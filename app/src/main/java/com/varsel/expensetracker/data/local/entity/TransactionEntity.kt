@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 
 /**
  * Room Database Entity representing an individual income or expense entry.
- * Stores core transaction details along with statement scanning metadata.
+ * Indexed by dateTimestamp and type for high-performance offline queries.
  */
 @Entity(
     tableName = "transactions",
@@ -42,6 +42,5 @@ data class TransactionEntity(
     val referenceNumber: String? = null,
 
     @ColumnInfo(name = "rawOcrText")
-    val rawOcrText: String
-  ? = null
+    val rawOcrText: String? = null
 )
