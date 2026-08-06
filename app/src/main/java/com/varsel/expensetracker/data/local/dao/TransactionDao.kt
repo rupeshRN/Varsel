@@ -86,6 +86,5 @@ interface TransactionDao {
      * Deletes a specific transaction record from the database.
      */
     @Delete
-    suspend fun deleteTransaction(transaction: Transactio
-                                  nEntity)
+    suspend fun deleteTransaction(transaction: TransactionEntity)
 }
