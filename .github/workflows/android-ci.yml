@@ -43,5 +43,4 @@ jobs:
         with:
           name: debug-apk
           path: app/build/outputs/apk/debug/*.apk
-          retenti
-          on-days: 7
+          retention-days: 7
