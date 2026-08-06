@@ -1,11 +1,11 @@
-
 package com.varsel.expensetracker.di
 
 import android.content.Context
 import androidx.room.Room
-import com.yourdomain.expensetracker.data.local.AppDatabase
-import com.yourdomain.expensetracker.data.local.dao.CategoryDao
-import com.yourdomain.expensetracker.data.local.dao.TransactionDao
+import com.varsel.expensetracker.data.local.AppDatabase
+import com.varsel.expensetracker.data.local.dao.CategoryDao
+import com.varsel.expensetracker.data.local.dao.CustomRuleDao
+import com.varsel.expensetracker.data.local.dao.TransactionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,8 +18,9 @@ import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
- * Hilt module providing database instances, DAOs, and SQLCipher 256-bit AES encryption keys.
- * Installed in SingletonComponent to persist across the entire application lifecycle.
+ * Hilt Dependency Injection module for database components.
+ * Configures SQLCipher AES-256 database encryption, builds the Singleton Room database instance,
+ * and provides DAO instances across the application dependency graph.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -29,8 +30,11 @@ object DatabaseModule {
     private const val PASSPHRASE_KEY = "db_passphrase_key"
 
     /**
-     * Generates or retrieves a cryptographically secure 256-bit passphrase.
-     * The passphrase is stored locally and converted into bytes using SQLCipher's SQLiteDatabase.
+     * Retrieves or generates a secure 256-bit passphrase used to encrypt the SQLite database.
+     * Uses Java's SecureRandom to guarantee cryptographically strong key generation on first launch.
+     *
+     * @param context Application context for accessing SharedPreferences.
+     * @return ByteArray representing the raw database passphrase.
      */
     @Provides
     @Singleton
@@ -39,11 +43,12 @@ object DatabaseModule {
         var keyString = prefs.getString(PASSPHRASE_KEY, null)
 
         if (keyString == null) {
-            // Generate 32 bytes (256 bits) of random entropy on first boot
+            // Generate 32 cryptographically secure random bytes (256 bits)
             val randomBytes = ByteArray(32)
             SecureRandom().nextBytes(randomBytes)
             keyString = randomBytes.joinToString("") { "%02x".format(it) }
             
+            // Persist key securely in device-protected preferences
             prefs.edit().putString(PASSPHRASE_KEY, keyString).apply()
         }
 
@@ -51,7 +56,13 @@ object DatabaseModule {
     }
 
     /**
-     * Constructs the Room Database instance configured with SQLCipher's SupportFactory.
+     * Builds and provides the encrypted Room database instance.
+     * Integrates SQLCipher SupportFactory for transparent AES-256 encryption and attaches
+     * the SeedCallback to pre-populate default budget categories on first initialization.
+     *
+     * @param context Application context.
+     * @param passphrase Generated encryption key for SQLCipher.
+     * @param categoryDaoProvider Deferred Provider for CategoryDao to prevent circular dependency during DB seeding.
      */
     @Provides
     @Singleton
@@ -60,7 +71,7 @@ object DatabaseModule {
         passphrase: ByteArray,
         categoryDaoProvider: Provider<CategoryDao>
     ): AppDatabase {
-        // Create SQLCipher Factory with the 256-bit encryption key
+        // Initialize SQLCipher factory for Room encryption
         val factory = SupportFactory(passphrase)
 
         return Room.databaseBuilder(
@@ -68,24 +79,22 @@ object DatabaseModule {
             AppDatabase::class.java,
             "encrypted_expense_tracker.db"
         )
-        .openHelperFactory(factory) // Replaces default SQLite open helper with SQLCipher
-        .addCallback(AppDatabase.SeedCallback(categoryDaoProvider)) // Category auto-seeding
+        .openHelperFactory(factory) // Enforces SQLCipher AES-256 encryption on file storage
+        .addCallback(AppDatabase.SeedCallback(categoryDaoProvider)) // Auto-seeds initial categories
         .fallbackToDestructiveMigration()
         .build()
     }
 
-    /**
-     * Provides a singleton instance of TransactionDao.
-     */
+    /** Provides singleton instance of TransactionDao for database queries. */
     @Provides
-    @Singleton
     fun provideTransactionDao(db: AppDatabase): TransactionDao = db.transactionDao()
 
-    /**
-     * Provides a singleton instance of CategoryDao.
-     */
+    /** Provides singleton instance of CategoryDao for category management. */
     @Provides
-    @Singleton
-    fun provideCategoryDao(db: AppDatabase): CategoryDao = db.categ
-  oryDao()
+    fun provideCategoryDao(db: AppDatabase): CategoryDao = db.categoryDao()
+
+    /** Provides singleton instance of CustomRuleDao for user rule persistent learning. */
+    @Provides
+    fun provideCustomRuleDao(db: AppDatabase): CustomRuleDao = db.customR
+    uleDao()
 }
