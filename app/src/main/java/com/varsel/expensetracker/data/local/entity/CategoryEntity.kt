@@ -6,14 +6,11 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * Room Database Entity representing budget and expense categories.
- * Enforces unique category names and stores visual styling metadata (icons and colors).
+ * Database entity for budget categories with dynamic keyword storage.
  */
 @Entity(
     tableName = "categories",
-    indices = [
-        Index(value = ["name"], unique = true)
-    ]
+    indices = [Index(value = ["name"], unique = true)]
 )
 data class CategoryEntity(
     @PrimaryKey(autoGenerate = true)
@@ -26,5 +23,8 @@ data class CategoryEntity(
     val iconName: String = "ic_category_default",
 
     @ColumnInfo(name = "colorHex")
-    val colorHex: String = "#6200EE"
+    val colorHex: String = "#6200EE",
+
+    @ColumnInfo(name = "keywords")
+    val keywords: String = "" // Comma-separated dynamic keywords (e.g., "STARBUCKS,MCDONALD,CAFE")
 )
