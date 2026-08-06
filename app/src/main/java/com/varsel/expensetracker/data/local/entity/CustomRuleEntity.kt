@@ -20,6 +20,5 @@ data class CustomRuleEntity(
     val pattern: String, // e.g., "JOES CORNER SHOP"
 
     @ColumnInfo(name = "categoryName")
-    val categoryName: String // e.g., "Groceries
-  "
+    val categoryName: String // e.g., "Groceries"
 )
