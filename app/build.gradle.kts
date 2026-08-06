@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.yourdomain.expensetracker"
+    namespace = "com.varsel.expensetracker"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.yourdomain.expensetracker"
+        applicationId = "com.varsel.expensetracker"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
