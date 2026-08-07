@@ -88,7 +88,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 
     // SQLCipher for encrypted Room DB (Single unified source)
-    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
+    implementation(libs.sqlcipher.android)
 
     // Navigation & Hilt Integration for Compose
     implementation("androidx.navigation:navigation-compose:2.8.0")
