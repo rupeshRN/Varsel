@@ -6,27 +6,37 @@ import org.junit.Test
 
 class StatementParserEngineTest {
 
-    private val statementParserEngine = StatementParserEngine()
-
     @Test
     fun testParseStatement() {
+        // Sample text matching both vertical PDFBox table extractions and pipe formats
         val sampleText = """
-            15/04/2026 Supermarket -45.50 1200.00
-            16/04/2026 Employer 2500.00 3700.00
+            02-Jul-2026
+             | UPI-ZOMATO-ZOM2394@oksbi
+             | 6183920192
+             | 450.00
+             |  | 44,780.00
+            05-Jul-2026
+             | NEFT-SALARY-TECHMAHIND
+             | NEFT98231A
+             |  | 75,000.00
+             | 119,780.00
         """.trimIndent()
 
-        val transactions = statementParserEngine.parseStatement(sampleText)
+        val engine = StatementParserEngine()
+        val transactions = engine.parseStatement(sampleText)
 
         assertEquals(2, transactions.size)
 
-        val first = transactions[0]
-        assertEquals("Supermarket", first.description)
-        assertEquals(45.50, first.amount, 0.01)
-        assertEquals(TransactionType.EXPENSE, first.type)
+        // Verify transaction 1
+        assertEquals("UPI-ZOMATO-ZOM2394@oksbi", transactions[0].description)
+        assertEquals(450.0, transactions[0].amount, 0.01)
+        assertEquals(TransactionType.EXPENSE, transactions[0].type)
+        assertEquals("6183920192", transactions[0].referenceNumber)
 
-        val second = transactions[1]
-        assertEquals("Employer", second.description)
-        assertEquals(2500.00, second.amount, 0.01)
-        assertEquals(TransactionType.INCOME, second.type)
-    }
+        // Verify transaction 2
+        assertEquals("NEFT-SALARY-TECHMAHIND", transactions[1].description)
+        assertEquals(75000.0, transactions[1].amount, 0.01)
+        assertEquals(TransactionType.INCOME, transactions[1].type)
+        assertEquals("NEFT98231A", transactions[1].referenceNumber)
+}
 }
