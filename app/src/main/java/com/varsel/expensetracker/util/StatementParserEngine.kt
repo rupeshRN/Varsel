@@ -2,9 +2,10 @@ package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionType
+import javax.inject.Inject
 import kotlin.math.abs
 
-class StatementParserEngine {
+class StatementParserEngine @Inject constructor() {
 
     private val transactionRegex = Regex(
         pattern = """^(\d{2}/\d{2}/\d{4})\s+(.+?)\s+([-+]?[0-9,]+\.\d{2})\s+([0-9,]+\.\d{2})$"""
