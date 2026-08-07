@@ -7,6 +7,8 @@ on:
   pull_request:
     branches:
       - main
+# Enables the "Run workflow" manual trigger button in the GitHub Actions web UI
+  workflow_dispatch:
 
 jobs:
   build:
