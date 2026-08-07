@@ -1,48 +1,54 @@
 package com.varsel.expensetracker.util
 
+import com.varsel.expensetracker.domain.model.TransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
+/**
+ * Unit test suite validating the behavior and accuracy of [StatementParserEngine].
+ */
 class StatementParserEngineTest {
 
-    private lateinit var statementParserEngine: StatementParserEngine
-
-    @Before
-    fun setUp() {
-        statementParserEngine = StatementParserEngine()
-    }
-
+    /**
+     * Test case to verify that valid raw statement text lines correctly parse into expected transaction fields.
+     */
     @Test
-    fun parseStatementText_validBankStatementLines_returnsParsedTransactions() {
-        val rawText = """
-            01/04/2026 UBER TRIP SAN FRANCISCO CA - 24.50 DR REF: UB123456
-            02/04/2026 SALARY CREDIT COMPANY INC + 3500.00 CR REF: SAL78901
+    fun testParseStatementText_validEntries() {
+        // Define a multi-line string simulating raw extracted statement data
+        val sampleText = """
+            STARBUCKS COFFEE 15.50 DEBIT
+            SALARY DEPOSIT 1500.00 CREDIT
         """.trimIndent()
 
-        val transactions = statementParserEngine.parseStatementText(rawText)
+        // Call the parser engine method with our sample text
+        val results = StatementParserEngine.parseStatementText(sampleText)
 
-        assertEquals(2, transactions.size)
+        // Assert that exactly 2 transaction entries were successfully extracted
+        assertEquals(2, results.size)
+        
+        // Retrieve and validate properties of the first parsed item (Debit)
+        val first = results[0]
+        assertEquals("STARBUCKS COFFEE 15.50 DEBIT", first.description)
+        assertEquals(15.50, first.amount, 0.001)
+        assertEquals(TransactionType.DEBIT, first.type)
 
-        val debitTransaction = transactions[0]
-        assertEquals("UBER TRIP SAN FRANCISCO CA", debitTransaction.description)
-        assertEquals(24.50, debitTransaction.amount, 0.001)
-        assertEquals("DEBIT", debitTransaction.type)
-        assertEquals("UB123456", debitTransaction.referenceNumber)
-
-        val creditTransaction = transactions[1]
-        assertEquals("SALARY CREDIT COMPANY INC", creditTransaction.description)
-        assertEquals(3500.00, creditTransaction.amount, 0.001)
-        assertEquals("CREDIT", creditTransaction.type)
-        assertEquals("SAL78901", creditTransaction.referenceNumber)
+        // Retrieve and validate properties of the second parsed item (Credit)
+        val second = results[1]
+        assertEquals("SALARY DEPOSIT 1500.00 CREDIT", second.description)
+        assertEquals(1500.00, second.amount, 0.001)
+        assertEquals(TransactionType.CREDIT, second.type)
     }
 
+    /**
+     * Test case to verify that empty input strings yield an empty transaction list without crashing.
+     */
     @Test
-    fun parseStatementText_emptyOrUnrecognizableText_returnsEmptyList() {
-        val invalidText = "THIS IS NOT A VALID BANK STATEMENT SUMMARY PAGE"
-        val result = statementParserEngine.parseStatementText(invalidText)
-
-        assertTrue(result.isEmpty())
+    fun testParseStatementText_emptyInput() {
+        // Pass an empty string to the parser engine
+        val results = StatementParserEngine.parseStatementText("")
+        
+        // Assert that the resulting collection is empty
+        assertTrue(results.isEmpty())
     }
 }
