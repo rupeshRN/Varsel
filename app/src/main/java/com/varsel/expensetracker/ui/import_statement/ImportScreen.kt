@@ -4,12 +4,15 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportScreen(
     viewModel: ImportViewModel,
@@ -17,11 +20,11 @@ fun ImportScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    val filePickerLauncher = rememberLauncherForActivityResult(
+    val pdfPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        if (uri != null) {
-            viewModel.processSelectedFile(uri)
+        uri?.let {
+            viewModel.processSelectedFile(it)
         }
     }
 
@@ -30,7 +33,9 @@ fun ImportScreen(
             TopAppBar(
                 title = { Text("Import Statement") },
                 navigationIcon = {
-                    TextButton(onClick = onBackClick) { Text("Back") }
+                    TextButton(onClick = onBackClick) {
+                        Text("Back")
+                    }
                 }
             )
         }
@@ -44,59 +49,84 @@ fun ImportScreen(
         ) {
             when (val state = uiState) {
                 is ImportUiState.Idle -> {
-                    Button(onClick = { filePickerLauncher.launch("*/*") }) {
-                        Text("Select Statement (PDF/Image)")
+                    Button(onClick = { pdfPickerLauncher.launch("application/pdf") }) {
+                        Text("Select PDF Statement")
                     }
                 }
+                is ImportUiState.Loading,
                 is ImportUiState.Processing -> {
                     CircularProgressIndicator()
                 }
-                is ImportUiState.Success -> {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Successfully parsed ${state.parsedTransactions.size} transactions!")
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.confirmAndSaveTransactions(state.parsedTransactions) }) {
-                            Text("Save Transactions")
+                is ImportUiState.ParsedTransactions -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "Parsed ${state.parsedTransactions.size} Transactions",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(state.parsedTransactions) { transaction ->
+                                Card(modifier = Modifier.fillMaxWidth()) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text(text = transaction.description, style = MaterialTheme.typography.bodyLarge)
+                                        Text(text = "Amount: ${transaction.amount} (${transaction.type})", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
+                            }
+                        }
+                        Button(
+                            onClick = { viewModel.confirmAndSaveTransactions(state.parsedTransactions) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Confirm and Save")
                         }
                     }
                 }
                 is ImportUiState.Saved -> {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Transactions saved successfully!")
-                        Spacer(modifier = Modifier.height(16.dp))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text("Transactions saved successfully!", style = MaterialTheme.typography.titleMedium)
                         Button(onClick = { viewModel.resetState() }) {
                             Text("Import Another")
                         }
                     }
                 }
-                is ImportUiState.Error -> {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(16.dp))
+                is ImportUiState.PasswordRequired -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text("PDF is password protected", style = MaterialTheme.typography.titleMedium)
+                        if (state.isInvalidPasswordError) {
+                            Text("Incorrect password, please try again", color = MaterialTheme.colorScheme.error)
+                        }
                         Button(onClick = { viewModel.resetState() }) {
-                            Text("Retry")
+                            Text("Cancel")
                         }
                     }
                 }
-                is ImportUiState.PasswordRequired -> {
-                    var passwordInput by remember { mutableStateOf("") }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("PDF is password protected.")
-                        if (state.isInvalidPasswordError) {
-                            Text("Invalid password, please try again.", color = MaterialTheme.colorScheme.error)
-                        }
-                        OutlinedTextField(
-                            value = passwordInput,
-                            onValueChange = { passwordInput = it },
-                            label = { Text("Enter Password") }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.submitPdfPassword(passwordInput) }) {
-                            Text("Submit Password")
+                is ImportUiState.Error -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+                        Button(onClick = { viewModel.resetState() }) {
+                            Text("Try Again")
                         }
                     }
                 }
             }
         }
+   
     }
 }
