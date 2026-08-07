@@ -50,6 +50,12 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun DashboardScreen(
