@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.repository.TransactionRepository
-import com.varsel.expensetracker.util.OcrManager
 import com.varsel.expensetracker.util.PdfTextExtractor
 import com.varsel.expensetracker.util.StatementParserEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,8 +18,7 @@ import javax.inject.Inject
 class ImportViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val pdfTextExtractor: PdfTextExtractor,
-    private val statementParserEngine: StatementParserEngine,
-    private val ocrManager: OcrManager
+    private val statementParserEngine: StatementParserEngine
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
