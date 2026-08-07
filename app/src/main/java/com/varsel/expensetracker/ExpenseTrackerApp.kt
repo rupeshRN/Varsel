@@ -2,12 +2,16 @@ package com.varsel.expensetracker
 
 import android.app.Application
 import android.content.Intent
+import com.tom_roush.pdfbox.util.PDFBoxResourceLoader
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class ExpenseTrackerApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        
+        // Initialize PDFBox-Android resource loader for direct PDF text extraction
+        PDFBoxResourceLoader.init(this)
         
         // CRITICAL: Explicitly load the native SQLCipher library to prevent UnsatisfiedLinkError
         try {
