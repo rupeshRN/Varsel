@@ -7,41 +7,40 @@ import kotlin.math.abs
 
 class StatementParserEngine @Inject constructor() {
 
-    // Flexible regex supporting various date separators (/ or -) and making the balance column optional
-    private val transactionRegex = Regex(
-        pattern = """(\d{2}[/-]\d{2}[/-]\d{4})\s+(.+?)\s+([-+]?[0-9,]+\.\d{2})"""
-    )
-
-    fun parseStatement(extractedText: String): List<Transaction> {
+    fun parseStatement(rawText: String): List<Transaction> {
         val transactions = mutableListOf<Transaction>()
-        val lines = extractedText.lines()
+        val lines = rawText.split("\n")
+
+        // Regex pattern to look for currency amounts (e.g., 45.00, 1,234.56, -50.20)
+        val amountRegex = Regex("[-+]?\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})|[-+]?\\d+\\.\\d{2}")
 
         for (line in lines) {
             val trimmedLine = line.trim()
-            val matchResult = transactionRegex.find(trimmedLine)
+            if (trimmedLine.isEmpty()) continue
 
-            if (matchResult != null) {
-                val rawDescription = matchResult.groups[2]?.value?.trim() ?: "Unknown"
-                val amountStr = matchResult.groups[3]?.value ?: "0.00"
+            val match = amountRegex.find(trimmedLine)
+            if (match != null) {
+                val amountStr = match.value.replace(",", "")
+                val amount = amountStr.toDoubleOrNull() ?: continue
 
-                val cleanDescription = rawDescription.replace(Regex("\\s+"), " ")
-                val parsedAmount = amountStr.replace(",", "").toDoubleOrNull() ?: 0.0
-                
-                val transactionType = if (parsedAmount < 0) TransactionType.EXPENSE else TransactionType.INCOME
+                // Extract description by removing the amount part from the line
+                val description = trimmedLine.replace(match.value, "").trim()
+                if (description.length < 2) continue
 
-                val transaction = Transaction(
-                    description = cleanDescription,
-                    amount = abs(parsedAmount),
-                    type = transactionType,
-                    category = "Uncategorized",
-                    dateTimestamp = System.currentTimeMillis(),
-                    referenceNumber = ""
+                val type = if (amount < 0) TransactionType.EXPENSE else TransactionType.INCOME
+
+                transactions.add(
+                    Transaction(
+                        description = description,
+                        amount = abs(amount),
+                        type = type,
+                        category = "Uncategorized",
+                        dateTimestamp = System.currentTimeMillis(),
+                        referenceNumber = ""
+                    )
                 )
-
-                transactions.add(transaction)
             }
         }
-
         return transactions
     }
 }
