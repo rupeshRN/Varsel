@@ -14,14 +14,23 @@ import com.varsel.expensetracker.domain.model.TransactionType
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    viewModel: DashboardViewModel
+    viewModel: DashboardViewModel,
+    onNavigateToImport: () -> Unit = {},
+    onNavigateToCategories: () -> Unit = {},
+    onNavigateToAllTransactions: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Dashboard") }
+                title = { Text("Dashboard") },
+                actions = {
+                    TextButton(onClick = onNavigateToSettings) {
+                        Text("Settings")
+                    }
+                }
             )
         }
     ) { paddingValues ->
@@ -44,6 +53,27 @@ fun DashboardScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Quick Action Buttons
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = onNavigateToImport,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Import Statement")
+                            }
+                            OutlinedButton(
+                                onClick = onNavigateToCategories,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Categories")
+                            }
+                        }
+                    }
+
                     // Summary Card
                     item {
                         Card(
@@ -84,12 +114,21 @@ fun DashboardScreen(
                         }
                     }
 
-                    // Recent Transactions Header
+                    // Recent Transactions Header with View All
                     item {
-                        Text(
-                            text = "Recent Transactions",
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Recent Transactions",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            TextButton(onClick = onNavigateToAllTransactions) {
+                                Text("View All")
+                            }
+                        }
                     }
 
                     if (uiState.recentTransactions.isEmpty()) {
@@ -142,6 +181,5 @@ fun DashboardScreen(
                 }
             }
         }
-  
     }
 }
