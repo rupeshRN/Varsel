@@ -55,7 +55,7 @@ object DatabaseModule {
             "encrypted_expense_tracker.db"
         )
         .openHelperFactory(factory)
-        //.addCallback(AppDatabase.SeedCallback(categoryDaoProvider)) // TEMPORARY: Disabled to test startup without seeding
+        .addCallback(AppDatabase.SeedCallback(categoryDaoProvider))
         .fallbackToDestructiveMigration()
         .build()
     }
