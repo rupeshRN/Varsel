@@ -3,47 +3,57 @@ package com.varsel.expensetracker.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.varsel.expensetracker.domain.model.Transaction
-import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-data class DashboardUiState(
-    val totalBalance: Double = 0.0,
-    val totalIncome: Double = 0.0,
-    val totalExpense: Double = 0.0,
-    val recentTransactions: List<Transaction> = emptyList(),
-    val isLoading: Boolean = false
-)
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<DashboardUiState> = transactionRepository.getAllTransactions()
-        .map { transactions ->
-            val income = transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-            val expense = transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-            val balance = income - expense
-            val recent = transactions.sortedByDescending { it.dateTimestamp }.take(5)
+    private val _uiState = MutableStateFlow(DashboardUiState())
+    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-            DashboardUiState(
-                totalBalance = balance,
-                totalIncome = income,
-                totalExpense = expense,
-                recentTransactions = recent,
-                isLoading = false
-            )
+    init {
+        loadDashboardData()
+    }
+
+    private fun loadDashboardData() {
+        viewModelScope.launch {
+            transactionRepository.getAllTransactions().collectLatest { transactions ->
+                val totalIncome = transactions.filter { it.type == com.varsel.expensetracker.domain.model.TransactionType.INCOME }.sumOf { it.amount }
+                val totalExpense = transactions.filter { it.type == com.varsel.expensetracker.domain.model.TransactionType.EXPENSE }.sumOf { it.amount }
+                val netBalance = totalIncome - totalExpense
+
+                _uiState.value = _uiState.value.copy(
+                    recentTransactions = transactions.sortedByDescending { it.dateTimestamp }.take(10),
+                    totalBalance = netBalance,
+                    totalIncome = totalIncome,
+                    totalExpense = totalExpense,
+                    isLoading = false
+                )
+            }
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = DashboardUiState(isLoading = true)
-      
-        )
+    }
+
+    fun updateTransaction(transaction: Transaction) {
+        viewModelScope.launch(Dispatchers.IO) {
+            transactionRepository.updateTransaction(transaction)
+        }
+    }
 }
+
+data class DashboardUiState(
+    val recentTransactions: List<Transaction> = emptyList(),
+    val totalBalance: Double = 0.0,
+    val totalIncome: Double = 0.0,
+    val totalExpense: Double = 0.0,
+    val isLoading: Boolean = true
+)
