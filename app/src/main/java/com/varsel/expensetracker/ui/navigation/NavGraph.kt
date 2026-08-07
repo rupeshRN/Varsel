@@ -44,7 +44,7 @@ fun NavGraph(
             val viewModel: TransactionViewModel = hiltViewModel()
             TransactionScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -52,7 +52,7 @@ fun NavGraph(
             val viewModel: ImportViewModel = hiltViewModel()
             ImportScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -60,7 +60,7 @@ fun NavGraph(
             val viewModel: CategoryViewModel = hiltViewModel()
             CategoryScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() }
             )
         }
     }
