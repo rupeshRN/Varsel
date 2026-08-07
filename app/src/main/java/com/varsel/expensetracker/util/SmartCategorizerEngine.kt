@@ -29,7 +29,7 @@ class SmartCategorizerEngine @Inject constructor(
                     val keyword = rule.pattern.uppercase()
                     val regex = Regex("\\b${Regex.escape(keyword)}\\b")
                     if (regex.containsMatchIn(upperDesc)) {
-                        return@withContext SmartDetails(rule.displayName, rule.categoryName)
+                        return@withContext SmartDetails(rule.name, rule.category)
                     }
                 }
             }
