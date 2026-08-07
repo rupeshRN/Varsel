@@ -8,7 +8,7 @@ import com.varsel.expensetracker.data.local.dao.CustomRuleDao
 import com.varsel.expensetracker.data.local.dao.TransactionDao
 import dagger.Module
 import dagger.Provides
-import dagger.InstallIn
+import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import net.zetetic.database.sqlcipher.SQLiteDatabase
