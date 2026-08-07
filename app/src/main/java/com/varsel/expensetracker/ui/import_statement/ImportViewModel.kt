@@ -2,7 +2,7 @@ package com.varsel.expensetracker.ui.import_statement
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.varsel.expensetracker.data.local.entity.TransactionEntity
+import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.repository.TransactionRepository
 import com.varsel.expensetracker.util.OcrManager
 import com.varsel.expensetracker.util.PdfTextExtractor
@@ -25,28 +25,47 @@ class ImportViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
 
-    fun parseAndSaveStatement(fileBytes: ByteArray) {
+    fun processSelectedFile(fileBytes: ByteArray) {
         viewModelScope.launch {
-            _uiState.value = ImportUiState.Loading
+            _uiState.value = ImportUiState.Processing
             try {
                 val extractedText = pdfTextExtractor.extractText(fileBytes)
                 val transactions = statementParserEngine.parseStatement(extractedText)
-
-                for (transaction in transactions) {
-                    transactionRepository.insertTransaction(transaction)
-                }
-
-                _uiState.value = ImportUiState.Success(transactions)
+                _uiState.value = ImportUiState.ParsedTransactions(transactions)
             } catch (e: Exception) {
                 _uiState.value = ImportUiState.Error(e.message ?: "Unknown error occurred")
             }
         }
+    }
+
+    fun confirmAndSaveTransactions(transactions: List<Transaction>) {
+        viewModelScope.launch {
+            try {
+                for (transaction in transactions) {
+                    transactionRepository.insertTransaction(transaction)
+                }
+                _uiState.value = ImportUiState.Saved
+            } catch (e: Exception) {
+                _uiState.value = ImportUiState.Error(e.message ?: "Failed to save transactions")
+            }
+        }
+    }
+
+    fun resetState() {
+        _uiState.value = ImportUiState.Idle
+    }
+
+    fun submitPdfPassword(password: String) {
+        // Handle password submission if required
     }
 }
 
 sealed class ImportUiState {
     object Idle : ImportUiState()
     object Loading : ImportUiState()
-    data class Success(val transactions: List<TransactionEntity>) : ImportUiState()
+    object Processing : ImportUiState()
+    data class ParsedTransactions(val parsedTransactions: List<Transaction>) : ImportUiState()
+    object Saved : ImportUiState()
+    data class PasswordRequired(val isInvalidPasswordError: Boolean = false) : ImportUiState()
     data class Error(val message: String) : ImportUiState()
 }
