@@ -71,7 +71,6 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-    // NOTE: libs.sqlcipher.android removed here to prevent duplicate native library collision
 
     // Offline Scanning & Extraction
     implementation(libs.mlkit.text.recognition)
@@ -96,7 +95,4 @@ dependencies {
 
     // Compose Material Icons Extended
     implementation("androidx.compose.material:material-icons-extended")
-
-implementation("com.tom-roush:pdfbox-android:2.0.27.0")
-}
 }
