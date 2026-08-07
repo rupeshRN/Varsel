@@ -85,4 +85,16 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    testImplementation("junit:junit:4.13.2")
+
+    // SQLCipher for encrypted Room DB
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
+    implementation("androidx.sqlite:sqlite-ktx:2.4.0")
+
+    // Navigation & Hilt Integration for Compose
+    implementation("androidx.navigation:navigation-compose:2.8.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    // Compose Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended")
 }
