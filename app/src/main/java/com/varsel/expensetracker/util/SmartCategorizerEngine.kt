@@ -1,10 +1,9 @@
 package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.data.local.dao.CustomRuleDao
-import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionType
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class SmartCategorizerEngine @Inject constructor(
@@ -13,18 +12,19 @@ class SmartCategorizerEngine @Inject constructor(
 
     data class SmartDetails(val displayName: String, val category: String)
 
-    fun getSmartDetails(description: String, type: TransactionType): SmartDetails {
+    suspend fun getSmartDetails(description: String, type: TransactionType): SmartDetails = withContext(Dispatchers.IO) {
         val upperDesc = description.uppercase()
 
-        // 1. Self-updating learning layer: Check user-defined custom rules from local Room DB first
+        // 1. Check user-defined custom rules from database safely without blocking threads
         try {
             if (customRuleDao != null) {
-                val rules = runBlocking(Dispatchers.IO) {
-                    customRuleDao.getAllRules()
-                }
+                val rules = customRuleDao.getAllRules()
                 for (rule in rules) {
-                    if (upperDesc.contains(rule.keyword.uppercase())) {
-                        return SmartDetails(rule.displayName, rule.categoryName)
+                    val keyword = rule.keyword.uppercase()
+                    // Use word boundary check to avoid false substring collisions (e.g. "CAR" matching "RESCAR")
+                    val regex = Regex("\\b${Regex.escape(keyword)}\\b")
+                    if (regex.containsMatchIn(upperDesc)) {
+                        return@withContext SmartDetails(rule.displayName, rule.categoryName)
                     }
                 }
             }
@@ -32,62 +32,33 @@ class SmartCategorizerEngine @Inject constructor(
             e.printStackTrace()
         }
 
-        // 2. Check for Income
-        if (upperDesc.contains("SALARY") || upperDesc.contains("WAGE")) {
-            return SmartDetails("Salary", "Income")
-        }
-        if (upperDesc.contains("INTEREST") || upperDesc.contains("DIVIDEND")) {
-            return SmartDetails("Bank Interest", "Income")
-        }
-
-        // 3. Check for Food & Dining
+        // 2. Built-in Smart Rules
         if (upperDesc.contains("ZOMATO") || upperDesc.contains("SWIGGY") || upperDesc.contains("UBER EATS")) {
-            return SmartDetails("Food Delivery", "Food & Drink")
+            return@withContext SmartDetails("Food Delivery", "Food & Drink")
         }
-        if (upperDesc.contains("RESTAURANT") || upperDesc.contains("CAFÉ") || upperDesc.contains("CAFE")) {
-            return SmartDetails("Dining Out", "Food & Drink")
+        if (upperDesc.contains("SALARY") || upperDesc.contains("WAGE")) {
+            return@withContext SmartDetails("Salary", "Income")
         }
-
-        // 4. Check for Groceries
-        if (upperDesc.contains("GROCERY") || upperDesc.contains("SUPERMARKET")) {
-            return SmartDetails("Groceries", "Groceries")
-        }
-
-        // 5. Check for Transport
-        if (upperDesc.contains("UBER") || upperDesc.contains("OLA")) {
-            return SmartDetails("Rideshare", "Transport")
-        }
-        if (upperDesc.contains("FUEL") || upperDesc.contains("GAS STATION")) {
-            return SmartDetails("Fuel", "Transport")
-        }
-
-        // 6. Check for Utilities / Subscriptions
         if (upperDesc.contains("NETFLIX") || upperDesc.contains("SPOTIFY") || upperDesc.contains("AMAZON PRIME")) {
-            return SmartDetails("Subscription", "Subscriptions")
+            return@withContext SmartDetails("Subscription", "Subscriptions")
         }
-        if (upperDesc.contains("ELECTRICITY") || upperDesc.contains("WATER") || upperDesc.contains("INTERNET BILL")) {
-            return SmartDetails("Utility Bill", "Utilities")
-        }
-
-        // 7. Check for Transfers
-        if (upperDesc.contains("TRANSFER TO") || upperDesc.contains("NEFT") || upperDesc.contains("IMPS")) {
-             val recipient = extractRecipientFromTransfer(description)
-             return SmartDetails(recipient, "Transfers")
-        }
-
-        // 8. Fallback for Cash withdrawals
         if (upperDesc.contains("ATM CASH") || upperDesc.contains("WDL")) {
-            return SmartDetails("Cash Withdrawal", "Cash")
+            return@withContext SmartDetails("Cash Withdrawal", "Cash")
         }
-        
-        // Default for everything else
-        val defaultName = description.split("-").firstOrNull()?.trim()?.capitalizeWords() ?: "Unknown Transaction"
-        return SmartDetails(defaultName, "Uncategorized")
+        if (upperDesc.contains("ELECTRICITY") || upperDesc.contains("WATER") || upperDesc.contains("INTERNET")) {
+            return@withContext SmartDetails("Utility Bill", "Utilities")
+        }
+        if (upperDesc.contains("TRANSFER TO") || upperDesc.contains("NEFT") || upperDesc.contains("IMPS")) {
+            val recipient = extractRecipientFromTransfer(description)
+            return@withContext SmartDetails(recipient, "Transfers")
+        }
+
+        // 3. Ultimate Fallback
+        val defaultName = description.split("-").firstOrNull()?.trim()?.capitalizeWords() ?: "Transaction"
+        return@withContext SmartDetails(defaultName, "Uncategorized")
     }
 
     private fun extractRecipientFromTransfer(fullDescription: String): String {
-        // Example: "NEFT-MOHIT KUMAR-RENT" -> Returns "Mohit Kumar"
-        // Example: "UPI-JANE DOE-FOOD" -> Returns "Jane Doe"
         val parts = fullDescription.split("-")
         return if (parts.size > 2) {
             parts[1].capitalizeWords()
@@ -95,6 +66,7 @@ class SmartCategorizerEngine @Inject constructor(
             "Bank Transfer"
         }
     }
-    
-    private fun String.capitalizeWords(): String = split(" ").joinToString(" ") { it.lowercase().replaceFirstChar { char -> char.uppercase() } }
+
+    private fun String.capitalizeWords(): String = 
+        split(" ").joinToString(" ") { it.lowercase().replaceFirstChar { char -> char.uppercase() } }
 }
