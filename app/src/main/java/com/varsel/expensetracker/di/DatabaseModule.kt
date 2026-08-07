@@ -95,6 +95,5 @@ object DatabaseModule {
 
     /** Provides singleton instance of CustomRuleDao for user rule persistent learning. */
     @Provides
-    fun provideCustomRuleDao(db: AppDatabase): CustomRuleDao = db.customR
-    uleDao()
+    fun provideCustomRuleDao(db: AppDatabase): CustomRuleDao = db.customRuleDao()
 }
