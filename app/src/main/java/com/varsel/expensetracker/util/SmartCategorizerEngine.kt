@@ -15,13 +15,12 @@ class SmartCategorizerEngine @Inject constructor(
     suspend fun getSmartDetails(description: String, type: TransactionType): SmartDetails = withContext(Dispatchers.IO) {
         val upperDesc = description.uppercase()
 
-        // 1. Check user-defined custom rules from database safely without blocking threads
         try {
             if (customRuleDao != null) {
-                val rules = customRuleDao.getAllRules()
+                // Ensure DAO method returns a List (e.g. List<CustomRuleEntity>) rather than a Flow
+                val rules = customRuleDao.getAllRules() 
                 for (rule in rules) {
                     val keyword = rule.keyword.uppercase()
-                    // Use word boundary check to avoid false substring collisions (e.g. "CAR" matching "RESCAR")
                     val regex = Regex("\\b${Regex.escape(keyword)}\\b")
                     if (regex.containsMatchIn(upperDesc)) {
                         return@withContext SmartDetails(rule.displayName, rule.categoryName)
@@ -32,7 +31,6 @@ class SmartCategorizerEngine @Inject constructor(
             e.printStackTrace()
         }
 
-        // 2. Built-in Smart Rules
         if (upperDesc.contains("ZOMATO") || upperDesc.contains("SWIGGY") || upperDesc.contains("UBER EATS")) {
             return@withContext SmartDetails("Food Delivery", "Food & Drink")
         }
@@ -48,23 +46,9 @@ class SmartCategorizerEngine @Inject constructor(
         if (upperDesc.contains("ELECTRICITY") || upperDesc.contains("WATER") || upperDesc.contains("INTERNET")) {
             return@withContext SmartDetails("Utility Bill", "Utilities")
         }
-        if (upperDesc.contains("TRANSFER TO") || upperDesc.contains("NEFT") || upperDesc.contains("IMPS")) {
-            val recipient = extractRecipientFromTransfer(description)
-            return@withContext SmartDetails(recipient, "Transfers")
-        }
 
-        // 3. Ultimate Fallback
         val defaultName = description.split("-").firstOrNull()?.trim()?.capitalizeWords() ?: "Transaction"
         return@withContext SmartDetails(defaultName, "Uncategorized")
-    }
-
-    private fun extractRecipientFromTransfer(fullDescription: String): String {
-        val parts = fullDescription.split("-")
-        return if (parts.size > 2) {
-            parts[1].capitalizeWords()
-        } else {
-            "Bank Transfer"
-        }
     }
 
     private fun String.capitalizeWords(): String = 
