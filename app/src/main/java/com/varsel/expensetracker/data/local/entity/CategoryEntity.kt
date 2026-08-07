@@ -10,5 +10,6 @@ data class CategoryEntity(
     val name: String,
     val colorHex: String,
     val iconName: String,
-    val budgetLimit: Double = 0.0
+    val budgetLimit: Double = 0.0,
+    val keywords: String = ""
 )
