@@ -1,17 +1,38 @@
 package com.varsel.expensetracker.util
 
+import com.varsel.expensetracker.data.local.dao.CustomRuleDao
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
-class SmartCategorizerEngine @Inject constructor() {
+class SmartCategorizerEngine @Inject constructor(
+    private val customRuleDao: CustomRuleDao? = null
+) {
 
     data class SmartDetails(val displayName: String, val category: String)
 
     fun getSmartDetails(description: String, type: TransactionType): SmartDetails {
         val upperDesc = description.uppercase()
 
-        // 1. Check for Income
+        // 1. Self-updating learning layer: Check user-defined custom rules from local Room DB first
+        try {
+            if (customRuleDao != null) {
+                val rules = runBlocking(Dispatchers.IO) {
+                    customRuleDao.getAllRules()
+                }
+                for (rule in rules) {
+                    if (upperDesc.contains(rule.keyword.uppercase())) {
+                        return SmartDetails(rule.displayName, rule.categoryName)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 2. Check for Income
         if (upperDesc.contains("SALARY") || upperDesc.contains("WAGE")) {
             return SmartDetails("Salary", "Income")
         }
@@ -19,7 +40,7 @@ class SmartCategorizerEngine @Inject constructor() {
             return SmartDetails("Bank Interest", "Income")
         }
 
-        // 2. Check for Food & Dining
+        // 3. Check for Food & Dining
         if (upperDesc.contains("ZOMATO") || upperDesc.contains("SWIGGY") || upperDesc.contains("UBER EATS")) {
             return SmartDetails("Food Delivery", "Food & Drink")
         }
@@ -27,12 +48,12 @@ class SmartCategorizerEngine @Inject constructor() {
             return SmartDetails("Dining Out", "Food & Drink")
         }
 
-        // 3. Check for Groceries
+        // 4. Check for Groceries
         if (upperDesc.contains("GROCERY") || upperDesc.contains("SUPERMARKET")) {
             return SmartDetails("Groceries", "Groceries")
         }
 
-        // 4. Check for Transport
+        // 5. Check for Transport
         if (upperDesc.contains("UBER") || upperDesc.contains("OLA")) {
             return SmartDetails("Rideshare", "Transport")
         }
@@ -40,7 +61,7 @@ class SmartCategorizerEngine @Inject constructor() {
             return SmartDetails("Fuel", "Transport")
         }
 
-        // 5. Check for Utilities / Subscriptions
+        // 6. Check for Utilities / Subscriptions
         if (upperDesc.contains("NETFLIX") || upperDesc.contains("SPOTIFY") || upperDesc.contains("AMAZON PRIME")) {
             return SmartDetails("Subscription", "Subscriptions")
         }
@@ -48,13 +69,13 @@ class SmartCategorizerEngine @Inject constructor() {
             return SmartDetails("Utility Bill", "Utilities")
         }
 
-        // 6. Check for Transfers
+        // 7. Check for Transfers
         if (upperDesc.contains("TRANSFER TO") || upperDesc.contains("NEFT") || upperDesc.contains("IMPS")) {
              val recipient = extractRecipientFromTransfer(description)
              return SmartDetails(recipient, "Transfers")
         }
 
-        // 7. Fallback for Cash withdrawals
+        // 8. Fallback for Cash withdrawals
         if (upperDesc.contains("ATM CASH") || upperDesc.contains("WDL")) {
             return SmartDetails("Cash Withdrawal", "Cash")
         }
@@ -75,5 +96,5 @@ class SmartCategorizerEngine @Inject constructor() {
         }
     }
     
-    private fun String.capitalizeWords(): String = split(" ").joinToString(" ") { it.toLowerCase().capitalize() }
+    private fun String.capitalizeWords(): String = split(" ").joinToString(" ") { it.lowercase().replaceFirstChar { char -> char.uppercase() } }
 }
