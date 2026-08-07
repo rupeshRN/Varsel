@@ -91,7 +91,7 @@ fun MainNavigation(
             // PDF/Image Statement Parsing Route
             composable(Screen.Import.route) {
                 // Placeholder until ImportScreen component is added in File 23
-                Text("Import Statement Screen")
+                ImportScreen()
             }
 
             // Category & Budgeting Rules Route
