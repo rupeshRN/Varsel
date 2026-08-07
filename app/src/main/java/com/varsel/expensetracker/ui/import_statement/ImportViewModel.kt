@@ -48,6 +48,5 @@ sealed class ImportUiState {
     object Idle : ImportUiState()
     object Loading : ImportUiState()
     data class Success(val transactions: List<TransactionEntity>) : ImportUiState()
-    data class Error(val message: String) : ImportUiSt
-    ate()
+    data class Error(val message: String) : ImportUiState()
 }
