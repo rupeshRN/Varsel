@@ -58,8 +58,7 @@ fun CategoryScreen(
                             name = newCategoryName,
                             colorHex = "#FF6200EE",
                             iconName = "default_icon",
-                            // INLINE FIX: Passed 'monthlyBudgetLimit' matching CategoryEntity parameter
-                            monthlyBudgetLimit = newBudgetLimit.toDoubleOrNull() ?: 0.0
+                            budgetLimit = newBudgetLimit.toDoubleOrNull() ?: 0.0
                         )
                         newCategoryName = ""
                         newBudgetLimit = ""
@@ -88,11 +87,9 @@ fun CategoryScreen(
                         ) {
                             Column {
                                 Text(text = category.name, style = MaterialTheme.typography.bodyLarge)
-                                // INLINE FIX: Use 'category.monthlyBudgetLimit' instead of unresolved references
-                                Text(text = "Budget: $${category.monthlyBudgetLimit}", style = MaterialTheme.typography.bodySmall)
+                                Text(text = "Budget: $${category.budgetLimit}", style = MaterialTheme.typography.bodySmall)
                             }
                             TextButton(onClick = {
-                                // INLINE FIX: Use entity 'category' object deletion directly (resolved 'categoryId' mismatch)
                                 viewModel.deleteCategory(category)
                             }) {
                                 Text("Delete", color = MaterialTheme.colorScheme.error)
@@ -147,7 +144,6 @@ fun CategoryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                // INLINE FIX: Use 'rule.pattern' instead of unresolved 'merchantPattern'
                                 Text(text = "Pattern: ${rule.pattern}", style = MaterialTheme.typography.bodyLarge)
                                 Text(text = "Category: ${rule.categoryName}", style = MaterialTheme.typography.bodySmall)
                             }
