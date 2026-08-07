@@ -1,6 +1,7 @@
 package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.domain.model.Transaction
+import com.varsel.expensetracker.domain.model.TransactionType
 import kotlin.math.abs
 
 class StatementParserEngine {
@@ -26,7 +27,7 @@ class StatementParserEngine {
                 val cleanDescription = rawDescription.replace(Regex("\\s+"), " ")
                 val parsedAmount = amountStr.replace(",", "").toDoubleOrNull() ?: 0.0
                 
-                val transactionType = if (parsedAmount < 0) "EXPENSE" else "INCOME"
+                val transactionType = if (parsedAmount < 0) TransactionType.EXPENSE else TransactionType.INCOME
 
                 val transaction = Transaction(
                     description = cleanDescription,
@@ -41,6 +42,7 @@ class StatementParserEngine {
             }
         }
 
-        return transactions
+        return transactio
+        ns
     }
 }
