@@ -13,23 +13,30 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 data class DashboardUiState(
-    val recentTransactions: List<Transaction> = emptyList(),
     val totalBalance: Double = 0.0,
+    val totalIncome: Double = 0.0,
+    val totalExpense: Double = 0.0,
+    val recentTransactions: List<Transaction> = emptyList(),
     val isLoading: Boolean = false
 )
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    repository: TransactionRepository
+    private val transactionRepository: TransactionRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<DashboardUiState> = repository.getAllTransactions()
+    val uiState: StateFlow<DashboardUiState> = transactionRepository.getAllTransactions()
         .map { transactions ->
+            val income = transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+            val expense = transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+            val balance = income - expense
+            val recent = transactions.sortedByDescending { it.dateTimestamp }.take(5)
+
             DashboardUiState(
-                recentTransactions = transactions.take(10),
-                totalBalance = transactions.sumOf { 
-                    if (it.type == TransactionType.CREDIT || it.type == TransactionType.INCOME) it.amount else -it.amount 
-                },
+                totalBalance = balance,
+                totalIncome = income,
+                totalExpense = expense,
+                recentTransactions = recent,
                 isLoading = false
             )
         }
@@ -37,5 +44,6 @@ class DashboardViewModel @Inject constructor(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = DashboardUiState(isLoading = true)
+      
         )
 }
