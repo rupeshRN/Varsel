@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     // Replace this with your actual root navigation graph or main screen
-                    AppNavGraph()
+                    NavGraph()
                 }
             }
         }
