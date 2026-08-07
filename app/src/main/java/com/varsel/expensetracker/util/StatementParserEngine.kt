@@ -2,27 +2,6 @@ package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionType
-import javax.inject.Inject
-
-class StatementParserEngine @Inject constructor(
-    private val smartCategorizer: SmartCategorizerEngine
-) {
-
-    fun parseStatement(rawText: String): List<Transaction> {
-        val transactions = mutableListOf<Transaction>()
-        val lines = rawText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
-
-        // Match standard date formats
-        val dateRegex = Regex("\\d{2}-[A-Za-z]{3}-\\d{4}|\\d{2}/\\d{2}/\\d{4}")
-        // Improved amount regex to strictly match currency formats
-        val amountRegex = Regex("[-+]?\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})|[-+]?\\d+\\.\\d{2}")
-
-            // Fallback based on expected amounts from screenshot
-                    if (transactionAmount != null && transactionAmount < 0) TransactionType.EXPENSE else TransactionType.INCOME
-package com.varsel.expensetracker.util
-
-import com.varsel.expensetracker.domain.model.Transaction
-import com.varsel.expensetracker.domain.model.TransactionType
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -34,16 +13,22 @@ class StatementParserEngine @Inject constructor() {
 
     private val dateFormats = listOf(
         DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH),
+        DateTimeFormatter.ofPattern("d-MMM-yyyy", Locale.ENGLISH),
         DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.ENGLISH)
+        DateTimeFormatter.ofPattern("d/M/yyyy", Locale.ENGLISH),
+        DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.ENGLISH),
+        DateTimeFormatter.ofPattern("d-M-yyyy", Locale.ENGLISH),
+        DateTimeFormatter.ofPattern("dd-MMM-yy", Locale.ENGLISH),
+        DateTimeFormatter.ofPattern("d-MMM-yy", Locale.ENGLISH)
     )
 
     fun parseStatement(rawText: String): List<Transaction> {
         val transactions = mutableListOf<Transaction>()
         val lines = rawText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
 
-        val dateRegex = Regex("\\d{2}-[A-Za-z]{3}-\\d{4}|\\d{2}/\\d{2}/\\d{4}|\\d{2}-\\d{2}-\\d{4}")
-        val amountRegex = Regex("[-+]?\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})|[-+]?\\d+\\.\\d{2}")
+        // Regex supporting potential internal whitespace artifacts from PDF/OCR extraction
+        val dateRegex = Regex("\\b\\d{1,2}[-/][A-Za-z]{3}[-/]\\d{2,4}\\b|\\b\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4}\\b")
+        val amountRegex = Regex("[-+]?\\d{1,3}(?:[\\s,]*\\d{3})*(?:\\.\\d{2})?|[-+]?\\d+(?:\\.\\d{2})?")
 
         var i = 0
         while (i < lines.size) {
@@ -60,6 +45,12 @@ class StatementParserEngine @Inject constructor() {
                 val timestamp = parseDateSafely(dateStr)
 
                 val blockLines = mutableListOf<String>()
+                // Keep the remainder of the current line after the date as part of the block
+                val remainder = line.substring(dateMatch.range.last + 1).trim()
+                if (remainder.isNotEmpty()) {
+                    blockLines.add(remainder)
+                }
+
                 i++
                 while (i < lines.size && dateRegex.find(lines[i]) == null) {
                     blockLines.add(lines[i])
@@ -96,10 +87,19 @@ class StatementParserEngine @Inject constructor() {
     private fun parseDateSafely(dateStr: String): Long {
         for (formatter in dateFormats) {
             try {
-                val localDate = LocalDate.parse(dateStr, formatter)
+                var normalizedDateStr = dateStr
+                // Expand 2-digit year to 4-digit if necessary (assuming 20xx for current decade)
+                if (dateStr.matches(Regex(".*-\\d{2}$")) || dateStr.matches(Regex(".*/\\d{2}$"))) {
+                    val parts = dateStr.split(Regex("[-/]"))
+                    if (parts.size == 3 && parts[2].length == 2) {
+                        val prefix = if (parts[2].toInt() > 50) "19" else "20"
+                        normalizedDateStr = dateStr.replace(Regex("${parts[2]}$"), "$prefix${parts[2]}")
+                    }
+                }
+                val localDate = LocalDate.parse(normalizedDateStr, formatter)
                 return localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             } catch (e: DateTimeParseException) {
-                // Try next format
+                // Continue to next format
             }
         }
         return System.currentTimeMillis()
@@ -121,13 +121,14 @@ class StatementParserEngine @Inject constructor() {
         for (item in cleanedBlock) {
             val amountMatch = amountRegex.find(item)
             if (amountMatch != null && transactionAmount == null) {
-                val amountStr = amountMatch.value.replace(",", "")
-                transactionAmount = amountStr.toDoubleOrNull()
+                // Clean up whitespace and commas within the matched amount string
+                val rawAmountStr = amountMatch.value.replace(" ", "").replace(",", "")
+                transactionAmount = rawAmountStr.toDoubleOrNull()
                 
                 val upperItem = item.uppercase()
-                transactionType = if (upperItem.contains("(DR)") || amountStr.startsWith("-")) {
+                transactionType = if (upperItem.contains("(DR)") || upperItem.contains(" DR") || rawAmountStr.startsWith("-")) {
                     TransactionType.EXPENSE
-                } else if (upperItem.contains("(CR)") || upperItem.contains("DEPOSIT")) {
+                } else if (upperItem.contains("(CR)") || upperItem.contains(" CR") || upperItem.contains("DEPOSIT")) {
                     TransactionType.INCOME
                 } else {
                     if (transactionAmount != null && transactionAmount < 0) TransactionType.EXPENSE else TransactionType.INCOME
@@ -137,7 +138,7 @@ class StatementParserEngine @Inject constructor() {
             }
         }
 
-        val rawDesc = descBuilder.toString().trim()
+        val rawDesc = descBuilder.toString().trim().replace(Regex("\\s+"), " ")
         if (rawDesc.isNotEmpty()) {
             description = rawDesc
         }
