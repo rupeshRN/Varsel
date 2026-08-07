@@ -11,10 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionType
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,9 +27,9 @@ fun DashboardScreen(
     onNavigateToAllTransactions: () -> Unit,
     onNavigateToCategories: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    // Lifecycle-aware flow collection to prevent background CPU cycles
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
-    // State to hold the transaction currently selected for editing category/details
     var selectedTransaction by remember { mutableStateOf<Transaction?>(null) }
 
     Scaffold(
@@ -61,8 +64,7 @@ fun DashboardScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Summary Card
-                item {
+                item(key = "summary_card") {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -86,8 +88,7 @@ fun DashboardScreen(
                     }
                 }
 
-                // Recent Transactions Header
-                item {
+                item(key = "recent_header") {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -104,9 +105,8 @@ fun DashboardScreen(
                     }
                 }
 
-                // Transactions List
                 if (uiState.recentTransactions.isEmpty()) {
-                    item {
+                    item(key = "empty_state") {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -117,7 +117,11 @@ fun DashboardScreen(
                         }
                     }
                 } else {
-                    items(uiState.recentTransactions) { transaction ->
+                    // Stable key provided for LazyColumn items to prevent recomposition glitches
+                    items(
+                        items = uiState.recentTransactions,
+                        key = { it.id }
+                    ) { transaction ->
                         TransactionItemCard(
                             transaction = transaction,
                             onClick = { selectedTransaction = transaction }
@@ -127,7 +131,6 @@ fun DashboardScreen(
             }
         }
 
-        // Edit Transaction / Category Dialog
         selectedTransaction?.let { transaction ->
             EditTransactionCategoryDialog(
                 transaction = transaction,
@@ -146,9 +149,12 @@ fun TransactionItemCard(
     transaction: Transaction,
     onClick: () -> Unit
 ) {
-    val dateFormat = SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH)
+    val dateFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH)
     val dateStr = try {
-        dateFormat.format(Date(transaction.dateTimestamp))
+        val date = Instant.ofEpochMilli(transaction.dateTimestamp)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+        date.format(dateFormatter)
     } catch (e: Exception) {
         "Recent"
     }
