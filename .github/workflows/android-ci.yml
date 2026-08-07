@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - main
-# Enables the "Run workflow" manual trigger button in the GitHub Actions web UI
   workflow_dispatch:
 
 jobs:
@@ -22,11 +21,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
-          # Removed redundant cache: gradle (setup-gradle handles this)
 
       - name: Grant execute permission for Gradlew
         run: chmod +x gradlew
@@ -36,6 +34,15 @@ jobs:
 
       - name: Run Unit Tests
         run: ./gradlew testDebugUnitTest
+
+      # If unit tests fail, upload the HTML test report to inspect the exact failure
+      - name: Upload Test Results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: app/build/reports/tests/testDebugUnitTest/
+          retention-days: 3
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
