@@ -84,13 +84,13 @@ fun MainNavigation(
         ) {
             // Dashboard & Financial Summary Route
             composable(Screen.Dashboard.route) {
-                // Placeholder until DashboardScreen component is added in File 22
-                Text("Dashboard Screen")
+                // DashboardScreen component is added in File 22
+                DashboardScreen()
             }
 
             // PDF/Image Statement Parsing Route
             composable(Screen.Import.route) {
-                // Placeholder until ImportScreen component is added in File 23
+                // ImportScreen component is added in File 23
                 ImportScreen()
             }
 
