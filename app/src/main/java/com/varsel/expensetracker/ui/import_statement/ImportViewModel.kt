@@ -1,5 +1,6 @@
 package com.varsel.expensetracker.ui.import_statement
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.varsel.expensetracker.domain.model.Transaction
@@ -25,11 +26,11 @@ class ImportViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
 
-    fun processSelectedFile(fileBytes: ByteArray) {
+    fun processSelectedFile(uri: Uri) {
         viewModelScope.launch {
             _uiState.value = ImportUiState.Processing
             try {
-                val extractedText = pdfTextExtractor.extractText(fileBytes)
+                val extractedText = pdfTextExtractor.extractText(uri)
                 val transactions = statementParserEngine.parseStatement(extractedText)
                 _uiState.value = ImportUiState.ParsedTransactions(transactions)
             } catch (e: Exception) {
