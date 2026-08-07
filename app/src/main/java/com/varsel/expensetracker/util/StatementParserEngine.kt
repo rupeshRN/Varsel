@@ -2,177 +2,124 @@ package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionType
-import java.text.SimpleDateFormat
-import java.util.Locale
 import javax.inject.Inject
-import kotlin.math.abs
 
-class StatementParserEngine @Inject constructor() {
+class StatementParserEngine @Inject constructor(
+    private val smartCategorizer: SmartCategorizerEngine
+) {
 
     fun parseStatement(rawText: String): List<Transaction> {
         val transactions = mutableListOf<Transaction>()
         val lines = rawText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
 
+        // Match standard date formats
         val dateRegex = Regex("\\d{2}-[A-Za-z]{3}-\\d{4}|\\d{2}/\\d{2}/\\d{4}")
-        val dateFormat = SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH)
+        // Improved amount regex to strictly match currency formats
         val amountRegex = Regex("[-+]?\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})|[-+]?\\d+\\.\\d{2}")
 
         var i = 0
         while (i < lines.size) {
             val line = lines[i]
 
-            // Skip headers, footers, and summary markers
-            if (line.startsWith("Opening Balance") || 
-                line.startsWith("Statement Summary") || 
-                line.startsWith("Total") ||
-                line.startsWith("Transaction History") ||
-                line.startsWith("Date") ||
-                line.startsWith("Branch:") ||
-                line.startsWith("Account")) {
+            // --- Phase 1: Aggressive Noise Filtering ---
+            // Skip lines that are obviously metadata, headers, footers, or totals.
+            // This resolves the "Opening Balance INR" and "Total Credits" issues seen in the screenshot.
+            if (isMetadataLine(line)) {
                 i++
                 continue
             }
 
+            // --- Phase 2: Transaction Row Validation ---
+            // A valid transaction row must start with a date.
             val dateMatch = dateRegex.find(line)
             if (dateMatch != null) {
                 val dateStr = dateMatch.value
-                val timestamp = try {
-                    dateFormat.parse(dateStr)?.time ?: System.currentTimeMillis()
-                } catch (e: Exception) {
-                    System.currentTimeMillis()
-                }
+                val timestamp = parseDateSafely(dateStr)
 
-                // Format 1: Single-line pipe-delimited or CSV format
-                if (line.contains("|") && amountRegex.containsMatchIn(line)) {
-                    val parts = line.split("|").map { it.trim() }
-                    if (parts.size >= 5) {
-                        val description = parts[1]
-                        val refNumber = parts.getOrNull(2) ?: ""
-                        val withdrawalStr = parts.getOrNull(3)?.replace(",", "") ?: ""
-                        val depositStr = parts.getOrNull(4)?.replace(",", "") ?: ""
-
-                        val withdrawal = withdrawalStr.toDoubleOrNull()
-                        val deposit = depositStr.toDoubleOrNull()
-
-                        if (withdrawal != null && withdrawal > 0.0) {
-                            transactions.add(
-                                Transaction(
-                                    description = description.ifEmpty { "Transaction" },
-                                    amount = withdrawal,
-                                    type = TransactionType.EXPENSE,
-                                    category = "Uncategorized",
-                                    dateTimestamp = timestamp,
-                                    referenceNumber = refNumber
-                                )
-                            )
-                        } else if (deposit != null && deposit > 0.0) {
-                            transactions.add(
-                                Transaction(
-                                    description = description.ifEmpty { "Transaction" },
-                                    amount = deposit,
-                                    type = TransactionType.INCOME,
-                                    category = "Uncategorized",
-                                    dateTimestamp = timestamp,
-                                    referenceNumber = refNumber
-                                )
-                            )
-                        }
-                    }
+                // --- Phase 3: Isolate Transaction Components ---
+                val blockLines = mutableListOf<String>()
+                i++
+                // Collect subsequent lines until we hit the next date (vertical PDF extraction blocks)
+                while (i < lines.size && dateRegex.find(lines[i]) == null) {
+                    blockLines.add(lines[i])
                     i++
-                } else {
-                    // Format 2: Vertical multi-line block format (PDFBox table extraction)
-                    val blockLines = mutableListOf<String>()
-                    i++
-                    while (i < lines.size && dateRegex.find(lines[i]) == null) {
-                        blockLines.add(lines[i])
-                        i++
-                    }
-                    parseVerticalBlock(timestamp, blockLines, transactions, amountRegex)
                 }
+                
+                // Parse the collected lines into a single transaction object
+                val txn = parseVerticalBlockIntoTransaction(timestamp, blockLines, amountRegex)
+                
+                if (txn != null) {
+                    transactions.add(txn)
+                }
+                
+                // NOTE: Do not increment 'i' here, it's handled inside the inner while loop
             } else {
+                // Skip non-date lines if they are not part of a transaction block
                 i++
             }
         }
 
-        // Fallback generic scanner if structured parsing yields nothing
-        if (transactions.isEmpty()) {
-            for (line in lines) {
-                val match = amountRegex.find(line)
-                if (match != null) {
-                    val amountStr = match.value.replace(",", "")
-                    val amount = amountStr.toDoubleOrNull() ?: continue
-                    val description = line.replace(match.value, "").trim()
-                    if (description.length < 2) continue
-                    val type = if (amount < 0) TransactionType.EXPENSE else TransactionType.INCOME
-                    transactions.add(
-                        Transaction(
-                            description = description,
-                            amount = abs(amount),
-                            type = type,
-                            category = "Uncategorized",
-                            dateTimestamp = System.currentTimeMillis(),
-                            referenceNumber = ""
-                        )
-                    )
-                }
-            }
-        }
-
-        return transactions
+        // Remove any "negative" income transactions that were incorrectly parsed by PDFBox block layout
+        return transactions.filterNot { it.type == TransactionType.INCOME && it.amount < 0 }
     }
 
-    private fun parseVerticalBlock(
+    private fun isMetadataLine(line: String): Boolean {
+        val upper = line.uppercase()
+        return upper.contains("STATEMENT SUMMARY") ||
+                upper.contains("OPENING BALANCE") ||
+                upper.contains("CLOSING BALANCE") ||
+                upper.contains("TOTAL DEBITS") ||
+                upper.contains("TOTAL CREDITS") ||
+                upper.contains("TRANSACTION HISTORY") ||
+                (upper.startsWith("DATE") && !upper.contains("DESCRIPTION")) || // Column headers
+                upper.startsWith("BRANCH:") ||
+                upper.startsWith("ACCOUNT:") ||
+                upper.startsWith("CURRENCY:") ||
+                upper.contains("PAGE ") // e.g., "Page 1 of 3"
+    }
+
+    private fun parseDateSafely(dateStr: String): Long {
+        return try {
+            val formats = listOf(
+                java.text.SimpleDateFormat("dd-MMM-yyyy", java.util.Locale.ENGLISH),
+                java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.ENGLISH)
+            )
+            for (format in formats) {
+                val date = format.parse(dateStr)
+                if (date != null) return date.time
+            }
+            System.currentTimeMillis()
+        } catch (e: Exception) {
+            System.currentTimeMillis()
+        }
+    }
+
+    private fun parseVerticalBlockIntoTransaction(
         timestamp: Long,
         blockLines: List<String>,
-        transactions: MutableList<Transaction>,
         amountRegex: Regex
-    ) {
-        val cleaned = blockLines.map { it.replace("|", "").trim() }.filter { it.isNotEmpty() }
-        if (cleaned.isEmpty()) return
-
+    ): Transaction? {
+        val cleanedBlock = blockLines.map { it.replace("|", "").trim() }.filter { it.isNotEmpty() }
+        
         var description = ""
         var reference = ""
-        val amounts = mutableListOf<Double>()
+        var transactionAmount: Double? = null
+        var transactionType = TransactionType.EXPENSE
 
-        for (item in cleaned) {
+        for (item in cleanedBlock) {
             val amountMatch = amountRegex.find(item)
-            if (amountMatch != null) {
-                val amt = amountMatch.value.replace(",", "").toDoubleOrNull()
-                if (amt != null) {
-                    amounts.add(amt)
-                }
-            } else {
-                if (description.isEmpty()) {
-                    description = item
-                } else if (reference.isEmpty() && item.all { it.isLetterOrDigit() }) {
-                    reference = item
-                } else {
-                    description += " $item"
-                }
-            }
-        }
-
-        if (amounts.isNotEmpty()) {
-            val txnAmount = amounts[0]
-            val upperDesc = description.uppercase()
-            val isIncome = upperDesc.contains("SALARY") || 
-                           upperDesc.contains("INTEREST") || 
-                           upperDesc.contains("CR") || 
-                           upperDesc.contains("DEPOSIT")
-
-            val type = if (isIncome) TransactionType.INCOME else TransactionType.EXPENSE
-
-            transactions.add(
-                Transaction(
-                    description = description.ifEmpty { "Transaction" },
-                    amount = abs(txnAmount),
-                    type = type,
-                    category = "Uncategorized",
-                    dateTimestamp = timestamp,
-                    referenceNumber = reference
-                )
-            )
             
-        }
-    }
-}
+            if (amountMatch != null) {
+                // This line contains the amount.
+                val amountStr = amountMatch.value.replace(",", "")
+                transactionAmount = amountStr.toDoubleOrNull()
+                
+                // Determine type (Expense or Income) based on sign or column indicator
+                val upperItem = item.toUpperCase()
+                transactionType = if (upperItem.contains("(DR)") || amountStr.startsWith("-")) {
+                    TransactionType.EXPENSE
+                } else if (upperItem.contains("(CR)") || upperItem.contains("DEPOSIT")) {
+                     TransactionType.INCOME
+                } else {
+                    // Fallback based on expected amounts from screenshot
+                    if (transactionAmount != null && transactionAmount < 0) TransactionType.EXPENSE else TransactionType.INCOME
