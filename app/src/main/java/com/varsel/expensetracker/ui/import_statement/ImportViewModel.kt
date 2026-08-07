@@ -1,7 +1,11 @@
 package com.varsel.expensetracker.ui.import_statement
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.varsel.expensetracker.domain.model.Transaction
@@ -20,7 +24,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -66,9 +69,6 @@ class ImportViewModel @Inject constructor(
 
     /**
      * Triggered when user picks a bank statement file (PDF or Image) from system document picker.
-     *
-     * Automatically attempts opening unencrypted PDFs first.
-     * Only triggers [ImportUiState.PasswordRequired] if PDFBox encounters password protection.
      */
     fun processSelectedFile(uri: Uri, password: String? = null) {
         currentSelectedUri = uri
@@ -83,9 +83,13 @@ class ImportViewModel @Inject constructor(
                     // Attempt native PDF embedded text extraction
                     extractPdfTextWithFallback(uri, password)
                 } else {
-                    // Image OCR extraction (JPG, PNG)
-                    val bitmap = android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                    OcrManager.extractTextFromBitmap(bitmap)
+                    // HIGHLIGHT: Updated deprecated MediaStore.Images.Media.getBitmap to safe ImageDecoder/InputStream handling
+                    val bitmap = loadBitmapFromUri(uri)
+                    if (bitmap != null) {
+                        OcrManager.extractTextFromBitmap(bitmap)
+                    } else {
+                        ""
+                    }
                 }
 
                 if (rawText.isBlank()) {
@@ -107,10 +111,8 @@ class ImportViewModel @Inject constructor(
                 )
 
             } catch (e: PdfPasswordRequiredException) {
-                // PDF is encrypted & user hasn't entered a password yet
                 _uiState.value = ImportUiState.PasswordRequired(uri = uri, isInvalidPasswordError = false)
             } catch (e: InvalidPdfPasswordException) {
-                // User submitted an incorrect password
                 _uiState.value = ImportUiState.PasswordRequired(uri = uri, isInvalidPasswordError = true)
             } catch (e: Exception) {
                 _uiState.value = ImportUiState.Error("Failed to parse statement: ${e.localizedMessage ?: "Unknown error"}")
@@ -127,26 +129,27 @@ class ImportViewModel @Inject constructor(
     }
 
     /**
-     * Confirms and batch-saves selected candidate transactions into the encrypted database.
+     * Confirms and batch-saves selected candidate transactions into the database.
      */
     fun confirmAndSaveTransactions(candidates: List<ParsedTransaction>) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = ImportUiState.Processing
             try {
                 val transactionsToInsert = candidates.map { candidate ->
-                    // Run Smart Categorizer Engine to assign Category ID based on narration
-                    val categoryId = categorizerEngine.categorizeTransaction(
+                    // Run Smart Categorizer Engine to assign Category based on narration
+                    val category = categorizerEngine.categorizeTransaction(
                         narration = candidate.description,
                         amount = candidate.amount
                     )
 
+                    // HIGHLIGHT: Updated parameter mapping ('category', 'date', and 'note') to match domain Transaction schema
                     Transaction(
                         amount = candidate.amount,
                         type = candidate.type,
                         description = candidate.description,
-                        categoryId = categoryId,
-                        timestamp = candidate.timestamp,
-                        referenceNumber = candidate.referenceNumber,
+                        category = category,
+                        date = candidate.timestamp,
+                        note = candidate.referenceNumber,
                         isAutoParsed = true
                     )
                 }
@@ -176,12 +179,26 @@ class ImportViewModel @Inject constructor(
             if (text.isNotBlank()) {
                 text
             } else {
-                // Fallback for scanned PDF pages
                 val bitmaps = PdfTextExtractor.renderPdfToBitmaps(context, uri)
                 OcrManager.extractTextFromBitmaps(bitmaps)
             }
         } catch (e: Exception) {
             throw e
+        }
+    }
+
+    // HIGHLIGHT: Added non-deprecated helper for decoding image URIs across Android API versions
+    private fun loadBitmapFromUri(uri: Uri): Bitmap? {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val source = ImageDecoder.createSource(context.contentResolver, uri)
+                ImageDecoder.decodeBitmap(source)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 }
