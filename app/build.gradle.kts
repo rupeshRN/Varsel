@@ -89,7 +89,6 @@ dependencies {
 
     // SQLCipher for encrypted Room DB
     implementation("net.zetetic:android-database-sqlcipher:4.5.4")
-    implementation("androidx.sqlite:sqlite-ktx:2.4.0")
 
     // Navigation & Hilt Integration for Compose
     implementation("androidx.navigation:navigation-compose:2.8.0")
