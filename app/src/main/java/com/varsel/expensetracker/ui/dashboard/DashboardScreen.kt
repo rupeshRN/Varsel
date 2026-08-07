@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.varsel.expensetracker.domain.model.Transaction
+import com.varsel.expensetracker.domain.model.TransactionType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -62,9 +63,10 @@ fun DashboardScreen(
 
 @Composable
 fun TransactionItem(transaction: Transaction) {
-    // INLINE FIX: Replaced unresolved 'transaction.timestamp' with 'transaction.dateTimestamp'
     val formattedDate = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
         .format(Date(transaction.dateTimestamp))
+
+    val isCredit = transaction.type == TransactionType.CREDIT || transaction.type == TransactionType.INCOME
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -82,9 +84,9 @@ fun TransactionItem(transaction: Transaction) {
                 Text(text = transaction.category, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }
             Text(
-                text = "${if (transaction.type == "CREDIT") "+" else "-"}$${transaction.amount}",
+                text = "${if (isCredit) "+" else "-"}$${transaction.amount}",
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (transaction.type == "CREDIT") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
+                color = if (isCredit) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
             )
         }
     }
