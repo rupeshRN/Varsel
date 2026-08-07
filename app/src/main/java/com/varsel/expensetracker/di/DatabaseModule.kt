@@ -11,8 +11,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import net.zetetic.database.sqlcipher.SQLiteDatabase
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
+import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -37,7 +37,7 @@ object DatabaseModule {
             prefs.edit().putString(PASSPHRASE_KEY, keyString).apply()
         }
 
-        return SQLiteDatabase.getBytes(keyString.toCharArray())
+        return keyString.toByteArray(StandardCharsets.UTF_8)
     }
 
     @Provides
