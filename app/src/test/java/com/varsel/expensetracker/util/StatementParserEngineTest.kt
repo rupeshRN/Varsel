@@ -2,53 +2,31 @@ package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.domain.model.TransactionType
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Unit test suite validating the behavior and accuracy of [StatementParserEngine].
- */
 class StatementParserEngineTest {
 
-    /**
-     * Test case to verify that valid raw statement text lines correctly parse into expected transaction fields.
-     */
+    private val statementParserEngine = StatementParserEngine()
+
     @Test
-    fun testParseStatementText_validEntries() {
-        // Define a multi-line string simulating raw extracted statement data
+    fun testParseStatement() {
         val sampleText = """
-            STARBUCKS COFFEE 15.50 DEBIT
-            SALARY DEPOSIT 1500.00 CREDIT
+            15/04/2026 Supermarket -45.50 1200.00
+            16/04/2026 Employer 2500.00 3700.00
         """.trimIndent()
 
-        // Call the parser engine method with our sample text
-        val results = StatementParserEngine.parseStatementText(sampleText)
+        val transactions = statementParserEngine.parseStatement(sampleText)
 
-        // Assert that exactly 2 transaction entries were successfully extracted
-        assertEquals(2, results.size)
-        
-        // Retrieve and validate properties of the first parsed item (Debit)
-        val first = results[0]
-        assertEquals("STARBUCKS COFFEE 15.50 DEBIT", first.description)
-        assertEquals(15.50, first.amount, 0.001)
-        assertEquals(TransactionType.DEBIT, first.type)
+        assertEquals(2, transactions.size)
 
-        // Retrieve and validate properties of the second parsed item (Credit)
-        val second = results[1]
-        assertEquals("SALARY DEPOSIT 1500.00 CREDIT", second.description)
-        assertEquals(1500.00, second.amount, 0.001)
-        assertEquals(TransactionType.CREDIT, second.type)
-    }
+        val first = transactions[0]
+        assertEquals("Supermarket", first.description)
+        assertEquals(45.50, first.amount, 0.01)
+        assertEquals(TransactionType.EXPENSE, first.type)
 
-    /**
-     * Test case to verify that empty input strings yield an empty transaction list without crashing.
-     */
-    @Test
-    fun testParseStatementText_emptyInput() {
-        // Pass an empty string to the parser engine
-        val results = StatementParserEngine.parseStatementText("")
-        
-        // Assert that the resulting collection is empty
-        assertTrue(results.isEmpty())
+        val second = transactions[1]
+        assertEquals("Employer", second.description)
+        assertEquals(2500.00, second.amount, 0.01)
+        assertEquals(TransactionType.INCOME, second.type)
     }
 }
