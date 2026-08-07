@@ -1,169 +1,53 @@
 package com.varsel.expensetracker.ui.import_statement
 
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
-import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.varsel.expensetracker.domain.model.Transaction
+import com.varsel.expensetracker.data.local.entity.TransactionEntity
 import com.varsel.expensetracker.domain.repository.TransactionRepository
-import com.varsel.expensetracker.util.InvalidPdfPasswordException
 import com.varsel.expensetracker.util.OcrManager
-import com.varsel.expensetracker.util.ParsedTransaction
-import com.varsel.expensetracker.util.PdfPasswordRequiredException
 import com.varsel.expensetracker.util.PdfTextExtractor
-import com.varsel.expensetracker.util.SmartCategorizerEngine
 import com.varsel.expensetracker.util.StatementParserEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-sealed interface ImportUiState {
-    object Idle : ImportUiState
-    object Processing : ImportUiState
-    data class PasswordRequired(
-        val uri: Uri,
-        val isInvalidPasswordError: Boolean = false
-    ) : ImportUiState
-    data class Success(
-        val parsedTransactions: List<ParsedTransaction>,
-        val autoCategorizedCount: Int
-    ) : ImportUiState
-    object Saved : ImportUiState
-    data class Error(val message: String) : ImportUiState
-}
-
 @HiltViewModel
 class ImportViewModel @Inject constructor(
-    private val repository: TransactionRepository,
-    private val categorizerEngine: SmartCategorizerEngine,
-    @ApplicationContext private val context: Context
+    private val transactionRepository: TransactionRepository,
+    private val pdfTextExtractor: PdfTextExtractor,
+    private val statementParserEngine: StatementParserEngine,
+    private val ocrManager: OcrManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
 
-    private var currentSelectedUri: Uri? = null
-
-    fun processSelectedFile(uri: Uri, password: String? = null) {
-        currentSelectedUri = uri
-        _uiState.value = ImportUiState.Processing
-
-        viewModelScope.launch(Dispatchers.IO) {
+    fun parseAndSaveStatement(fileBytes: ByteArray) {
+        viewModelScope.launch {
+            _uiState.value = ImportUiState.Loading
             try {
-                val mimeType = context.contentResolver.getType(uri) ?: ""
-                
-                val rawText = if (mimeType.contains("pdf", ignoreCase = true) || uri.toString().endsWith(".pdf", ignoreCase = true)) {
-                    extractPdfTextWithFallback(uri, password)
-                } else {
-                    val bitmap = loadBitmapFromUri(uri)
-                    if (bitmap != null) {
-                        OcrManager.extractTextFromBitmap(bitmap)
-                    } else {
-                        ""
-                    }
+                val extractedText = pdfTextExtractor.extractText(fileBytes)
+                val transactions = statementParserEngine.parseStatement(extractedText)
+
+                for (transaction in transactions) {
+                    transactionRepository.insertTransaction(transaction)
                 }
 
-                if (rawText.isBlank()) {
-                    _uiState.value = ImportUiState.Error("Could not extract readable text from statement.")
-                    return@launch
-                }
-
-                val parsedCandidates = StatementParserEngine.parseStatementText(rawText)
-
-                if (parsedCandidates.isEmpty()) {
-                    _uiState.value = ImportUiState.Error("No valid transactions detected in this statement format.")
-                    return@launch
-                }
-
-                _uiState.value = ImportUiState.Success(
-                    parsedTransactions = parsedCandidates,
-                    autoCategorizedCount = parsedCandidates.count { it.description.isNotBlank() }
-                )
-
-            } catch (e: PdfPasswordRequiredException) {
-                _uiState.value = ImportUiState.PasswordRequired(uri = uri, isInvalidPasswordError = false)
-            } catch (e: InvalidPdfPasswordException) {
-                _uiState.value = ImportUiState.PasswordRequired(uri = uri, isInvalidPasswordError = true)
+                _uiState.value = ImportUiState.Success(transactions)
             } catch (e: Exception) {
-                _uiState.value = ImportUiState.Error("Failed to parse statement: ${e.localizedMessage ?: "Unknown error"}")
+                _uiState.value = ImportUiState.Error(e.message ?: "Unknown error occurred")
             }
         }
     }
+}
 
-    fun submitPdfPassword(password: String) {
-        val uri = currentSelectedUri ?: return
-        processSelectedFile(uri, password)
-    }
-
-    fun confirmAndSaveTransactions(candidates: List<ParsedTransaction>) {
-        viewModelScope.launch(Dispatchers.IO) {
-            _uiState.value = ImportUiState.Processing
-            try {
-                val transactionsToInsert = candidates.map { candidate ->
-                    val categoryName = categorizerEngine.categorizeTransaction(
-                        rawDescription = candidate.description,
-                        categories = emptyList(),
-                        customRules = emptyList(),
-                        historicalTransactions = emptyList()
-                    )
-
-                    Transaction(
-                        amount = candidate.amount,
-                        type = candidate.type,
-                        description = candidate.description,
-                        category = categoryName ?: "Uncategorized",
-                        dateTimestamp = candidate.timestamp,
-                        referenceNumber = candidate.referenceNumber
-                    )
-                }
-
-                repository.insertTransactions(transactionsToInsert)
-                _uiState.value = ImportUiState.Saved
-            } catch (e: Exception) {
-                _uiState.value = ImportUiState.Error("Failed to save transactions: ${e.localizedMessage}")
-            }
-        }
-    }
-
-    fun resetState() {
-        currentSelectedUri = null
-        _uiState.value = ImportUiState.Idle
-    }
-
-    private suspend fun extractPdfTextWithFallback(uri: Uri, password: String?): String {
-        return try {
-            val text = PdfTextExtractor.extractTextFromPdf(context, uri, password)
-            if (text.isNotBlank()) {
-                text
-            } else {
-                val bitmaps = PdfTextExtractor.renderPdfToBitmaps(context, uri)
-                OcrManager.extractTextFromBitmaps(bitmaps)
-            }
-        } catch (e: Exception) {
-            throw e
-        }
-    }
-
-    private fun loadBitmapFromUri(uri: Uri): Bitmap? {
-        return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val source = ImageDecoder.createSource(context.contentResolver, uri)
-                ImageDecoder.decodeBitmap(source)
-            } else {
-                @Suppress("DEPRECATION")
-                MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
+sealed class ImportUiState {
+    object Idle : ImportUiState()
+    object Loading : ImportUiState()
+    data class Success(val transactions: List<TransactionEntity>) : ImportUiState()
+    data class Error(val message: String) : ImportUiSt
+    ate()
 }
