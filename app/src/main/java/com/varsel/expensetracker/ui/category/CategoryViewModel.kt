@@ -15,9 +15,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * Immutable UI State for the Category Management and Custom Rules screen.
- */
 data class CategoryUiState(
     val categories: List<CategoryEntity> = emptyList(),
     val customRules: List<CustomRuleEntity> = emptyList(),
@@ -25,20 +22,12 @@ data class CategoryUiState(
     val errorMessage: String? = null
 )
 
-/**
- * ViewModel responsible for managing budget categories, monthly budget thresholds,
- * and user-defined merchant auto-categorization override rules.
- */
 @HiltViewModel
 class CategoryViewModel @Inject constructor(
     private val categoryDao: CategoryDao,
     private val customRuleDao: CustomRuleDao
 ) : ViewModel() {
 
-    /**
-     * Reactive StateFlow stream uniting categories and merchant rules directly from 
-     * encrypted SQLCipher local storage to the Jetpack Compose UI.
-     */
     val uiState: StateFlow<CategoryUiState> = combine(
         categoryDao.getAllCategories(),
         customRuleDao.getAllRules()
@@ -54,9 +43,6 @@ class CategoryViewModel @Inject constructor(
         initialValue = CategoryUiState(isLoading = true)
     )
 
-    /**
-     * Inserts a new budget category (e.g., Food, Groceries, Rent) into Room database.
-     */
     fun addCategory(
         name: String,
         colorHex: String,
@@ -68,50 +54,34 @@ class CategoryViewModel @Inject constructor(
                 name = name.trim(),
                 colorHex = colorHex,
                 iconName = iconName,
-                // HIGHLIGHT: Renamed parameter key from 'monthlyBudgetLimit' to 'budgetLimit'
-                budgetLimit = monthlyBudgetLimit
+                monthlyBudgetLimit = monthlyBudgetLimit
             )
             categoryDao.insertCategory(newCategory)
         }
     }
 
-    /**
-     * Updates an existing category (e.g., modifying color, icon, or monthly budget cap).
-     */
     fun updateCategory(category: CategoryEntity) {
         viewModelScope.launch(Dispatchers.IO) {
             categoryDao.updateCategory(category)
         }
     }
 
-    /**
-     * Deletes a category from local encrypted storage.
-     */
     fun deleteCategory(category: CategoryEntity) {
         viewModelScope.launch(Dispatchers.IO) {
             categoryDao.deleteCategory(category)
         }
     }
 
-    /**
-     * Teaches the categorization engine a custom rule by mapping a merchant keyword pattern 
-     * to a specific category name (e.g., keyword "STARBUCKS" -> Category: "Coffee & Snacks").
-     */
-    // HIGHLIGHT: Updated second parameter from 'categoryId: Long' to 'categoryName: String'
     fun addCustomRule(merchantPattern: String, categoryName: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val rule = CustomRuleEntity(
-                // HIGHLIGHT: Renamed 'merchantPattern' -> 'pattern' and 'categoryId' -> 'categoryName'
                 pattern = merchantPattern.trim().uppercase(),
                 categoryName = categoryName
             )
-            customRuleDao.insertRule(rule)
+            customRuleDao.insertCustomRule(rule)
         }
     }
 
-    /**
-     * Removes a merchant auto-categorization override rule.
-     */
     fun deleteCustomRule(rule: CustomRuleEntity) {
         viewModelScope.launch(Dispatchers.IO) {
             customRuleDao.deleteRule(rule)
