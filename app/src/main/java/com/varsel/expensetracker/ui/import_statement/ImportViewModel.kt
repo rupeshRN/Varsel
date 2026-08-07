@@ -26,9 +26,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * Jetpack UI State Machine representing statement import lifecycle.
- */
 sealed interface ImportUiState {
     object Idle : ImportUiState
     object Processing : ImportUiState
@@ -56,9 +53,6 @@ class ImportViewModel @Inject constructor(
 
     private var currentSelectedUri: Uri? = null
 
-    /**
-     * Triggered when user selects a bank statement file (PDF or Image).
-     */
     fun processSelectedFile(uri: Uri, password: String? = null) {
         currentSelectedUri = uri
         _uiState.value = ImportUiState.Processing
@@ -70,7 +64,6 @@ class ImportViewModel @Inject constructor(
                 val rawText = if (mimeType.contains("pdf", ignoreCase = true) || uri.toString().endsWith(".pdf", ignoreCase = true)) {
                     extractPdfTextWithFallback(uri, password)
                 } else {
-                    // INLINE FIX: Replaced deprecated MediaStore.Images.Media.getBitmap with safe loadBitmapFromUri
                     val bitmap = loadBitmapFromUri(uri)
                     if (bitmap != null) {
                         OcrManager.extractTextFromBitmap(bitmap)
@@ -84,7 +77,6 @@ class ImportViewModel @Inject constructor(
                     return@launch
                 }
 
-                // INLINE FIX: Correctly reference StatementParserEngine.parseStatementText companion / object function
                 val parsedCandidates = StatementParserEngine.parseStatementText(rawText)
 
                 if (parsedCandidates.isEmpty()) {
@@ -107,23 +99,16 @@ class ImportViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Submits password for encrypted PDF statement.
-     */
     fun submitPdfPassword(password: String) {
         val uri = currentSelectedUri ?: return
         processSelectedFile(uri, password)
     }
 
-    /**
-     * Confirms and batch-saves selected candidate transactions into the database.
-     */
     fun confirmAndSaveTransactions(candidates: List<ParsedTransaction>) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = ImportUiState.Processing
             try {
                 val transactionsToInsert = candidates.map { candidate ->
-                    // INLINE FIX: Updated call to 'categorizeTransaction' with new signature parameters
                     val categoryName = categorizerEngine.categorizeTransaction(
                         rawDescription = candidate.description,
                         categories = emptyList(),
@@ -131,7 +116,6 @@ class ImportViewModel @Inject constructor(
                         historicalTransactions = emptyList()
                     )
 
-                    // INLINE FIX: Map candidate fields to Transaction constructor matching (category, dateTimestamp, referenceNumber)
                     Transaction(
                         amount = candidate.amount,
                         type = candidate.type,
@@ -169,7 +153,6 @@ class ImportViewModel @Inject constructor(
         }
     }
 
-    // INLINE FIX: Helper method handling bitmap decoding without using deprecated APIs on Android P+
     private fun loadBitmapFromUri(uri: Uri): Bitmap? {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
