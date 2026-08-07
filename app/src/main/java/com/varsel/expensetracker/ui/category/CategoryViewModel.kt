@@ -68,7 +68,8 @@ class CategoryViewModel @Inject constructor(
                 name = name.trim(),
                 colorHex = colorHex,
                 iconName = iconName,
-                monthlyBudgetLimit = monthlyBudgetLimit
+                // HIGHLIGHT: Renamed parameter key from 'monthlyBudgetLimit' to 'budgetLimit'
+                budgetLimit = monthlyBudgetLimit
             )
             categoryDao.insertCategory(newCategory)
         }
@@ -94,13 +95,15 @@ class CategoryViewModel @Inject constructor(
 
     /**
      * Teaches the categorization engine a custom rule by mapping a merchant keyword pattern 
-     * to a specific category ID (e.g., keyword "STARBUCKS" -> Category: Coffee & Snacks).
+     * to a specific category name (e.g., keyword "STARBUCKS" -> Category: "Coffee & Snacks").
      */
-    fun addCustomRule(merchantPattern: String, categoryId: Long) {
+    // HIGHLIGHT: Updated second parameter from 'categoryId: Long' to 'categoryName: String'
+    fun addCustomRule(merchantPattern: String, categoryName: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val rule = CustomRuleEntity(
-                merchantPattern = merchantPattern.trim().uppercase(),
-                categoryId = categoryId
+                // HIGHLIGHT: Renamed 'merchantPattern' -> 'pattern' and 'categoryId' -> 'categoryName'
+                pattern = merchantPattern.trim().uppercase(),
+                categoryName = categoryName
             )
             customRuleDao.insertRule(rule)
         }
