@@ -3,6 +3,8 @@ package com.varsel.expensetracker.util
 import com.varsel.expensetracker.data.local.entity.CategoryEntity
 import com.varsel.expensetracker.data.local.entity.CustomRuleEntity
 import com.varsel.expensetracker.data.local.entity.TransactionEntity
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * On-Device Smart Categorization Engine.
@@ -12,7 +14,8 @@ import com.varsel.expensetracker.data.local.entity.TransactionEntity
  *  - Tier 2: Dynamic Database Keywords (Stored inside CategoryEntity in Room DB)
  *  - Tier 3: Local Word-Frequency Statistical Classifier (Analyzes past user transaction history)
  */
-object SmartCategorizerEngine {
+@Singleton
+class SmartCategorizerEngine @Inject constructor() {
 
     /**
      * Categorizes a transaction description by evaluating it sequentially against Tier 1, Tier 2, and Tier 3.
@@ -29,35 +32,43 @@ object SmartCategorizerEngine {
         customRules: List<CustomRuleEntity>,
         historicalTransactions: List<TransactionEntity>
     ): String {
-        // Sanitize string to uppercase for case-insensitive matching
         val cleanDesc = rawDescription.uppercase().trim()
+        if (cleanDesc.isBlank()) return "Uncategorized"
 
         // ----------------------------------------------------------------------------------
         // TIER 1: Explicit Custom Rules (User Overrides)
         // Checks if the user manually reclassified a merchant in the past (e.g., "JOES SHOP").
         // ----------------------------------------------------------------------------------
         for (rule in customRules) {
-            if (cleanDesc.contains(rule.pattern.uppercase())) {
+            val pattern = rule.pattern.uppercase().trim()
+            if (pattern.isNotBlank() && cleanDesc.contains(pattern)) {
                 return rule.categoryName
             }
         }
 
         // ----------------------------------------------------------------------------------
-        // TIER 2: Dynamic Database Keywords
-        // Scans the dynamic comma-separated keywords stored in SQLite for each category.
+        // TIER 2: Dynamic Database Keywords with Word-Boundary Match
+        // Prevents partial word false positives (e.g., 'CAR' matching 'STARBUCKS').
         // ----------------------------------------------------------------------------------
         for (category in categories) {
             if (category.keywords.isNotBlank()) {
-                val keywordList = category.keywords.split(",").map { it.trim().uppercase() }
-                if (keywordList.any { keyword -> keyword.isNotEmpty() && cleanDesc.contains(keyword) }) {
-                    return category.name
+                val keywordList = category.keywords.split(",")
+                    .map { it.trim().uppercase() }
+                    .filter { it.isNotBlank() }
+
+                for (keyword in keywordList) {
+                    // Use word boundary regex to avoid partial word matching
+                    val wordBoundaryRegex = Regex("""\b${Regex.escape(keyword)}\b""", RegexOption.IGNORE_CASE)
+                    if (wordBoundaryRegex.containsMatchIn(cleanDesc)) {
+                        return category.name
+                    }
                 }
             }
         }
 
         // ----------------------------------------------------------------------------------
         // TIER 3: Local Offline Word-Probability Classifier
-        // Analyzes word co-occurrence frequencies across historical user transactions.
+        // Tokenizes narration using spaces & delimiters (/ - * . #) to match historical words.
         // ----------------------------------------------------------------------------------
         val predictedCategory = predictFromHistory(cleanDesc, historicalTransactions)
         if (predictedCategory != null) {
@@ -70,8 +81,8 @@ object SmartCategorizerEngine {
 
     /**
      * Lightweight, pure-Kotlin statistical classifier.
-     * Tokenizes the transaction description into distinct terms and evaluates how frequently
-     * those terms have been associated with specific categories in past user data.
+     * Tokenizes transaction descriptions into distinct terms across common bank delimiters
+     * and evaluates historical category co-occurrence frequencies.
      */
     private fun predictFromHistory(
         cleanDescription: String,
@@ -79,18 +90,18 @@ object SmartCategorizerEngine {
     ): String? {
         if (historicalTransactions.isEmpty()) return null
 
-        // Tokenize description into clean words (filter out small noise words under 3 chars)
-        val words = cleanDescription.split("\\s+".toRegex()).filter { it.length > 2 }
+        // Split on whitespace and common banking delimiters: /, -, *, #, ., _, commas
+        val delimiterRegex = Regex("""[\s/\\-*#,_.]+""")
+        val words = cleanDescription.split(delimiterRegex).filter { it.length > 2 }
         if (words.isEmpty()) return null
 
-        // Map to aggregate candidate category scores
         val categoryScores = mutableMapOf<String, Double>()
 
         for (tx in historicalTransactions) {
             // Ignore uncategorized history to prevent feedback loops
-            if (tx.categoryName == "Uncategorized") continue
+            if (tx.categoryName.equals("Uncategorized", ignoreCase = true)) continue
 
-            val txWords = tx.description.uppercase().split("\\s+".toRegex())
+            val txWords = tx.description.uppercase().split(delimiterRegex).toSet()
             var matchCount = 0
 
             // Count matching word tokens between current and historical description
@@ -102,7 +113,6 @@ object SmartCategorizerEngine {
 
             if (matchCount > 0) {
                 val currentScore = categoryScores.getOrDefault(tx.categoryName, 0.0)
-                // Assign weighted score bonus for multiple word matches
                 categoryScores[tx.categoryName] = currentScore + (matchCount * 1.5)
             }
         }
@@ -115,7 +125,6 @@ object SmartCategorizerEngine {
             bestMatch.key
         } else {
             null
-  
         }
     }
 }
