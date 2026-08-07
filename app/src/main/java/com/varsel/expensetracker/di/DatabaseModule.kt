@@ -11,8 +11,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SQLiteDatabase
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.security.SecureRandom
 import javax.inject.Provider
 import javax.inject.Singleton
