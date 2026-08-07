@@ -5,171 +5,79 @@ import com.varsel.expensetracker.data.local.dao.CustomRuleDao
 import com.varsel.expensetracker.data.local.dao.TransactionDao
 import com.varsel.expensetracker.data.local.entity.TransactionEntity
 import com.varsel.expensetracker.domain.model.Transaction
-import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.domain.repository.TransactionRepository
 import com.varsel.expensetracker.util.SmartCategorizerEngine
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import javax.inject.Singleton
 
-/**
- * Concrete implementation of the TransactionRepository interface.
- * 
- * Acts as the Single Source of Truth for financial transaction data in the application.
- * Responsibilities include:
- *  - Mapping Room Entities (TransactionEntity) to pure Domain Models (Transaction).
- *  - Interfacing with TransactionDao, CategoryDao, and CustomRuleDao.
- *  - Executing offline automated transaction categorization via SmartCategorizerEngine.
- */
+@Singleton
 class TransactionRepositoryImpl @Inject constructor(
     private val transactionDao: TransactionDao,
     private val categoryDao: CategoryDao,
-    private val customRuleDao: CustomRuleDao
+    private val customRuleDao: CustomRuleDao,
+    private val categorizerEngine: SmartCategorizerEngine
 ) : TransactionRepository {
 
-    /**
-     * Observes all recorded transactions and converts the Room entity list stream
-     * into a list stream of domain models for UI consumption.
-     */
     override fun getAllTransactions(): Flow<List<Transaction>> {
         return transactionDao.getAllTransactions().map { entities ->
             entities.map { it.toDomainModel() }
         }
     }
 
-    /**
-     * Filters transactions by type ("INCOME" or "EXPENSE") and transforms them to domain models.
-     */
-    override fun getTransactionsByType(type: TransactionType): Flow<List<Transaction>> {
-        return transactionDao.getTransactionsByType(type.name).map { entities ->
-            entities.map { it.toDomainModel() }
-        }
-    }
-
-    /**
-     * Fetches transaction entries occurring within a given epoch millisecond timestamp range.
-     */
-    override fun getTransactionsBetweenDates(startDate: Long, endDate: Long): Flow<List<Transaction>> {
-        return transactionDao.getTransactionsBetweenDates(startDate, endDate).map { entities ->
-            entities.map { it.toDomainModel() }
-        }
-    }
-
-    /**
-     * Calculates total sum for a specific transaction type within a date boundary.
-     * Returns 0.0 if the SQL SUM result is null.
-     */
-    override fun getTotalAmountByTypeAndDateRange(
-        type: TransactionType,
-        startDate: Long,
-        endDate: Long
-    ): Flow<Double> {
-        return transactionDao.getTotalAmountByTypeAndDateRange(type.name, startDate, endDate)
-            .map { totalSum -> totalSum ?: 0.0 }
-    }
-
-    /**
-     * Persists a domain transaction entry into Room by converting it to an entity.
-     */
-    override suspend fun insertTransaction(transaction: Transaction): Long {
-        return transactionDao.insertTransaction(transaction.toEntity())
-    }
-
-    /**
-     * Batch inserts a collection of domain transactions into Room storage.
-     */
     override suspend fun insertTransactions(transactions: List<Transaction>) {
-        transactionDao.insertTransactions(transactions.map { it.toEntity() })
+        val entities = transactions.map { it.toEntity() }
+        transactionDao.insertTransactions(entities)
     }
 
     /**
-     * Updates an existing transaction entity in Room DB.
+     * Auto-categorizes an incoming raw transaction using the categorizer engine.
      */
-    override suspend fun updateTransaction(transaction: Transaction) {
-        transactionDao.updateTransaction(transaction.toEntity())
-    }
+    suspend fun autoCategorizeAndInsert(transaction: Transaction) {
+        // Fetch real-time categories and rules to pass to categorizerEngine
+        val categories = categoryDao.getAllCategories().first()
+        val customRules = customRuleDao.getAllRules().first()
 
-    /**
-     * Deletes a transaction entity from Room DB.
-     */
-    override suspend fun deleteTransaction(transaction: Transaction) {
-        transactionDao.deleteTransaction(transaction.toEntity())
-    }
-
-    /**
-     * Executes the 3-Tier offline categorization flow before saving the record:
-     * 1. Fetches current snapshot of DB categories, custom rules, and past history.
-     * 2. Evaluates the description string against SmartCategorizerEngine.
-     * 3. Constructs, inserts, and returns the categorized domain Transaction.
-     */
-    override suspend fun autoCategorizeAndSave(
-        rawDescription: String,
-        amount: Double,
-        type: TransactionType,
-        timestamp: Long,
-        bankName: String?,
-        refNo: String?
-    ): Transaction {
-        // Retrieve offline snapshot data required by the SmartCategorizerEngine
-        val categories = categoryDao.getAllCategoriesSnapshot()
-        val customRules = customRuleDao.getAllRules()
-        val historicalTransactions = transactionDao.getCategorizedTransactionsSnapshot()
-
-        // Predict appropriate budget category
-        val assignedCategory = SmartCategorizerEngine.categorizeTransaction(
-            rawDescription = rawDescription,
+        // INLINE FIX: Updated call to 'categorizeTransaction' with named arguments matching new signature
+        val assignedCategoryName = categorizerEngine.categorizeTransaction(
+            rawDescription = transaction.description,
             categories = categories,
             customRules = customRules,
-            historicalTransactions = historicalTransactions
+            historicalTransactions = emptyList()
         )
 
-        // Construct entity for SQLite persistence
-        val entity = TransactionEntity(
-            amount = amount,
-            type = type.name,
-            description = rawDescription,
-            dateTimestamp = timestamp,
-            categoryName = assignedCategory,
-            bankName = bankName,
-            referenceNumber = refNo
+        // INLINE FIX: Construct updated Transaction model using domain properties ('category', 'dateTimestamp')
+        val processedTransaction = transaction.copy(
+            category = assignedCategoryName ?: transaction.category.ifBlank { "Uncategorized" }
         )
 
-        val insertedId = transactionDao.insertTransaction(entity)
-        return entity.copy(id = insertedId).toDomainModel()
+        transactionDao.insertTransaction(processedTransaction.toEntity())
     }
+}
 
-    // =================================================================================
-    // Entity <-> Domain Model Transformation Functions
-    // =================================================================================
+// Mapper extension functions
+private fun TransactionEntity.toDomainModel(): Transaction {
+    return Transaction(
+        id = id,
+        amount = amount,
+        type = type,
+        description = description,
+        category = category,
+        dateTimestamp = dateTimestamp,
+        referenceNumber = referenceNumber
+    )
+}
 
-    /** Transforms a Room database Entity into a clean Domain Model. */
-    private fun TransactionEntity.toDomainModel(): Transaction {
-        return Transaction(
-            id = id,
-            amount = amount,
-            type = TransactionType.valueOf(type),
-            description = description,
-            dateTimestamp = dateTimestamp,
-            categoryName = categoryName,
-            bankName = bankName,
-            referenceNumber = referenceNumber,
-            rawOcrText = rawOcrText
-        )
-    }
-
-    /** Transforms a Domain Model into a Room database Entity. */
-    private fun Transaction.toEntity(): TransactionEntity {
-        return TransactionEntity(
-            id = id,
-            amount = amount,
-            type = type.name,
-            description = description,
-            dateTimestamp = dateTimestamp,
-            categoryName = categoryName,
-            bankName = bankName,
-            referenceNumber = referenceNumber,
-            rawOcrText = rawOcrText
- 
-        )
-    }
+private fun Transaction.toEntity(): TransactionEntity {
+    return TransactionEntity(
+        id = id,
+        amount = amount,
+        type = type,
+        description = description,
+        category = category,
+        dateTimestamp = dateTimestamp,
+        referenceNumber = referenceNumber
+    )
 }
