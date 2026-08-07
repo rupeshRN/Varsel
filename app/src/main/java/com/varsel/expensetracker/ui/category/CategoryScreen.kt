@@ -60,6 +60,11 @@ import com.varsel.expensetracker.data.local.entity.CategoryEntity
 import com.varsel.expensetracker.data.local.entity.CustomRuleEntity
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ErrorOutline
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
