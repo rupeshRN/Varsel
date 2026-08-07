@@ -7,8 +7,9 @@ import kotlin.math.abs
 
 class StatementParserEngine @Inject constructor() {
 
+    // Flexible regex supporting various date separators (/ or -) and making the balance column optional
     private val transactionRegex = Regex(
-        pattern = """^(\d{2}/\d{2}/\d{4})\s+(.+?)\s+([-+]?[0-9,]+\.\d{2})\s+([0-9,]+\.\d{2})$"""
+        pattern = """(\d{2}[/-]\d{2}[/-]\d{4})\s+(.+?)\s+([-+]?[0-9,]+\.\d{2})"""
     )
 
     fun parseStatement(extractedText: String): List<Transaction> {
@@ -20,10 +21,8 @@ class StatementParserEngine @Inject constructor() {
             val matchResult = transactionRegex.find(trimmedLine)
 
             if (matchResult != null) {
-                val dateStr = matchResult.groups[1]?.value ?: ""
                 val rawDescription = matchResult.groups[2]?.value?.trim() ?: "Unknown"
                 val amountStr = matchResult.groups[3]?.value ?: "0.00"
-                val balanceStr = matchResult.groups[4]?.value ?: "0.00"
 
                 val cleanDescription = rawDescription.replace(Regex("\\s+"), " ")
                 val parsedAmount = amountStr.replace(",", "").toDoubleOrNull() ?: 0.0
