@@ -96,8 +96,8 @@ fun MainNavigation(
 
             // Category & Budgeting Rules Route
             composable(Screen.Categories.route) {
-                // Placeholder until CategoryScreen component is added in File 24
-                Text("Categories & Rules Screen")
+                // CategoryScreen component is added in File 24
+                CategoryScreen()
             }
         }
     }
