@@ -25,81 +25,46 @@ import androidx.hilt.navigation.compose.hiltViewModel
 /**
  * Sealed hierarchy defining type-safe navigation routes, titles, and Material icons.
  */
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Home)
-    object Import : Screen("import", "Import", Icons.Default.UploadFile)
-    object Categories : Screen("categories", "Categories", Icons.Default.Category)
+sealed class Screen(val route: String) {
+    object Dashboard : Screen("dashboard")
+    object Import : Screen("import")
+    object Category : Screen("category")
 }
 
-/**
- * List of primary screens accessible via the bottom navigation bar.
- */
-val bottomNavScreens = listOf(
-    Screen.Dashboard,
-    Screen.Import,
-    Screen.Categories
-)
-
-/**
- * Main application navigation container wrapping the Material 3 NavigationBar and NavHost.
- */
 @Composable
-fun MainNavigation(
+fun SetupNavGraph(
     navController: NavHostController = rememberNavController()
 ) {
-    // Observe current backstack entry to highlight the correct active bottom nav icon
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                bottomNavScreens.forEach { screen ->
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.title) },
-                        label = { Text(screen.title) },
-                        selected = currentRoute == screen.route,
-                        onClick = {
-                            if (currentRoute != screen.route) {
-                                navController.navigate(screen.route) {
-                                    // Pop up to root destination to prevent building deep backstacks
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    // Avoid multiple copies of the same screen on backstack
-                                    launchSingleTop = true
-                                    // Restore screen state when reselecting tab
-                                    restoreState = true
-                                }
-                            }
-                        }
-                    )
-                }
-            }
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Dashboard.route
+    ) {
+        // INLINE FIX: Correctly imported and resolved DashboardScreen reference
+        composable(Screen.Dashboard.route) {
+            val viewModel: DashboardViewModel = hiltViewModel()
+            DashboardScreen(
+                viewModel = viewModel,
+                onNavigateToImport = { navController.navigate(Screen.Import.route) },
+                onNavigateToCategories = { navController.navigate(Screen.Category.route) }
+            )
         }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Dashboard.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            // Dashboard & Financial Summary Route
-            composable(Screen.Dashboard.route) {
-                // DashboardScreen component is added in File 22
-                DashboardScreen()
-            }
 
-            // PDF/Image Statement Parsing Route
-            composable(Screen.Import.route) {
-                // ImportScreen component is added in File 23
-                ImportScreen()
-            }
+        // INLINE FIX: Correctly imported and resolved ImportScreen reference
+        composable(Screen.Import.route) {
+            val viewModel: ImportViewModel = hiltViewModel()
+            ImportScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
 
-            // Category & Budgeting Rules Route
-            composable(Screen.Categories.route) {
-                // CategoryScreen component is added in File 24
-                CategoryScreen()
-            }
+        // INLINE FIX: Correctly imported and resolved CategoryScreen reference
+        composable(Screen.Category.route) {
+            val viewModel: CategoryViewModel = hiltViewModel()
+            CategoryScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
         }
     }
 }
