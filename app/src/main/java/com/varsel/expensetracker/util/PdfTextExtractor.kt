@@ -15,23 +15,16 @@ class PdfTextExtractor @Inject constructor(
     suspend fun extractText(uri: Uri): String {
         var tempFile: File? = null
         return try {
-            // Create a temporary file in the cache directory to hold the PDF stream
             tempFile = File.createTempFile("statement_temp", ".pdf", context.cacheDir)
-            
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 FileOutputStream(tempFile).use { fos ->
                     inputStream.copyTo(fos)
                 }
             } ?: return ""
 
-            // Load the PDF document using PDFBox
             val document = PDDocument.load(tempFile)
-            
-            // Extract the text layer directly without OCR
             val stripper = PDFTextStripper()
             val text = stripper.getText(document)
-            
-            // Close document to release resources
             document.close()
 
             text ?: ""
@@ -39,8 +32,8 @@ class PdfTextExtractor @Inject constructor(
             e.printStackTrace()
             ""
         } finally {
-            // Always clean up the temporary file
             tempFile?.delete()
         }
+   
     }
 }
