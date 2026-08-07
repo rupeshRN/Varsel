@@ -2,7 +2,7 @@ package com.varsel.expensetracker
 
 import android.app.Application
 import android.content.Intent
-import com.tom_roush.pdfbox.util.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -34,5 +34,6 @@ class ExpenseTrackerApp : Application() {
                 defaultHandler?.uncaughtException(thread, throwable)
             }
         }
+    
     }
 }
