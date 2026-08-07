@@ -47,14 +47,15 @@ object DatabaseModule {
         passphrase: ByteArray,
         categoryDaoProvider: Provider<CategoryDao>
     ): AppDatabase {
-        val factory = SupportOpenHelperFactory(passphrase)
+        // TEMPORARY ISOLATION TEST: Bypassing SQLCipher factory
+        // val factory = SupportOpenHelperFactory(passphrase)
 
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
             "encrypted_expense_tracker.db"
         )
-        .openHelperFactory(factory)
+        //.openHelperFactory(factory) // TEMPORARY: Commented out to test standard SQLite
         .addCallback(AppDatabase.SeedCallback(categoryDaoProvider))
         .fallbackToDestructiveMigration()
         .build()
