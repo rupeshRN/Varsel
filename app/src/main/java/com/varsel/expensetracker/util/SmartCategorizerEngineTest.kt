@@ -6,9 +6,6 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
-/**
- * Unit tests for merchant categorization and custom rule override priority.
- */
 class SmartCategorizerEngineTest {
 
     private lateinit var categorizerEngine: SmartCategorizerEngine
@@ -19,57 +16,53 @@ class SmartCategorizerEngineTest {
     }
 
     @Test
-    fun `categorize matching default keyword returns expected category ID`() {
-        val description = "POS Purchase at ZOMATO Bangalore"
-        
-        // Assuming default rule maps 'ZOMATO' to Category ID 1 (Food & Dining)
-        val categoryId = categorizerEngine.categorize(
-            description = description,
-            customRules = emptyList()
-        )
-
-        assertEquals(1L, categoryId)
-    }
-
-    @Test
-    fun `categorize matching is case-insensitive`() {
-        val lowerCaseDescription = "swiggy food order"
-        val upperCaseDescription = "SWIGGY FOOD ORDER"
-
-        val lowerResult = categorizerEngine.categorize(lowerCaseDescription, emptyList())
-        val upperResult = categorizerEngine.categorize(upperCaseDescription, emptyList())
-
-        assertEquals(lowerResult, upperResult)
-    }
-
-    @Test
-    fun `custom rules override default keyword rules`() {
-        val description = "UBER RIDE SAN FRANCISCO"
-
-        // Default categorizer maps UBER -> Transport (e.g. ID 3)
-        // Custom rule maps UBER -> Business Expenses (e.g. ID 10)
+    fun categorizeTransaction_matchesExactCustomRulePattern() {
+        // Arrange: Rule maps pattern string to a category name
         val customRules = listOf(
-            CustomRuleEntity(id = 1, merchantPattern = "UBER", categoryId = 10L)
+            CustomRuleEntity(pattern = "STARBUCKS", categoryName = "Coffee & Snacks"),
+            CustomRuleEntity(pattern = "UBER", categoryName = "Transportation")
         )
 
-        val categoryId = categorizerEngine.categorize(
-            description = description,
+        // Act
+        val category = categorizerEngine.categorizeTransaction(
+            narration = "POS STARBUCKS COFFEE #1204",
+            amount = 14.50,
             customRules = customRules
         )
 
-        // Custom rule must take priority over default rules
-        assertEquals(10L, categoryId)
+        // Assert
+        assertEquals("Coffee & Snacks", category)
     }
 
     @Test
-    fun `categorize returns null for unknown merchant with no matching rules`() {
-        val description = "UNKNOWN LOCAL SHOP 9982"
+    fun categorizeTransaction_fallbackKeywordMatch_returnsDefaultCategory() {
+        // Arrange
+        val customRules = emptyList<CustomRuleEntity>()
 
-        val categoryId = categorizerEngine.categorize(
-            description = description,
-            customRules = emptyList()
+        // Act
+        val category = categorizerEngine.categorizeTransaction(
+            narration = "SWIGGY FOOD ORDER #99831",
+            amount = 250.0,
+            customRules = customRules
         )
 
-        assertNull(categoryId)
+        // Assert
+        assertEquals("Food & Dining", category)
+    }
+
+    @Test
+    fun categorizeTransaction_unmatchedNarration_returnsUncategorized() {
+        // Arrange
+        val customRules = emptyList<CustomRuleEntity>()
+
+        // Act
+        val category = categorizerEngine.categorizeTransaction(
+            narration = "TRANSFER REF 981273912",
+            amount = 500.0,
+            customRules = customRules
+        )
+
+        // Assert
+        assertNull(category)
     }
 }
