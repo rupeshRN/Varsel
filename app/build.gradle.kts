@@ -67,11 +67,11 @@ dependencies {
     implementation(libs.bundles.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // Offline Encrypted Local Database
+    // Offline Encrypted Local Database (Room)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-    implementation(libs.sqlcipher.android)
+    // NOTE: libs.sqlcipher.android removed here to prevent duplicate native library collision
 
     // Offline Scanning & Extraction
     implementation(libs.mlkit.text.recognition)
@@ -87,7 +87,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     testImplementation("junit:junit:4.13.2")
 
-    // SQLCipher for encrypted Room DB
+    // SQLCipher for encrypted Room DB (Single unified source)
     implementation("net.zetetic:android-database-sqlcipher:4.5.4")
 
     // Navigation & Hilt Integration for Compose
