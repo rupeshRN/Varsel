@@ -1,55 +1,79 @@
 package com.varsel.expensetracker.util
 
-import com.varsel.expensetracker.data.local.entity.CategoryEntity
-import com.varsel.expensetracker.data.local.entity.CustomRuleEntity
 import com.varsel.expensetracker.domain.model.Transaction
+import com.varsel.expensetracker.domain.model.TransactionType
 import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
 class SmartCategorizerEngine @Inject constructor() {
 
-    /**
-     * Assigns a category string based on raw transaction narration, optional rules,
-     * category entities, and historical user transaction data.
-     * 
-     * INLINE FIX: Parameter signature updated from (narration, amount) to accept:
-     * - [rawDescription]: Unstructured text/narration string from statement or user input.
-     * - [categories]: Predefined/user category entities with names to match against.
-     * - [customRules]: List of CustomRuleEntity patterns configured by the user.
-     * - [historicalTransactions]: Past categorized transactions for machine learning/heuristics.
-     */
-    fun categorizeTransaction(
-        rawDescription: String,
-        categories: List<CategoryEntity> = emptyList(),
-        customRules: List<CustomRuleEntity> = emptyList(),
-        historicalTransactions: List<Transaction> = emptyList()
-    ): String? {
-        if (rawDescription.isBlank()) return null
+    data class SmartDetails(val displayName: String, val category: String)
 
-        val upperDesc = rawDescription.uppercase()
+    fun getSmartDetails(description: String, type: TransactionType): SmartDetails {
+        val upperDesc = description.uppercase()
 
-        // 1. Check custom user-defined rule patterns first (highest priority)
-        for (rule in customRules) {
-            if (upperDesc.contains(rule.pattern.uppercase())) {
-                return rule.categoryName
-            }
+        // 1. Check for Income
+        if (upperDesc.contains("SALARY") || upperDesc.contains("WAGE")) {
+            return SmartDetails("Salary", "Income")
+        }
+        if (upperDesc.contains("INTEREST") || upperDesc.contains("DIVIDEND")) {
+            return SmartDetails("Bank Interest", "Income")
         }
 
-        // 2. Check predefined category keyword matches
-        for (category in categories) {
-            if (upperDesc.contains(category.name.uppercase())) {
-                return category.name
-            }
+        // 2. Check for Food & Dining
+        if (upperDesc.contains("ZOMATO") || upperDesc.contains("SWIGGY") || upperDesc.contains("UBER EATS")) {
+            return SmartDetails("Food Delivery", "Food & Drink")
+        }
+        if (upperDesc.contains("RESTAURANT") || upperDesc.contains("CAFÉ") || upperDesc.contains("CAFE")) {
+            return SmartDetails("Dining Out", "Food & Drink")
         }
 
-        // 3. Fallback heuristic keyword matching for common vendors
-        return when {
-            upperDesc.contains("UBER") || upperDesc.contains("LYFT") || upperDesc.contains("METRO") -> "Transportation"
-            upperDesc.contains("STARBUCKS") || upperDesc.contains("SWIGGY") || upperDesc.contains("ZOMATO") -> "Food & Dining"
-            upperDesc.contains("AMAZON") || upperDesc.contains("WALMART") -> "Shopping"
-            upperDesc.contains("SALARY") || upperDesc.contains("PAYROLL") || upperDesc.contains("CREDIT") -> "Income"
-            else -> null
+        // 3. Check for Groceries
+        if (upperDesc.contains("GROCERY") || upperDesc.contains("SUPERMARKET")) {
+            return SmartDetails("Groceries", "Groceries")
+        }
+
+        // 4. Check for Transport
+        if (upperDesc.contains("UBER") || upperDesc.contains("OLA")) {
+            return SmartDetails("Rideshare", "Transport")
+        }
+        if (upperDesc.contains("FUEL") || upperDesc.contains("GAS STATION")) {
+            return SmartDetails("Fuel", "Transport")
+        }
+
+        // 5. Check for Utilities / Subscriptions
+        if (upperDesc.contains("NETFLIX") || upperDesc.contains("SPOTIFY") || upperDesc.contains("AMAZON PRIME")) {
+            return SmartDetails("Subscription", "Subscriptions")
+        }
+        if (upperDesc.contains("ELECTRICITY") || upperDesc.contains("WATER") || upperDesc.contains("INTERNET BILL")) {
+            return SmartDetails("Utility Bill", "Utilities")
+        }
+
+        // 6. Check for Transfers
+        if (upperDesc.contains("TRANSFER TO") || upperDesc.contains("NEFT") || upperDesc.contains("IMPS")) {
+             val recipient = extractRecipientFromTransfer(description)
+             return SmartDetails(recipient, "Transfers")
+        }
+
+        // 7. Fallback for Cash withdrawals
+        if (upperDesc.contains("ATM CASH") || upperDesc.contains("WDL")) {
+            return SmartDetails("Cash Withdrawal", "Cash")
+        }
+        
+        // Default for everything else
+        val defaultName = description.split("-").firstOrNull()?.trim()?.capitalizeWords() ?: "Unknown Transaction"
+        return SmartDetails(defaultName, "Uncategorized")
+    }
+
+    private fun extractRecipientFromTransfer(fullDescription: String): String {
+        // Example: "NEFT-MOHIT KUMAR-RENT" -> Returns "Mohit Kumar"
+        // Example: "UPI-JANE DOE-FOOD" -> Returns "Jane Doe"
+        val parts = fullDescription.split("-")
+        return if (parts.size > 2) {
+            parts[1].capitalizeWords()
+        } else {
+            "Bank Transfer"
         }
     }
+    
+    private fun String.capitalizeWords(): String = split(" ").joinToString(" ") { it.toLowerCase().capitalize() }
 }
