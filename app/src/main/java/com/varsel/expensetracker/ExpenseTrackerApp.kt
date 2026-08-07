@@ -9,7 +9,14 @@ class ExpenseTrackerApp : Application() {
     override fun onCreate() {
         super.onCreate()
         
-        // Intercepts any fatal crash and displays it visually instead of crashing to black screen
+        // CRITICAL: Explicitly load the native SQLCipher library to prevent UnsatisfiedLinkError
+        try {
+            System.loadLibrary("sqlcipher")
+        } catch (e: UnsatisfiedLinkError) {
+            e.printStackTrace()
+        }
+
+        // Intercepts remaining Java fatal crashes and displays them visually
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
