@@ -22,14 +22,41 @@ class SmartCategorizerEngine @Inject constructor(
                     customRuleDao.getAllRules().first()
                 } catch (e: Exception) {
                     @Suppress("UNCHECKED_CAST")
-                    customRuleDao.getAllRules() as? List<com.varsel.expensetracker.data.local.entity.CustomRuleEntity> ?: emptyList()
+                    customRuleDao.getAllRules() as? List<Any> ?: emptyList()
                 }
 
                 for (rule in rules) {
-                    val keyword = rule.pattern.uppercase()
-                    val regex = Regex("\\b${Regex.escape(keyword)}\\b")
-                    if (regex.containsMatchIn(upperDesc)) {
-                        return@withContext SmartDetails(rule.name, rule.category)
+                    val ruleClass = rule!!::class.java
+
+                    val keyword = try {
+                        (ruleClass.methods.find { 
+                            it.name.equals("getPattern", ignoreCase = true) || 
+                            it.name.equals("getKeyword", ignoreCase = true) 
+                        }?.invoke(rule) as? String) ?: ""
+                    } catch (e: Exception) { "" }
+
+                    val ruleName = try {
+                        (ruleClass.methods.find { 
+                            it.name.equals("getName", ignoreCase = true) || 
+                            it.name.equals("getDisplayName", ignoreCase = true) 
+                        }?.invoke(rule) as? String) ?: ""
+                    } catch (e: Exception) { "" }
+
+                    val ruleCategory = try {
+                        (ruleClass.methods.find { 
+                            it.name.equals("getCategory", ignoreCase = true) || 
+                            it.name.equals("getCategoryName", ignoreCase = true) 
+                        }?.invoke(rule) as? String) ?: ""
+                    } catch (e: Exception) { "" }
+
+                    if (keyword.isNotBlank()) {
+                        val regex = Regex("\\b${Regex.escape(keyword.uppercase())}\\b")
+                        if (regex.containsMatchIn(upperDesc)) {
+                            return@withContext SmartDetails(
+                                displayName = if (ruleName.isNotBlank()) ruleName else keyword,
+                                category = if (ruleCategory.isNotBlank()) ruleCategory else "Uncategorized"
+                            )
+                        }
                     }
                 }
             }
