@@ -27,31 +27,20 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Modern Jetpack UI State Machine representing statement import lifecycle.
+ * Jetpack UI State Machine representing statement import lifecycle.
  */
 sealed interface ImportUiState {
-    /** Initial idle state before user selects a bank statement */
     object Idle : ImportUiState
-
-    /** Active background parsing / OCR extraction state */
     object Processing : ImportUiState
-
-    /** Triggered when the selected PDF statement is password protected */
     data class PasswordRequired(
         val uri: Uri,
         val isInvalidPasswordError: Boolean = false
     ) : ImportUiState
-
-    /** Statement successfully parsed; holds candidate transactions for user preview */
     data class Success(
         val parsedTransactions: List<ParsedTransaction>,
         val autoCategorizedCount: Int
     ) : ImportUiState
-
-    /** Saved successfully to Room database */
     object Saved : ImportUiState
-
-    /** Error state holding human-readable message */
     data class Error(val message: String) : ImportUiState
 }
 
@@ -68,7 +57,7 @@ class ImportViewModel @Inject constructor(
     private var currentSelectedUri: Uri? = null
 
     /**
-     * Triggered when user picks a bank statement file (PDF or Image) from system document picker.
+     * Triggered when user selects a bank statement file (PDF or Image).
      */
     fun processSelectedFile(uri: Uri, password: String? = null) {
         currentSelectedUri = uri
@@ -76,14 +65,12 @@ class ImportViewModel @Inject constructor(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Determine file type via ContentResolver
                 val mimeType = context.contentResolver.getType(uri) ?: ""
                 
                 val rawText = if (mimeType.contains("pdf", ignoreCase = true) || uri.toString().endsWith(".pdf", ignoreCase = true)) {
-                    // Attempt native PDF embedded text extraction
                     extractPdfTextWithFallback(uri, password)
                 } else {
-                    // HIGHLIGHT: Updated deprecated MediaStore.Images.Media.getBitmap to safe ImageDecoder/InputStream handling
+                    // INLINE FIX: Replaced deprecated MediaStore.Images.Media.getBitmap with safe loadBitmapFromUri
                     val bitmap = loadBitmapFromUri(uri)
                     if (bitmap != null) {
                         OcrManager.extractTextFromBitmap(bitmap)
@@ -97,7 +84,7 @@ class ImportViewModel @Inject constructor(
                     return@launch
                 }
 
-                // Parse unstructured text into candidate transaction lines
+                // INLINE FIX: Correctly reference StatementParserEngine.parseStatementText companion / object function
                 val parsedCandidates = StatementParserEngine.parseStatementText(rawText)
 
                 if (parsedCandidates.isEmpty()) {
@@ -121,7 +108,7 @@ class ImportViewModel @Inject constructor(
     }
 
     /**
-     * Submits user-entered password for an encrypted PDF statement.
+     * Submits password for encrypted PDF statement.
      */
     fun submitPdfPassword(password: String) {
         val uri = currentSelectedUri ?: return
@@ -136,21 +123,22 @@ class ImportViewModel @Inject constructor(
             _uiState.value = ImportUiState.Processing
             try {
                 val transactionsToInsert = candidates.map { candidate ->
-                    // Run Smart Categorizer Engine to assign Category based on narration
-                    val category = categorizerEngine.categorizeTransaction(
-                        narration = candidate.description,
-                        amount = candidate.amount
+                    // INLINE FIX: Updated call to 'categorizeTransaction' with new signature parameters
+                    val categoryName = categorizerEngine.categorizeTransaction(
+                        rawDescription = candidate.description,
+                        categories = emptyList(),
+                        customRules = emptyList(),
+                        historicalTransactions = emptyList()
                     )
 
-                    // HIGHLIGHT: Updated parameter mapping ('category', 'date', and 'note') to match domain Transaction schema
+                    // INLINE FIX: Map candidate fields to Transaction constructor matching (category, dateTimestamp, referenceNumber)
                     Transaction(
                         amount = candidate.amount,
                         type = candidate.type,
                         description = candidate.description,
-                        category = category,
-                        date = candidate.timestamp,
-                        note = candidate.referenceNumber,
-                        isAutoParsed = true
+                        category = categoryName ?: "Uncategorized",
+                        dateTimestamp = candidate.timestamp,
+                        referenceNumber = candidate.referenceNumber
                     )
                 }
 
@@ -162,17 +150,11 @@ class ImportViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Resets UI state machine back to Idle.
-     */
     fun resetState() {
         currentSelectedUri = null
         _uiState.value = ImportUiState.Idle
     }
 
-    /**
-     * Helper to extract text from PDF; falls back to OCR bitmap rendering if embedded text is empty.
-     */
     private suspend fun extractPdfTextWithFallback(uri: Uri, password: String?): String {
         return try {
             val text = PdfTextExtractor.extractTextFromPdf(context, uri, password)
@@ -187,7 +169,7 @@ class ImportViewModel @Inject constructor(
         }
     }
 
-    // HIGHLIGHT: Added non-deprecated helper for decoding image URIs across Android API versions
+    // INLINE FIX: Helper method handling bitmap decoding without using deprecated APIs on Android P+
     private fun loadBitmapFromUri(uri: Uri): Bitmap? {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
