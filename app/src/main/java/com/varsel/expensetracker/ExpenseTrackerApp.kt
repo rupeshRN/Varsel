@@ -11,7 +11,11 @@ class ExpenseTrackerApp : Application() {
         super.onCreate()
         
         // Initialize PDFBox-Android resource loader for direct PDF text extraction
-        PDFBoxResourceLoader.init(this)
+        try {
+            PDFBoxResourceLoader.init(this)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         
         // CRITICAL: Explicitly load the native SQLCipher library to prevent UnsatisfiedLinkError
         try {
