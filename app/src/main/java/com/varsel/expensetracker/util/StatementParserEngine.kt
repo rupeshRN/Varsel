@@ -1,78 +1,46 @@
-package com.varsel.expensetracker.util
+package com.varsel.expensetracker.util // Defines the package where this parsing utility class resides
 
-import com.varsel.expensetracker.domain.model.TransactionType
+import com.varsel.expensetracker.data.local.entity.TransactionEntity // Imports the database entity model used to store transaction records
 
-/**
- * Data model representing a single transaction parsed from raw statement text or images.
- */
-data class ParsedTransaction(
-    val description: String,      // Text description of the transaction line item
-    val amount: Double,           // Extracted numeric transaction amount
-    val type: TransactionType,    // Classified transaction type (CREDIT or DEBIT)
-    val referenceNumber: String?, // Optional reference ID if detected
-    val timestamp: Long           // Epoch timestamp marking when parsing occurred
-)
+class StatementParserEngine { // Declares the core utility class responsible for turning raw text files into structured transaction objects
 
-/**
- * Utility object responsible for parsing raw text strings extracted from bank/expense statements.
- */
-object StatementParserEngine {
+    // Defines a strict regular expression pattern to isolate date, description text, amount, and balance columns independently
+    private val transactionRegex = Regex(
+        pattern = """^(\d{2}/\d{2}/\d{4})\s+(.+?)\s+([-+]?[0-9,]+\.\d{2})\s+([0-9,]+\.\d{2})$"""
+    )
 
     /**
-     * Parses raw text block line-by-line to identify transactions, amounts, and types.
-     * @param rawText The raw text string extracted from the statement file.
-     * @return A list of [ParsedTransaction] objects extracted from the text.
+     * Parses raw multi-line text extracted from a statement PDF and converts it into structured transactions.
      */
-    fun parseStatementText(rawText: String): List<ParsedTransaction> {
-        // Initialize a mutable list to hold successfully parsed transaction candidates
-        val transactions = mutableListOf<ParsedTransaction>()
-        
-        // Split the raw multi-line input string into individual lines
-        val lines = rawText.lines()
-        
-        // Capture current epoch system time to use as the fallback timestamp
-        val currentTime = System.currentTimeMillis()
+    fun parseStatement(extractedText: String): List<TransactionEntity> { // Public function entry point accepting raw text and returning a list of entities
+        val transactions = mutableListOf<TransactionEntity>() // Initializes an empty mutable list to collect successfully parsed transaction items
+        val lines = extractedText.lines() // Splits the raw string document into a collection of individual text lines
 
-        // Loop through each line in the text file
-        for (line in lines) {
-            // Skip execution for empty or blank lines
-            if (line.isBlank()) continue
-            
-            // Convert line to uppercase to reliably check for keywords like CREDIT, CR, or '+'
-            val upper = line.uppercase()
-            
-            // Determine transaction type based on keyword presence
-            val type = if (upper.contains("CR") || upper.contains("CREDIT") || upper.contains("+")) {
-                TransactionType.CREDIT
-            } else {
-                TransactionType.DEBIT
-            }
+        for (line in lines) { // Begins a loop to iterate through every line found in the extracted document text
+            val trimmedLine = line.trim() // Strips any leading or trailing whitespace from the current line
+            val matchResult = transactionRegex.find(trimmedLine) // Attempts to evaluate the line against our defined regex pattern
 
-            // Define regular expression matching standard decimal amounts (e.g., 15.50)
-            val amountRegex = "([0-9]+\\.[0-9]{2})".toRegex()
-            
-            // Search the current line for a match against the amount pattern
-            val match = amountRegex.find(line)
-            
-            // Proceed only if a valid monetary amount is found in the line
-            if (match != null) {
-                // Convert matched amount string to a Double value, defaulting to 0.0 if failed
-                val amount = match.value.toDoubleOrNull() ?: 0.0
-                
-                // Construct a new ParsedTransaction item and add it to our list
-                transactions.add(
-                    ParsedTransaction(
-                        description = line.trim(),
-                        amount = amount,
-                        type = type,
-                        referenceNumber = null,
-                        timestamp = currentTime
-                    )
+            if (matchResult != null) { // Conditional check that executes only if the line successfully matches a transaction row format
+                val dateStr = matchResult.groups[1]?.value ?: continue // Extracts Group 1 (Date value) or skips the line if it is missing
+                val rawDescription = matchResult.groups[2]?.value?.trim() ?: "Unknown" // Extracts Group 2 (Merchant/Description text) non-greedily, avoiding number spillover
+                val amountStr = matchResult.groups[3]?.value ?: "0.00" // Extracts Group 3 (Transaction amount string)
+                val balanceStr = matchResult.groups[4]?.value ?: "0.00" // Extracts Group 4 (Running balance string)
+
+                val cleanDescription = rawDescription.replace(Regex("\\s+"), " ") // Cleans up inner whitespace gaps inside the description text
+
+                val parsedAmount = amountStr.replace(",", "").toDoubleOrNull() ?: 0.0 // Strips commas and safely parses the amount string into a Double value
+                val parsedBalance = balanceStr.replace(",", "").toDoubleOrNull() ?: 0.0 // Strips commas and safely parses the balance string into a Double value
+
+                val transactionEntity = TransactionEntity( // Instantiates a new TransactionEntity database record using the parsed data fields
+                    description = cleanDescription, // Assigns the isolated text description
+                    amount = parsedAmount // Assigns the parsed numerical transaction amount
                 )
-            }
-        }
-        
-        // Return the final list of compiled transaction items
-        return transactions
-    }
-}
+
+                transactions.add(transactionEntity) // Appends the constructed transaction record into our results list
+            } // Closes the match validation conditional block
+        } // Closes the line iteration loop
+
+        return transactions // Returns the final list of cleanly parsed transaction entities back to the caller
+    } // Closes the parseStatement function block
+} // Closes the StatementParserEngine 
+class block
