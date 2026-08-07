@@ -26,11 +26,10 @@ class SmartCategorizerEngine @Inject constructor(
                 }
 
                 for (rule in rules) {
-                    // Match against actual CustomRuleEntity property names (pattern and name/category)
                     val keyword = rule.pattern.uppercase()
                     val regex = Regex("\\b${Regex.escape(keyword)}\\b")
                     if (regex.containsMatchIn(upperDesc)) {
-                        return@withContext SmartDetails(rule.name, rule.category)
+                        return@withContext SmartDetails(rule.displayName, rule.categoryName)
                     }
                 }
             }
