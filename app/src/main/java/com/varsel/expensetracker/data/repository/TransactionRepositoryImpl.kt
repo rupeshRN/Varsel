@@ -71,7 +71,7 @@ class TransactionRepositoryImpl @Inject constructor(
     /**
      * Persists a domain transaction entry into Room by converting it to an entity.
      */
-    override fun insertTransaction(transaction: Transaction): Long {
+    override suspend fun insertTransaction(transaction: Transaction): Long {
         return transactionDao.insertTransaction(transaction.toEntity())
     }
 
