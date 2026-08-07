@@ -3,6 +3,7 @@ package com.varsel.expensetracker.ui.transaction
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.varsel.expensetracker.domain.model.Transaction
+import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -34,16 +35,13 @@ class TransactionViewModel @Inject constructor(
 
     fun addTransaction(
         amount: Double,
-        type: String,
+        type: TransactionType,
         description: String,
         category: String,
         dateTimestamp: Long,
         referenceNumber: String?
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            // INLINE FIX: Updated Transaction constructor to match domain model fields
-            // - Replaced 'categoryId' with 'category' (String)
-            // - Replaced 'timestamp' with 'dateTimestamp' (Long)
             val transaction = Transaction(
                 amount = amount,
                 type = type,
