@@ -3,6 +3,7 @@ package com.varsel.expensetracker.util
 import com.varsel.expensetracker.data.local.dao.CustomRuleDao
 import com.varsel.expensetracker.domain.model.TransactionType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -17,8 +18,13 @@ class SmartCategorizerEngine @Inject constructor(
 
         try {
             if (customRuleDao != null) {
-                // Ensure DAO method returns a List (e.g. List<CustomRuleEntity>) rather than a Flow
-                val rules = customRuleDao.getAllRules() 
+                val rules = try {
+                    customRuleDao.getAllRules().first()
+                } catch (e: Exception) {
+                    @Suppress("UNCHECKED_CAST")
+                    customRuleDao.getAllRules() as? List<com.varsel.expensetracker.data.local.entity.CustomRuleEntity> ?: emptyList()
+                }
+
                 for (rule in rules) {
                     val keyword = rule.keyword.uppercase()
                     val regex = Regex("\\b${Regex.escape(keyword)}\\b")
