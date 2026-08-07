@@ -47,14 +47,14 @@ class CategoryViewModel @Inject constructor(
         name: String,
         colorHex: String,
         iconName: String,
-        monthlyBudgetLimit: Double = 0.0
+        budgetLimit: Double = 0.0
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             val newCategory = CategoryEntity(
                 name = name.trim(),
                 colorHex = colorHex,
                 iconName = iconName,
-                monthlyBudgetLimit = monthlyBudgetLimit
+                budgetLimit = budgetLimit
             )
             categoryDao.insertCategory(newCategory)
         }
