@@ -49,11 +49,10 @@ class ImportViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = ImportUiState.Loading
             try {
-                // Resolve mimeType automatically if not passed by the UI layer
-                const val DEFAULT_PDF_MIME = "application/pdf"
+                val defaultPdfMime = "application/pdf"
                 val resolvedMimeType = mimeType ?: context.contentResolver.getType(uri)
 
-                val rawText = if (resolvedMimeType == DEFAULT_PDF_MIME || uri.toString().endsWith(".pdf", ignoreCase = true)) {
+                val rawText = if (resolvedMimeType == defaultPdfMime || uri.toString().endsWith(".pdf", ignoreCase = true)) {
                     pdfTextExtractor.extractTextFromPdf(context, uri)
                 } else {
                     ocrManager.extractTextFromImage(context, uri)
