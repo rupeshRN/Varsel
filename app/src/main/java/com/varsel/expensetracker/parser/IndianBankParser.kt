@@ -34,7 +34,7 @@ class IndianBankParser @Inject constructor(
 
             try {
 
-                val parsed = indianBlockParser.parse(block)
+                val parsed = indianBlockParser.parse(block.lines.joinToString("\n"))
 
                 val date =
                     formatter.parse(parsed.date)
