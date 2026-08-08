@@ -100,12 +100,11 @@ class ImportViewModel @Inject constructor(
 
                 _uiState.value =
                     ImportUiState.ParsedTransactions(transactions)
-                */
 
             } catch (e: Exception) {
 
                 _uiState.value = ImportUiState.Error(
-                    e.stackTraceToString()
+    e.message ?: e.stackTraceToString())
                 )
             }
         }
