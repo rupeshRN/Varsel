@@ -18,7 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportScreen(
-    onNavigateBack: () -> Unit,
+    onBackClick: () -> Unit,
     viewModel: ImportViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -37,7 +37,7 @@ fun ImportScreen(
             TopAppBar(
                 title = { Text("Import Statement") },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateBack) {
+                    TextButton(onClick = onBackClick) {
                         Text("Back")
                     }
                 }
@@ -150,6 +150,5 @@ fun ImportScreen(
                 }
             }
         }
-  
-    }
+   }
 }
