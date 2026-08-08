@@ -9,44 +9,18 @@ class IndianBankParser @Inject constructor() : StatementParser {
 
         val text = rawText.uppercase()
 
-        return text.contains("INDIAN BANK")
-                || text.contains("ACCOUNT ACTIVITY")
-                || text.contains("ACCOUNT DETAILS")
-                || text.contains("ACCOUNT SUMMARY")
+        return text.contains("INDIAN BANK") ||
+                text.contains("ACCOUNT ACTIVITY") ||
+                text.contains("ACCOUNT DETAILS") ||
+                text.contains("ACCOUNT SUMMARY")
     }
 
     override fun parse(rawText: String): List<Transaction> {
 
-    val lines = rawText
-        .lines()
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
+        // TEMPORARY DEBUG
+        // Display the normalized text received by the parser.
 
-    val dateRegex =
-        Regex("^\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
+        throw IllegalArgumentException(rawText)
 
-    val transactionStartLines = mutableListOf<String>()
-
-    for (line in lines) {
-
-        if (dateRegex.containsMatchIn(line)) {
-            transactionStartLines.add(line)
-        }
-    }
-
-    throw IllegalArgumentException(
-
-        buildString {
-
-            appendLine("Transaction Start Lines Found")
-
-            appendLine("----------------------------")
-
-            transactionStartLines.forEach {
-                appendLine(it)
-            }
-        }
-
-    )
     }
 }
