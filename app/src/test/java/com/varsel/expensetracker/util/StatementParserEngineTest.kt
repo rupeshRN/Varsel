@@ -14,11 +14,15 @@ class StatementParserEngineTest {
 
     @Test
     fun testParseStatement() {
-        // Sample bank statement raw text snippet
+        // Sample bank statement structured into vertical blocks matching parser expectations
         val sampleStatement = """
-            Date       Description                       Amount
-            07/08/2026   Grocery Store Purchase            -11000.00
-            06/08/2026   Salary Deposit                    +5000.00
+            07/08/2026
+            Grocery Store Purchase
+            -11000.00
+            
+            06/08/2026
+            Salary Deposit
+            +5000.00
         """.trimIndent()
 
         val parsedTransactions = statementParserEngine.parseStatement(sampleStatement)
@@ -30,7 +34,6 @@ class StatementParserEngineTest {
         val firstTransaction = parsedTransactions[0]
         
         assertEquals("Grocery Store Purchase", firstTransaction.description)
-        // StatementParserEngine normalizes amounts to absolute positive values
         assertEquals(11000.00, firstTransaction.amount, 0.01)
         assertEquals(TransactionType.EXPENSE, firstTransaction.type)
     }
