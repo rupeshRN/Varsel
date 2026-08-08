@@ -8,6 +8,7 @@ import com.varsel.expensetracker.ui.category.CategoryScreen
 import com.varsel.expensetracker.ui.dashboard.DashboardScreen
 import com.varsel.expensetracker.ui.import_statement.ImportScreen
 import com.varsel.expensetracker.ui.transaction.TransactionScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 
 sealed class Screen(val route: String) {
     object Dashboard : Screen("dashboard")
@@ -21,14 +22,22 @@ fun NavGraph(navController: NavHostController) {
     NavHost(
         navController = navController,
         startDestination = Screen.Dashboard.route
-    ) {
-        composable(Screen.Dashboard.route) {
-            DashboardScreen(
-                onNavigateToTransactions = { navController.navigate(Screen.Transactions.route) },
-                onNavigateToImport = { navController.navigate(Screen.ImportStatement.route) },
-                onNavigateToCategories = { navController.navigate(Screen.Categories.route) }
-            )
+    ) 
+
+    composable(Screen.Dashboard.route) {
+    DashboardScreen(
+        viewModel = hiltViewModel(),
+        onNavigateToImport = {
+            navController.navigate(Screen.ImportStatement.route)
+        },
+        onNavigateToAllTransactions = {
+            navController.navigate(Screen.Transactions.route)
+        },
+        onNavigateToCategories = {
+            navController.navigate(Screen.Categories.route)
         }
+    )
+    }
         composable(Screen.Transactions.route) {
             TransactionScreen(
                 onBackClick = { navController.popBackStack() }
