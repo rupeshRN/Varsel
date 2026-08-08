@@ -6,12 +6,11 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.regex.Pattern
+import kotlin.math.abs
 
 class StatementParserEngine {
 
     fun parseStatement(rawText: String): List<Transaction> {
-        val transactions = mutableListOf<Transaction>()
-        
         // Try primary tabular parser first
         val tabularTransactions = parseTabularFormat(rawText)
         if (tabularTransactions.isNotEmpty()) {
@@ -83,15 +82,15 @@ class StatementParserEngine {
                 }
 
                 val referenceNumber = extractReferenceNumber(line)
+                val timestamp = currentDate.time
 
                 transactions.add(
                     Transaction(
-                        id = 0L,
-                        amount = transactionAmount,
+                        amount = abs(transactionAmount),
                         type = type,
                         description = description,
                         category = "Uncategorized",
-                        date = currentDate,
+                        dateTimestamp = timestamp,
                         referenceNumber = referenceNumber
                     )
                 )
@@ -147,15 +146,15 @@ class StatementParserEngine {
             if (pendingDate != null && pendingAmount != null) {
                 val desc = if (descriptionBuilder.isNotEmpty()) descriptionBuilder.toString() else "Bank Transaction"
                 val refNo = extractReferenceNumber(desc)
+                val timestamp = pendingDate.time
 
                 transactions.add(
                     Transaction(
-                        id = 0L,
-                        amount = pendingAmount,
+                        amount = abs(pendingAmount),
                         type = if (isDebit) TransactionType.EXPENSE else TransactionType.INCOME,
                         description = desc.replace(Regex("[/\\\\|]+"), " ").trim(),
                         category = "Uncategorized",
-                        date = pendingDate,
+                        dateTimestamp = timestamp,
                         referenceNumber = refNo
                     )
                 )
