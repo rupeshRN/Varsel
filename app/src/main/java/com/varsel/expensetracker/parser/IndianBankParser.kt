@@ -1,64 +1,44 @@
 package com.varsel.expensetracker.parser
 
 import com.varsel.expensetracker.domain.model.Transaction
-import com.varsel.expensetracker.domain.model.TransactionType
-import java.text.SimpleDateFormat
-import java.util.Locale
 import javax.inject.Inject
 
 class IndianBankParser @Inject constructor(
-    private val transactionBlockBuilder: TransactionBlockBuilder,
-    private val indianBlockParser: IndianBlockParser
+    private val blockBuilder: TransactionBlockBuilder
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
 
         val text = rawText.uppercase()
 
-        return text.contains("INDIAN BANK") ||
-                text.contains("ACCOUNT ACTIVITY") ||
-                text.contains("ACCOUNT DETAILS") ||
-                text.contains("ACCOUNT SUMMARY")
+        return text.contains("ACCOUNT ACTIVITY") ||
+                text.contains("ACCOUNT SUMMARY") ||
+                text.contains("ACCOUNT DETAILS")
     }
 
     override fun parse(rawText: String): List<Transaction> {
 
-        val blocks = transactionBlockBuilder.build(rawText)
+        val blocks = blockBuilder.build(rawText)
 
-        val output = mutableListOf<Transaction>()
+        throw IllegalArgumentException(
 
-        val formatter =
-            SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
+            buildString {
 
-        for (block in blocks) {
+                appendLine("TOTAL BLOCKS = ${blocks.size}")
+                appendLine()
 
-            try {
+                blocks.forEachIndexed { index, block ->
 
-                val parsed = indianBlockParser.parse(block.lines.joinToString("\n"))
+                    appendLine("========== BLOCK ${index + 1} ==========")
 
-                val date =
-                    formatter.parse(parsed.date)
+                    block.lines.forEach {
+                        appendLine(it)
+                    }
 
-                output.add(
-                    Transaction(
-                        amount = parsed.debit ?: parsed.credit ?: 0.0,
-                        type = if (parsed.debit != null)
-                            TransactionType.EXPENSE
-                        else
-                            TransactionType.INCOME,
-                        description = parsed.description,
-                        category = "Uncategorized",
-                        dateTimestamp = date?.time ?: 0L,
-                        referenceNumber = null
-                    )
-                )
-
-            } catch (_: Exception) {
-                // Ignore malformed transaction blocks
+                    appendLine()
+                }
             }
 
-        }
-
-        return output
+        )
     }
 }
