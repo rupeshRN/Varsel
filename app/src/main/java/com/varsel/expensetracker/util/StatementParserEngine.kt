@@ -28,12 +28,18 @@ class StatementParserEngine @Inject constructor() {
         val dateRegex = Regex("\\b\\d{1,2}[-/]\\d{1,2}(?:[-/]\\d{2,4})?\\b|\\b\\d{1,2}[-/][A-Za-z]{3}[-/]\\d{2,4}\\b")
         val dateMatches = dateRegex.findAll(normalizedText).toList()
 
-        if (dateMatches.isEmpty()) return emptyList()
+        if (dateMatches.isEmpty()) {
+            return emptyList()
+        }
 
         for (i in dateMatches.indices) {
             val match = dateMatches[i]
             val startIndex = match.range.first
-            val endIndex = if (i + 1 < dateMatches.size) dateMatches[i + 1].range.first else normalizedText.length
+            val endIndex = if (i + 1 < dateMatches.size) {
+                dateMatches[i + 1].range.first
+            } else {
+                normalizedText.length
+            }
             val chunk = normalizedText.substring(startIndex, endIndex).replace("\n", " ").trim()
 
             val dateStr = match.value
@@ -50,7 +56,7 @@ class StatementParserEngine @Inject constructor() {
 
     private fun parseDateSafely(dateStr: String): Long {
         var formatStr = dateStr
-        val hasYear = Regex("\\d{4}").containsMatchIn(formatStr) || Regex("-\\d{2}$").containsMatchIn(formatStr) || Regex("/\\d{2}$").containsMatchIn(formatStr)
+        val hasYear = formatStr.contains(Regex("\\d{4}")) || formatStr.contains(Regex("-\\d{2}$")) || formatStr.contains(Regex("/\\d{2}$"))
         if (!hasYear) {
             formatStr = "$formatStr/2023"
         }
@@ -84,7 +90,7 @@ class StatementParserEngine @Inject constructor() {
             val implicitMatches = implicitRefPattern.findAll(cleanedChunk).toList()
             for (m in implicitMatches) {
                 val candidate = m.value
-                if (!cleanedChunk.contains(".$candidate") && candidate.length in 10..15) {
+                if (!cleanedChunk.contains(".$candidate") && candidate.length >= 10 && candidate.length <= 15) {
                     referenceNumber = candidate
                     break
                 }
@@ -94,9 +100,11 @@ class StatementParserEngine @Inject constructor() {
         val amountRegex = Regex("\\b\\d{1,3}(?:,\\d{3})*\\.\\d{2}\\b|\\b\\d+\\.\\d{2}\\b")
         val amounts = amountRegex.findAll(cleanedChunk).map { it.value.replace(",", "").toDouble() }.toList()
 
-        if (amounts.isEmpty()) return null
+        if (amounts.isEmpty()) {
+            return null
+        }
 
-        val transactionAmount: Double = if (amounts.size >= 2 && cleanedChunk.contains("CR")) {
+        val transactionAmount: Double = if (amounts.size >= 2 && upper.contains("CR")) {
             amounts[0]
         } else {
             amounts.last()
