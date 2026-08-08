@@ -7,7 +7,8 @@ import java.util.Locale
 import javax.inject.Inject
 
 class IndianBankParser @Inject constructor(
-    private val blockBuilder: TransactionBlockBuilder
+    private val blockBuilder: TransactionBlockBuilder,
+    private val descriptionCleaner: DescriptionCleaner
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
@@ -74,9 +75,7 @@ class IndianBankParser @Inject constructor(
             description = description.replace(amounts[1].value, "")
 
             // Clean spaces
-            description = description
-                .replace(Regex("\\s+"), " ")
-                .trim()
+            description = descriptionCleaner.clean(description)
 
             val upper = description.uppercase()
 
