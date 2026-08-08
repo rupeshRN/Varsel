@@ -141,9 +141,12 @@ class StatementParserEngine @Inject constructor() {
                 } else {
                     if (transactionAmount != null && transactionAmount < 0) TransactionType.EXPENSE else TransactionType.INCOME
                 }
-            } else {
-                descBuilder.append(" ").append(item)
+                
+                // CRITICAL FIX: Skip appending the amount line to the description builder
+                continue
             }
+
+            descBuilder.append(" ").append(item)
         }
 
         val rawDesc = descBuilder.toString().trim().replace(Regex("\\s+"), " ")
