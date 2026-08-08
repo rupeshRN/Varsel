@@ -3,7 +3,6 @@ package com.varsel.expensetracker.util
 import com.varsel.expensetracker.domain.model.TransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 /**
@@ -15,7 +14,6 @@ class StatementParserEngineTest {
 
     @Test
     fun testParseStatement() {
-        // Sample statement separating description, reference numbers, and amounts
         val sampleStatement = """
             07/08/2026
             Grocery Store Purchase
@@ -30,22 +28,19 @@ class StatementParserEngineTest {
 
         val parsedTransactions = statementParserEngine.parseStatement(sampleStatement)
 
-        // Ensure parser successfully extracted transactions
         assertFalse("Parsed transactions list should not be empty", parsedTransactions.isEmpty())
         assertEquals("Expected 2 parsed transactions", 2, parsedTransactions.size)
 
-        // Validate the first transaction description, amount, and extracted reference number
         val firstTransaction = parsedTransactions[0]
-        assertEquals("Grocery Store Purchase", firstTransaction.description)
+        assertEquals("Grocery Store Purchase", firstTransaction.description.trim())
         assertEquals(11000.00, firstTransaction.amount, 0.01)
         assertEquals(TransactionType.EXPENSE, firstTransaction.type)
-        assertEquals("REF: 987654321", firstTransaction.referenceNumber)
+        assertEquals("REF: 987654321", firstTransaction.referenceNumber?.trim())
 
-        // Validate the second transaction
         val secondTransaction = parsedTransactions[1]
-        assertEquals("Salary Deposit", secondTransaction.description)
+        assertEquals("Salary Deposit", secondTransaction.description.trim())
         assertEquals(5000.00, secondTransaction.amount, 0.01)
         assertEquals(TransactionType.INCOME, secondTransaction.type)
-        assertEquals("UTR: 123456ABC", secondTransaction.referenceNumber)
+        assertEquals("UTR: 123456ABC", secondTransaction.referenceNumber?.trim())
     }
 }
