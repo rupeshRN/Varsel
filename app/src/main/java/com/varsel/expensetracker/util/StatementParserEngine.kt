@@ -26,7 +26,6 @@ class StatementParserEngine @Inject constructor() {
         val transactions = mutableListOf<Transaction>()
         val lines = rawText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
 
-        // Regex supporting potential internal whitespace artifacts from PDF/OCR extraction
         val dateRegex = Regex("\\b\\d{1,2}[-/][A-Za-z]{3}[-/]\\d{2,4}\\b|\\b\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4}\\b")
         val amountRegex = Regex("[-+]?\\d{1,3}(?:[\\s,]*\\d{3})*(?:\\.\\d{2})?|[-+]?\\d+(?:\\.\\d{2})?")
 
@@ -45,7 +44,6 @@ class StatementParserEngine @Inject constructor() {
                 val timestamp = parseDateSafely(dateStr)
 
                 val blockLines = mutableListOf<String>()
-                // Keep the remainder of the current line after the date as part of the block
                 val remainder = line.substring(dateMatch.range.last + 1).trim()
                 if (remainder.isNotEmpty()) {
                     blockLines.add(remainder)
@@ -88,7 +86,6 @@ class StatementParserEngine @Inject constructor() {
         for (formatter in dateFormats) {
             try {
                 var normalizedDateStr = dateStr
-                // Expand 2-digit year to 4-digit if necessary (assuming 20xx for current decade)
                 if (dateStr.matches(Regex(".*-\\d{2}$")) || dateStr.matches(Regex(".*/\\d{2}$"))) {
                     val parts = dateStr.split(Regex("[-/]"))
                     if (parts.size == 3 && parts[2].length == 2) {
@@ -115,13 +112,27 @@ class StatementParserEngine @Inject constructor() {
         var description = "Transaction"
         var transactionAmount: Double? = null
         var transactionType = TransactionType.EXPENSE
+        var referenceNumber: String? = null
+
+        // Regex to detect reference numbers or UTR codes (e.g., REF: 12345, UTRN987654)
+        val refPattern = Regex("(?i)\\b(REF|UTR|TXN|ID)[:\\s]*([A-Za-z0-9]{6,})\\b")
 
         val descBuilder = StringBuilder()
 
         for (item in cleanedBlock) {
+            // Check if line contains a reference number
+            val refMatch = refPattern.find(item)
+            if (refMatch != null && referenceNumber == null) {
+                referenceNumber = refMatch.value
+                val textWithoutRef = item.replace(refMatch.value, "").trim()
+                if (textWithoutRef.isNotEmpty()) {
+                    descBuilder.append(" ").append(textWithoutRef)
+                }
+                continue
+            }
+
             val amountMatch = amountRegex.find(item)
             if (amountMatch != null && transactionAmount == null) {
-                // Clean up whitespace and commas within the matched amount string
                 val rawAmountStr = amountMatch.value.replace(" ", "").replace(",", "")
                 transactionAmount = rawAmountStr.toDoubleOrNull()
                 
@@ -152,7 +163,7 @@ class StatementParserEngine @Inject constructor() {
             description = description,
             category = "Uncategorized",
             dateTimestamp = timestamp,
-            referenceNumber = null
+            referenceNumber = referenceNumber
         )
     }
 }
