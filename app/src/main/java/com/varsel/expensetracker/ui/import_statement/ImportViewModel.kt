@@ -105,7 +105,6 @@ class ImportViewModel @Inject constructor(
 
                 _uiState.value = ImportUiState.Error(
     e.message ?: e.stackTraceToString())
-                )
             }
         }
     }
