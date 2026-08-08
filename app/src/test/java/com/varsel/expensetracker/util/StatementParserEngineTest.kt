@@ -29,12 +29,18 @@ class StatementParserEngineTest {
 
         // Ensure the parser successfully extracted transactions
         assertFalse("Parsed transactions list should not be empty", parsedTransactions.isEmpty())
+        assertEquals("Expected 2 parsed transactions", 2, parsedTransactions.size)
 
         // Validate the parsed values for the first transaction
         val firstTransaction = parsedTransactions[0]
-        
-        assertEquals("Grocery Store Purchase", firstTransaction.description)
+        assertEquals("Grocery Store Purchase", firstTransaction.description.trim())
         assertEquals(11000.00, firstTransaction.amount, 0.01)
         assertEquals(TransactionType.EXPENSE, firstTransaction.type)
+
+        // Validate the parsed values for the second transaction
+        val secondTransaction = parsedTransactions[1]
+        assertEquals("Salary Deposit", secondTransaction.description.trim())
+        assertEquals(5000.00, secondTransaction.amount, 0.01)
+        assertEquals(TransactionType.INCOME, secondTransaction.type)
     }
 }
