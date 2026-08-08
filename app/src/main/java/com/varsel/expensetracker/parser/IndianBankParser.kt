@@ -16,11 +16,6 @@ class IndianBankParser @Inject constructor() : StatementParser {
     }
 
     override fun parse(rawText: String): List<Transaction> {
-
-        // TEMPORARY DEBUG
-        // Display the normalized text received by the parser.
-
-        throw IllegalArgumentException(rawText)
-
+        return emptyList()
     }
 }
