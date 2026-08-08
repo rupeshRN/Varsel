@@ -19,6 +19,7 @@ import javax.inject.Inject
 
 sealed interface ImportUiState {
     object Idle : ImportUiState
+    object Loading : ImportUiState
     object Processing : ImportUiState
     data class ParsedTransactions(
         val parsedTransactions: List<Transaction>
@@ -46,7 +47,7 @@ class ImportViewModel @Inject constructor(
 
     fun processSelectedFile(uri: Uri, mimeType: String?) {
         viewModelScope.launch {
-            _uiState.value = ImportUiState.Processing
+            _uiState.value = ImportUiState.Loading
             try {
                 val rawText = if (mimeType == "application/pdf" || uri.toString().endsWith(".pdf", ignoreCase = true)) {
                     pdfTextExtractor.extractTextFromPdf(context, uri)
