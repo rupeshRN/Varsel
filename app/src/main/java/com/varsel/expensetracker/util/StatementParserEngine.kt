@@ -11,13 +11,11 @@ import kotlin.math.abs
 class StatementParserEngine {
 
     fun parseStatement(rawText: String): List<Transaction> {
-        // Try primary tabular parser first
         val tabularTransactions = parseTabularFormat(rawText)
         if (tabularTransactions.isNotEmpty()) {
             return tabularTransactions
         }
 
-        // Fallback to robust heuristic OCR / block parser
         val fallbackTransactions = parseFallbackFormat(rawText)
         if (fallbackTransactions.isNotEmpty()) {
             return fallbackTransactions
