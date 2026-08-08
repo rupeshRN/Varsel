@@ -2,12 +2,12 @@ package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.domain.model.TransactionType
 import kotlinx.coroutines.runBlocking
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 /**
  * Unit test class for validating the smart categorization logic in [SmartCategorizerEngine].
- * Uses runBlocking to safely execute suspend functions within standard JUnit tests.
+ * Uses runBlocking to safely execute suspend functions within standard JUnit 4 tests.
  */
 class SmartCategorizerEngineTest {
 
