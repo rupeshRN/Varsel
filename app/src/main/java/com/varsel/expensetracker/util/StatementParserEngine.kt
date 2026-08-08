@@ -12,13 +12,23 @@ class StatementParserEngine @Inject constructor(
 
     fun parseStatement(rawText: String): List<Transaction> {
 
-        // Normalize extracted PDF text
         val normalizedText = textNormalizer.normalize(rawText)
 
-        // Detect the appropriate parser
-        val parser = bankDetector.detect(normalizedText)
+        throw IllegalArgumentException(
+            buildString {
 
-        // Parse transactions
-        return parser.parse(normalizedText)
+                appendLine("========== RAW TEXT ==========")
+                appendLine(rawText)
+
+                appendLine()
+                appendLine("========== NORMALIZED ==========")
+                appendLine(normalizedText)
+
+                appendLine()
+                appendLine("========== END ==========")
+
+            }
+        )
+
     }
 }
