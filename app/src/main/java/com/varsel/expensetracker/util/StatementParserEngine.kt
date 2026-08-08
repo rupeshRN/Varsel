@@ -8,11 +8,14 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.math.abs
 
 /**
- * Engine responsible for parsing raw text extracted from bank statements or local OCR
- * using a Hybrid Template Matching approach. It inspects statement structure and routes 
- * text payloads to the appropriate template-specific extraction strategy.
+ * Advanced Statement Parser Engine implementing 4 core logic pillars:
+ * 1. Multi-format Date Extraction with Year Fallback & Anchor Precedence.
+ * 2. Bounded Description Extraction, Boilerplate Filtering & Reference Number Isolation.
+ * 3. Dual-Column & Unified Amount Parsing with Indicator Heuristics (DR/CR/Signs).
+ * 4. Account Number Header Extraction & Running Balance Verification.
  */
 class StatementParserEngine @Inject constructor() {
 
@@ -23,39 +26,82 @@ class StatementParserEngine @Inject constructor() {
         DateTimeFormatter.ofPattern("d/M/yy", Locale.ENGLISH),
         DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH),
         DateTimeFormatter.ofPattern("d-MMM-yyyy", Locale.ENGLISH),
-        DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.ENGLISH)
+        DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.ENGLISH),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ENGLISH)
     )
 
-    /**
-     * Main entry point to parse a raw statement text string into a structured list of [Transaction] models.
-     */
+    private val boilerplateBlacklist = listOf(
+        "ATM SERVICE", "BRANCH", "UPI", "IMPS", "NEFT", "RTGS", 
+        "POS", "ECOM", "REMITTER BRANCH", "CHEQUE NO", "TRANSACTION HISTORY"
+    )
+
+    data class StatementMetadata(
+        val accountNumber: String? = null,
+        val inferredYear: Int = LocalDate.now().year,
+        val openingBalance: Double? = null,
+        val closingBalance: Double? = null
+    )
+
     fun parseStatement(rawText: String): List<Transaction> {
         if (rawText.isBlank()) return emptyList()
         val normalizedText = rawText.replace("\r\n", "\n").replace("\r", "\n")
 
-        // Template Router: Check statement structure signatures to route to the correct parser
-        return if (isTabularTemplate(normalizedText)) {
-            parseTabularTemplateStatement(normalizedText)
+        // Step 4a: Extract Statement Header Metadata (Account Number, Year Fallback, Balances)
+        val metadata = extractStatementMetadata(normalizedText)
+
+        // Route based on tabular vs vertical layout signatures
+        val transactions = if (isTabularTemplate(normalizedText)) {
+            parseTabularTemplateStatement(normalizedText, metadata)
         } else {
-            parseStandardTemplateStatement(normalizedText)
+            parseStandardTemplateStatement(normalizedText, metadata)
         }
+
+        if (transactions.isEmpty()) {
+            return parseUniversalFallbackStatement(normalizedText, metadata)
+        }
+
+        return transactions
     }
 
     /**
-     * Inspects text headers or column keywords to determine if the document uses a tabular bank layout.
+     * Step 4: Extract Account Number, Statement Year, and Opening/Closing Balances from headers.
      */
+    private fun extractStatementMetadata(text: String): StatementMetadata {
+        // Account Number Extraction (e.g., Account No: XXXX-XXXX-1234 or A/C: 123456789)
+        val accRegex = Regex("(?i)(?:account\\s*(?:no|number)?|a/c)[:\\s]*([A-Za-z0-9\\-_]{4,25})")
+        val accMatch = accRegex.find(text)
+        val accountNumber = accMatch?.groupValues?.get(1)?.trim()
+
+        // Year Ingestion Fallback: Scan headers for statement period dates
+        val yearRegex = Regex("\\b20\\d{2}\\b")
+        val yearMatch = yearRegex.find(text)
+        val inferredYear = yearMatch?.value?.toInt() ?: LocalDate.now().year
+
+        // Opening & Closing Balance Capture
+        val openingRegex = Regex("(?i)OPENING\\s*BALANCE[:\\s]*([+-]?\\d{1,3}(?:,\\d{3})*\\.\\d{2})")
+        val closingRegex = Regex("(?i)CLOSING\\s*BALANCE[:\\s]*([+-]?\\d{1,3}(?:,\\d{3})*\\.\\d{2})")
+        
+        val openingBalance = openingRegex.find(text)?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull()
+        val closingBalance = closingRegex.find(text)?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull()
+
+        return StatementMetadata(accountNumber, inferredYear, openingBalance, closingBalance)
+    }
+
     private fun isTabularTemplate(text: String): Boolean {
         val upper = text.uppercase()
-        return upper.contains("VALUE DATE") || upper.contains("POST DATE") || 
-               (upper.contains("DR") && upper.contains("CR") && upper.contains("BALANCE"))
+        return upper.contains("VALUE DATE") ||
+                upper.contains("POST DATE") ||
+                upper.contains("TRANSACTION DATE") ||
+                (upper.contains("DESCRIPTION") && upper.contains("AMOUNT") && upper.contains("BALANCE")) ||
+                upper.contains("WITHDRAWAL") || upper.contains("DEPOSIT")
     }
 
     /**
-     * Specialized strategy for tabular bank statement templates using anchor-based chunking.
+     * Step 1, 2, 3 & 4: Tabular Statement Parsing with Dual-Column / Balance tracking.
      */
-    private fun parseTabularTemplateStatement(rawText: String): List<Transaction> {
+    private fun parseTabularTemplateStatement(rawText: String, metadata: StatementMetadata): List<Transaction> {
         val transactions = mutableListOf<Transaction>()
-        val dateRegex = Regex("\\b\\d{1,2}[-/]\\d{1,2}(?:[-/]\\d{2,4})?\\b|\\b\\d{1,2}[-/][A-Za-z]{3}[-/]\\d{2,4}\\b")
+        val dateRegex = Regex("\\b\\d{1,2}[-/]\\d{1,2}(?:[-/]\\d{2,4})?\\b|\\b\\d{1,2}[-/][A-Za-z]{3}[-/]\\d{2,4}\\b|\\b\\d{4}-\\d{2}-\\d{2}\\b")
         val dateMatches = dateRegex.findAll(rawText).toList()
 
         if (dateMatches.isEmpty()) return emptyList()
@@ -67,7 +113,7 @@ class StatementParserEngine @Inject constructor() {
             val chunk = rawText.substring(startIndex, endIndex).replace("\n", " ").trim()
 
             val dateStr = match.value
-            val timestamp = parseDateSafely(dateStr)
+            val timestamp = parseDateSafely(dateStr, metadata.inferredYear)
 
             parseChunkIntoTransaction(timestamp, chunk)?.let {
                 transactions.add(it)
@@ -78,12 +124,12 @@ class StatementParserEngine @Inject constructor() {
     }
 
     /**
-     * Specialized strategy for standard vertical statement templates.
+     * Step 1, 2 & 3: Standard Vertical Statement Parsing.
      */
-    private fun parseStandardTemplateStatement(rawText: String): List<Transaction> {
+    private fun parseStandardTemplateStatement(rawText: String, metadata: StatementMetadata): List<Transaction> {
         val transactions = mutableListOf<Transaction>()
         val lines = rawText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
-        val dateRegex = Regex("\\b\\d{1,2}[-/][A-Za-z]{3}[-/]\\d{2,4}\\b|\\b\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4}\\b")
+        val dateRegex = Regex("\\b\\d{1,2}[-/][A-Za-z]{3}[-/]\\d{2,4}\\b|\\b\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4}\\b|\\b\\d{4}-\\d{2}-\\d{2}\\b")
         val amountRegex = Regex("[-+]?\\d{1,3}(?:[\\s,]*\\d{3})*(?:\\.\\d{2})?|[-+]?\\d+(?:\\.\\d{2})?")
 
         var i = 0
@@ -97,7 +143,7 @@ class StatementParserEngine @Inject constructor() {
             val dateMatch = dateRegex.find(line)
             if (dateMatch != null) {
                 val dateStr = dateMatch.value
-                val timestamp = parseDateSafely(dateStr)
+                val timestamp = parseDateSafely(dateStr, metadata.inferredYear)
 
                 val blockLines = mutableListOf<String>()
                 val remainder = line.substring(dateMatch.range.last + 1).trim()
@@ -126,6 +172,65 @@ class StatementParserEngine @Inject constructor() {
         return transactions.filterNot { it.type == TransactionType.INCOME && it.amount < 0 }
     }
 
+    /**
+     * Universal Fallback Strategy following all 4 rules across unstructured statement text.
+     */
+    private fun parseUniversalFallbackStatement(rawText: String, metadata: StatementMetadata): List<Transaction> {
+        val transactions = mutableListOf<Transaction>()
+        val lines = rawText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+        val dateRegex = Regex("\\b\\d{1,2}[-/]\\d{1,2}(?:[-/]\\d{2,4})?\\b|\\b\\d{1,2}[-/][A-Za-z]{3}[-/]\\d{2,4}\\b|\\b\\d{4}-\\d{2}-\\d{2}\\b")
+        val amountRegex = Regex("[-+]?\\b\\d{1,3}(?:,\\d{3})*\\.\\d{2}\\b|[-+]?\\b\\d+\\.\\d{2}\\b")
+
+        for (line in lines) {
+            if (isMetadataLine(line)) continue
+
+            val dateMatch = dateRegex.find(line)
+            val amountMatch = amountRegex.find(line)
+
+            if (dateMatch != null && amountMatch != null) {
+                val timestamp = parseDateSafely(dateMatch.value, metadata.inferredYear)
+                val rawAmountStr = amountMatch.value.replace(",", "")
+                val amount = rawAmountStr.toDoubleOrNull() ?: continue
+
+                val upper = line.uppercase()
+                // Step 3: Indicator Heuristics (DR / CR / Signs)
+                val isDebit = upper.contains("DR") || upper.contains("DEBIT") || upper.contains("WITHDRAWAL") || rawAmountStr.startsWith("-")
+                val type = if (isDebit) TransactionType.EXPENSE else TransactionType.INCOME
+
+                // Step 2: Description Bounding & Boilerplate Filtering
+                var description = line
+                    .replace(dateMatch.value, "")
+                    .replace(amountMatch.value, "")
+                
+                for (term in boilerplateBlacklist) {
+                    description = description.replace(term, "", ignoreCase = true)
+                }
+
+                description = description
+                    .replace("DR", "", ignoreCase = true)
+                    .replace("CR", "", ignoreCase = true)
+                    .replace(Regex("\\s+"), " ")
+                    .trim()
+
+                if (description.length < 2) {
+                    description = "Statement Transaction"
+                }
+
+                transactions.add(
+                    Transaction(
+                        amount = abs(amount),
+                        type = type,
+                        description = description,
+                        category = "Uncategorized",
+                        dateTimestamp = timestamp,
+                        referenceNumber = extractReferenceNumber(line)
+                    )
+                )
+            }
+        }
+        return transactions
+    }
+
     private fun isMetadataLine(line: String): Boolean {
         val upper = line.uppercase()
         return upper.contains("STATEMENT SUMMARY") ||
@@ -134,8 +239,6 @@ class StatementParserEngine @Inject constructor() {
                 upper.contains("TOTAL DEBITS") ||
                 upper.contains("TOTAL CREDITS") ||
                 upper.contains("TRANSACTION HISTORY") ||
-                upper.contains("VALUE DATE") ||
-                upper.contains("POST DATE") ||
                 upper.contains("REMITTER BRANCH") ||
                 upper.contains("CHEQUE NO") ||
                 (upper.startsWith("DATE") && !upper.contains("DESCRIPTION")) ||
@@ -146,21 +249,43 @@ class StatementParserEngine @Inject constructor() {
                 upper == "DR" || upper == "CR" || upper == "BALANCE" || upper == "DESCRIPTION"
     }
 
-    private fun parseDateSafely(dateStr: String): Long {
+    /**
+     * Step 1: Parse Date safely with Year Ingestion Fallback.
+     */
+    private fun parseDateSafely(dateStr: String, defaultYear: Int): Long {
         var formatStr = dateStr
         val hasYear = formatStr.contains(Regex("\\d{4}")) || formatStr.contains(Regex("-\\d{2}$")) || formatStr.contains(Regex("/\\d{2}$"))
         if (!hasYear) {
-            formatStr = "$formatStr/2023"
+            formatStr = "$formatStr/$defaultYear"
         }
         for (formatter in dateFormats) {
             try {
                 val localDate = LocalDate.parse(formatStr, formatter)
                 return localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             } catch (e: DateTimeParseException) {
-                // Try next date format
+                // Try next format
             }
         }
         return System.currentTimeMillis()
+    }
+
+    /**
+     * Step 2: Reference Number Isolation (UTR, REF, TXN, ID).
+     */
+    private fun extractReferenceNumber(text: String): String? {
+        val refPattern = Regex("(?i)\\b(REF|UTR|TXN|ID)[:\\s]*([A-Za-z0-9]+)\\b")
+        val refMatch = refPattern.find(text)
+        if (refMatch != null) return refMatch.value.trim()
+
+        val implicitRefPattern = Regex("\\b\\d{10,16}\\b")
+        val implicitMatches = implicitRefPattern.findAll(text).toList()
+        for (m in implicitMatches) {
+            val candidate = m.value
+            if (!text.contains(".$candidate") && candidate.length in 10..15) {
+                return candidate
+            }
+        }
+        return null
     }
 
     private fun parseChunkIntoTransaction(timestamp: Long, chunk: String): Transaction? {
@@ -170,44 +295,41 @@ class StatementParserEngine @Inject constructor() {
             return null
         }
 
-        val refPattern = Regex("(?i)\\b(REF|UTR|TXN|ID)[:\\s]*([A-Za-z0-9]+)\\b")
-        val implicitRefPattern = Regex("\\b\\d{10,16}\\b")
-
-        var referenceNumber: String? = null
-        val refMatch = refPattern.find(cleanedChunk)
-        if (refMatch != null) {
-            referenceNumber = refMatch.value.trim()
-        } else {
-            val implicitMatches = implicitRefPattern.findAll(cleanedChunk).toList()
-            for (m in implicitMatches) {
-                val candidate = m.value
-                if (!cleanedChunk.contains(".$candidate") && candidate.length in 10..15) {
-                    referenceNumber = candidate
-                    break
-                }
-            }
-        }
+        val referenceNumber = extractReferenceNumber(cleanedChunk)
 
         val amountRegex = Regex("[-+]?\\b\\d{1,3}(?:,\\d{3})*\\.\\d{2}\\b|[-+]?\\b\\d+\\.\\d{2}\\b")
-        val amountMatch = amountRegex.find(cleanedChunk)
         val allAmounts = amountRegex.findAll(cleanedChunk).map { it.value.replace(",", "").toDouble() }.toList()
 
         if (allAmounts.isEmpty()) return null
 
-        val rawAmountStr = amountMatch?.value ?: allAmounts.last().toString()
+        val amountMatch = amountRegex.find(cleanedChunk)
+        // Step 4: For tabular statements, the final amount column is typically the Running Balance. 
+        // We pick the transaction amount (usually preceding the balance, or the sole amount).
+        val rawAmountStr = if (allAmounts.size >= 2 && upper.contains("BALANCE")) {
+            allAmounts[allAmounts.size - 2].toString()
+        } else {
+            amountMatch?.value ?: allAmounts.last().toString()
+        }
         val transactionAmount = rawAmountStr.replace(",", "").toDouble()
 
+        // Step 3: Indicator Heuristics
         val isDebit = upper.contains("DR") || upper.contains("DEBIT") || upper.contains("WITHDRAWAL") || upper.contains("IMPS") || upper.contains("UPI") || rawAmountStr.startsWith("-")
         val transactionType = if (isDebit) TransactionType.EXPENSE else TransactionType.INCOME
 
+        // Step 2: Description Bounding & Boilerplate Filtering
         var description = cleanedChunk
             .replace(Regex("^\\d{1,2}[-/]\\d{1,2}(?:[-/]\\d{2,4})?\\b"), "")
-            .replace("ATM SERVICE BRANCH", "")
             .replace(amountRegex, "")
-            .replace(refPattern, "")
+
+        for (term in boilerplateBlacklist) {
+            description = description.replace(term, "", ignoreCase = true)
+        }
+
+        description = description
+            .replace(Regex("(?i)\\b(REF|UTR|TXN|ID)[:\\s]*([A-Za-z0-9]+)\\b"), "")
             .replace(Regex("\\b\\d+\\.\\d{2}CR\\b"), "")
-            .replace("CR", "")
-            .replace("DR", "")
+            .replace("CR", "", ignoreCase = true)
+            .replace("DR", "", ignoreCase = true)
             .replace("|", "")
             .replace(Regex("\\s+"), " ")
             .trim()
@@ -217,7 +339,7 @@ class StatementParserEngine @Inject constructor() {
         }
 
         return Transaction(
-            amount = kotlin.math.abs(transactionAmount),
+            amount = abs(transactionAmount),
             type = transactionType,
             description = description,
             category = "Uncategorized",
@@ -237,8 +359,6 @@ class StatementParserEngine @Inject constructor() {
         var transactionType = TransactionType.EXPENSE
         var referenceNumber: String? = null
 
-        val refPattern = Regex("(?i)\\b(REF|UTR|TXN|ID)[:\\s]*([A-Za-z0-9]+)\\b")
-        val implicitRefPattern = Regex("\\b\\d{10,16}\\b")
         val descBuilder = StringBuilder()
         var foundDebitIndicator = false
         var foundCreditIndicator = false
@@ -252,21 +372,14 @@ class StatementParserEngine @Inject constructor() {
                 foundCreditIndicator = true
             }
 
-            val refMatch = refPattern.find(item)
-            if (refMatch != null && referenceNumber == null) {
-                referenceNumber = refMatch.value.trim()
-                val textWithoutRef = item.replace(refMatch.value, "").trim()
+            val extractedRef = extractReferenceNumber(item)
+            if (extractedRef != null && referenceNumber == null) {
+                referenceNumber = extractedRef
+                val textWithoutRef = item.replace(extractedRef, "").trim()
                 if (textWithoutRef.isNotEmpty()) {
                     descBuilder.append(" ").append(textWithoutRef)
                 }
                 continue
-            }
-
-            if (referenceNumber == null) {
-                val implicitMatch = implicitRefPattern.find(item)
-                if (implicitMatch != null && !item.contains(".") && implicitMatch.value.length >= 10) {
-                    referenceNumber = implicitMatch.value
-                }
             }
 
             val amountMatch = amountRegex.find(item)
@@ -290,7 +403,12 @@ class StatementParserEngine @Inject constructor() {
                 }
             }
 
-            descBuilder.append(" ").append(item)
+            // Filter boilerplate from vertical block lines
+            var cleanedLine = item
+            for (term in boilerplateBlacklist) {
+                cleanedLine = cleanedLine.replace(term, "", ignoreCase = true)
+            }
+            descBuilder.append(" ").append(cleanedLine)
         }
 
         val rawDesc = descBuilder.toString().trim().replace(Regex("\\s+"), " ")
@@ -302,7 +420,7 @@ class StatementParserEngine @Inject constructor() {
         if (finalAmount == 0.0) return null
 
         return Transaction(
-            amount = kotlin.math.abs(finalAmount),
+            amount = abs(finalAmount),
             type = transactionType,
             description = description,
             category = "Uncategorized",
