@@ -95,7 +95,4 @@ dependencies {
 
     // Compose Material Icons Extended
     implementation("androidx.compose.material:material-icons-extended")
-
-// add pdfbox
-implementation(libs.pdfbox.android)
 }
