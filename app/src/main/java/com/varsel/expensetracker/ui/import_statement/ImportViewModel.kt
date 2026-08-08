@@ -21,15 +21,19 @@ sealed interface ImportUiState {
     object Idle : ImportUiState
     object Loading : ImportUiState
     object Processing : ImportUiState
+
     data class ParsedTransactions(
         val parsedTransactions: List<Transaction>
     ) : ImportUiState
+
     data class PasswordRequired(
         val isInvalidPasswordError: Boolean = false,
         val pendingUri: Uri? = null,
         val pendingMimeType: String? = null
     ) : ImportUiState
+
     data class Saved(val count: Int) : ImportUiState
+
     data class Error(val message: String) : ImportUiState
 }
 
@@ -45,47 +49,90 @@ class ImportViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
 
-    fun processSelectedFile(uri: Uri, mimeType: String? = null) {
+    fun processSelectedFile(
+        uri: Uri,
+        mimeType: String? = null
+    ) {
         viewModelScope.launch {
-            _uiState.value = ImportUiState.Loading
-            try {
-                val defaultPdfMime = "application/pdf"
-                val resolvedMimeType = mimeType ?: context.contentResolver.getType(uri)
 
-                val rawText = if (resolvedMimeType == defaultPdfMime || uri.toString().endsWith(".pdf", ignoreCase = true)) {
-                    pdfTextExtractor.extractTextFromPdf(context, uri)
-                } else {
-                    ocrManager.extractTextFromImage(context, uri)
-                }
+            _uiState.value = ImportUiState.Loading
+
+            try {
+
+                val resolvedMimeType =
+                    mimeType ?: context.contentResolver.getType(uri)
+
+                val rawText =
+                    if (resolvedMimeType == "application/pdf" ||
+                        uri.toString().endsWith(".pdf", true)
+                    ) {
+                        pdfTextExtractor.extractTextFromPdf(context, uri)
+                    } else {
+                        ocrManager.extractTextFromImage(context, uri)
+                    }
 
                 if (rawText.isNullOrBlank()) {
-                    _uiState.value = ImportUiState.Error("Could not extract text from the selected document.")
+                    _uiState.value = ImportUiState.Error(
+                        "Could not extract any text from the selected document."
+                    )
                     return@launch
                 }
 
-                val transactions = statementParserEngine.parseStatement(rawText)
+                // ======================================================
+                // TEMPORARY DEBUG MODE
+                // ======================================================
+                // Instead of parsing, display the extracted text.
+                // This helps us understand how PDFBox is reading
+                // the Indian Bank statement.
+                // ======================================================
+
+                _uiState.value = ImportUiState.Error(rawText)
+                return@launch
+
+                /*
+                Keep this code for later.
+
+                val transactions =
+                    statementParserEngine.parseStatement(rawText)
 
                 if (transactions.isEmpty()) {
-                    _uiState.value = ImportUiState.Error("No valid transactions found using template parser.")
+                    _uiState.value =
+                        ImportUiState.Error("No transactions found.")
                     return@launch
                 }
 
-                _uiState.value = ImportUiState.ParsedTransactions(parsedTransactions = transactions)
+                _uiState.value =
+                    ImportUiState.ParsedTransactions(transactions)
+                */
+
             } catch (e: Exception) {
-                _uiState.value = ImportUiState.Error(e.localizedMessage ?: "An unexpected error occurred during processing.")
+
+                _uiState.value = ImportUiState.Error(
+                    e.stackTraceToString()
+                )
             }
         }
     }
 
-    fun confirmAndSaveTransactions(transactions: List<Transaction>) {
+    fun confirmAndSaveTransactions(
+        transactions: List<Transaction>
+    ) {
         viewModelScope.launch {
+
             try {
-                for (transaction in transactions) {
-                    transactionRepository.insertTransaction(transaction)
+
+                transactions.forEach {
+                    transactionRepository.insertTransaction(it)
                 }
-                _uiState.value = ImportUiState.Saved(count = transactions.size)
+
+                _uiState.value =
+                    ImportUiState.Saved(transactions.size)
+
             } catch (e: Exception) {
-                _uiState.value = ImportUiState.Error(e.localizedMessage ?: "Failed to save transactions.")
+
+                _uiState.value = ImportUiState.Error(
+                    e.localizedMessage ?: "Failed to save transactions."
+                )
             }
         }
     }
