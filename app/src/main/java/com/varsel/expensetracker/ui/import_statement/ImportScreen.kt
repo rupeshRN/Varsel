@@ -23,7 +23,6 @@ fun ImportScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Document picker launcher supporting both PDFs and images
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -150,5 +149,6 @@ fun ImportScreen(
                 }
             }
         }
-   }
+  
+    }
 }
