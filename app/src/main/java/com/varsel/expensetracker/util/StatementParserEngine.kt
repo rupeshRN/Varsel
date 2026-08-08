@@ -114,16 +114,13 @@ class StatementParserEngine @Inject constructor() {
         var transactionType = TransactionType.EXPENSE
         var referenceNumber: String? = null
 
-        // Regex to detect reference numbers or UTR codes (e.g., REF: 12345, UTRN987654)
-        val refPattern = Regex("(?i)\\b(REF|UTR|TXN|ID)[:\\s]*([A-Za-z0-9]{6,})\\b")
-
+        val refPattern = Regex("(?i)\\b(REF|UTR|TXN|ID)[:\\s]*([A-Za-z0-9]+)\\b")
         val descBuilder = StringBuilder()
 
         for (item in cleanedBlock) {
-            // Check if line contains a reference number
             val refMatch = refPattern.find(item)
             if (refMatch != null && referenceNumber == null) {
-                referenceNumber = refMatch.value
+                referenceNumber = refMatch.value.trim()
                 val textWithoutRef = item.replace(refMatch.value, "").trim()
                 if (textWithoutRef.isNotEmpty()) {
                     descBuilder.append(" ").append(textWithoutRef)
