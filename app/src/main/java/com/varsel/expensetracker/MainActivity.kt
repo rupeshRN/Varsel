@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.varsel.expensetracker.ui.navigation.NavGraph
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.navigation.compose.rememberNavController
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -23,7 +24,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    NavGraph()
+                    val navController = rememberNavController()
+NavGraph(navController = navController)
                 }
             }
         }
