@@ -6,9 +6,10 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.regex.Pattern
+import javax.inject.Inject
 import kotlin.math.abs
 
-class StatementParserEngine {
+class StatementParserEngine @Inject constructor() {
 
     fun parseStatement(rawText: String): List<Transaction> {
         val tabularTransactions = parseTabularFormat(rawText)
