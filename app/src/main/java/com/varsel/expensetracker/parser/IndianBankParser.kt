@@ -75,7 +75,8 @@ class IndianBankParser @Inject constructor(
 
             // Clean spaces
             description = description
-                .replace(Regex("\\s+"), " ")
+                .replace("-", "")
+                .replace(Regex("\\s+"), "")
                 .trim()
 
             val upper = description.uppercase()
