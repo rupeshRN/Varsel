@@ -86,11 +86,8 @@ class ImportViewModel @Inject constructor(
                 // the Indian Bank statement.
                 // ======================================================
 
-                _uiState.value = ImportUiState.Error(rawText)
-                return@launch
-
-                /*
-                Keep this code for later.
+               // _uiState.value = ImportUiState.Error(rawText)
+                // return@launch
 
                 val transactions =
                     statementParserEngine.parseStatement(rawText)
