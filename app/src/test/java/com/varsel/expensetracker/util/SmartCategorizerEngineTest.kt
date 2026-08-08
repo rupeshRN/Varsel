@@ -1,63 +1,61 @@
 package com.varsel.expensetracker.util
 
-import com.varsel.expensetracker.data.local.entity.CategoryEntity
-import com.varsel.expensetracker.data.local.entity.CustomRuleEntity
+import com.varsel.expensetracker.domain.model.TransactionType
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Before
 import org.junit.Test
 
 class SmartCategorizerEngineTest {
 
-    private lateinit var categorizerEngine: SmartCategorizerEngine
+    private val smartCategorizerEngine = SmartCategorizerEngine(customRuleDao = null)
 
-    @Before
-    fun setUp() {
-        categorizerEngine = SmartCategorizerEngine()
+    @Test
+    fun testGetSmartDetails_foodDelivery() = runTest {
+        val result = smartCategorizerEngine.getSmartDetails(
+            description = "Zomato Order #1234",
+            type = TransactionType.EXPENSE
+        )
+        assertEquals("Food Delivery", result.displayName)
+        assertEquals("Food & Drink", result.category)
     }
 
     @Test
-    fun categorizeTransaction_matchesExactCustomRulePattern() {
-        val customRules = listOf(
-            CustomRuleEntity(pattern = "STARBUCKS", categoryName = "Coffee & Snacks"),
-            CustomRuleEntity(pattern = "UBER", categoryName = "Transportation")
+    fun testGetSmartDetails_salary() = runTest {
+        val result = smartCategorizerEngine.getSmartDetails(
+            description = "Monthly Salary Credit",
+            type = TransactionType.INCOME
         )
-
-        val category = categorizerEngine.categorizeTransaction(
-            rawDescription = "POS STARBUCKS COFFEE #1204",
-            categories = emptyList(),
-            customRules = customRules,
-            historicalTransactions = emptyList()
-        )
-
-        assertEquals("Coffee & Snacks", category)
+        assertEquals("Salary", result.displayName)
+        assertEquals("Income", result.category)
     }
 
     @Test
-    fun categorizeTransaction_fallbackKeywordMatch_returnsDefaultCategory() {
-        val categories = listOf(
-            CategoryEntity(name = "Food & Dining", colorHex = "#FF5722", iconName = "ic_food")
+    fun testGetSmartDetails_subscription() = runTest {
+        val result = smartCategorizerEngine.getSmartDetails(
+            description = "Netflix Monthly Subscription",
+            type = TransactionType.EXPENSE
         )
-
-        val category = categorizerEngine.categorizeTransaction(
-            rawDescription = "SWIGGY FOOD ORDER #99831",
-            categories = categories,
-            customRules = emptyList(),
-            historicalTransactions = emptyList()
-        )
-
-        assertEquals("Food & Dining", category)
+        assertEquals("Subscription", result.displayName)
+        assertEquals("Subscriptions", result.category)
     }
 
     @Test
-    fun categorizeTransaction_unmatchedNarration_returnsNull() {
-        val category = categorizerEngine.categorizeTransaction(
-            rawDescription = "TRANSFER REF 981273912",
-            categories = emptyList(),
-            customRules = emptyList(),
-            historicalTransactions = emptyList()
+    fun testGetSmartDetails_utility() = runTest {
+        val result = smartCategorizerEngine.getSmartDetails(
+            description = "Electricity Bill Payment",
+            type = TransactionType.EXPENSE
         )
+        assertEquals("Utility Bill", result.displayName)
+        assertEquals("Utilities", result.category)
+    }
 
-        assertNull(category)
+    @Test
+    fun testGetSmartDetails_fallback() = runTest {
+        val result = smartCategorizerEngine.getSmartDetails(
+            description = "Random Local Store",
+            type = TransactionType.EXPENSE
+        )
+        assertEquals("Random Local Store", result.displayName)
+        assertEquals("Uncategorized", result.category)
     }
 }
