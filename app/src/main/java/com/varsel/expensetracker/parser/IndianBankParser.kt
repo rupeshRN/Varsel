@@ -1,6 +1,9 @@
 package com.varsel.expensetracker.parser
 
 import com.varsel.expensetracker.domain.model.Transaction
+import com.varsel.expensetracker.domain.model.TransactionType
+import java.text.SimpleDateFormat
+import java.util.Locale
 import javax.inject.Inject
 
 class IndianBankParser @Inject constructor(
@@ -20,25 +23,89 @@ class IndianBankParser @Inject constructor(
 
         val blocks = blockBuilder.build(rawText)
 
-        throw IllegalArgumentException(
+        val transactions = mutableListOf<Transaction>()
 
-            buildString {
+        val dateRegex =
+            Regex("^\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
 
-                appendLine("TOTAL BLOCKS = ${blocks.size}")
-                appendLine()
+        val amountRegex =
+            Regex("INR\\s*([\\d,]+\\.\\d{2})")
 
-                blocks.forEachIndexed { index, block ->
+        val dateFormatter =
+            SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
 
-                    appendLine("========== BLOCK ${index + 1} ==========")
+        for (block in blocks) {
 
-                    block.lines.forEach {
-                        appendLine(it)
-                    }
+            if (block.lines.isEmpty()) continue
 
-                    appendLine()
+            val firstLine = block.lines.first()
+
+            val dateMatch = dateRegex.find(firstLine) ?: continue
+
+            val date = try {
+                dateFormatter.parse(dateMatch.value)
+            } catch (e: Exception) {
+                null
+            } ?: continue
+
+            val allText = block.lines.joinToString(" ")
+
+            val amounts = amountRegex.findAll(allText).toList()
+
+            // We expect:
+            // First amount = Transaction amount
+            // Second amount = Running balance
+            if (amounts.size < 2) continue
+
+            val amount = amounts[0]
+                .groupValues[1]
+                .replace(",", "")
+                .toDoubleOrNull() ?: continue
+
+            var description = allText
+
+            // Remove date
+            description = description.replace(dateMatch.value, "")
+
+            // Remove first INR amount
+            description = description.replace(amounts[0].value, "")
+
+            // Remove balance amount
+            description = description.replace(amounts[1].value, "")
+
+            // Clean spaces
+            description = description
+                .replace(Regex("\\s+"), " ")
+                .trim()
+
+            val upper = description.uppercase()
+
+            val type =
+                if (
+                    upper.contains("ACHCR") ||
+                    upper.contains(" CREDIT") ||
+                    upper.contains("CR ") ||
+                    upper.contains("SALARY") ||
+                    upper.contains("NEFTCR") ||
+                    upper.contains("IMPSCR")
+                ) {
+                    TransactionType.INCOME
+                } else {
+                    TransactionType.EXPENSE
                 }
-            }
 
-        )
+            transactions.add(
+                Transaction(
+                    amount = amount,
+                    type = type,
+                    description = description,
+                    category = "Uncategorized",
+                    dateTimestamp = date.time,
+                    referenceNumber = null
+                )
+            )
+        }
+
+        return transactions
     }
 }
