@@ -26,7 +26,7 @@ class IndianBankParser @Inject constructor(
         val transactions = mutableListOf<Transaction>()
 
         val dateRegex =
-            Regex("^\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
+    Regex("^\\d{1,2}\\s*[A-Za-z]{3}\\s+\\d{4}")
 
         val amountRegex =
             Regex("INR\\s*([\\d,]+\\.\\d{2})")
