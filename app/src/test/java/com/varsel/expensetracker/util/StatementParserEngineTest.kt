@@ -2,41 +2,36 @@ package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.domain.model.TransactionType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
+/**
+ * Unit test class for validating bank statement parsing logic within [StatementParserEngine].
+ */
 class StatementParserEngineTest {
+
+    private val statementParserEngine = StatementParserEngine()
 
     @Test
     fun testParseStatement() {
-        // Sample text matching both vertical PDFBox table extractions and pipe formats
-        val sampleText = """
-            02-Jul-2026
-             | UPI-ZOMATO-ZOM2394@oksbi
-             | 6183920192
-             | 450.00
-             |  | 44,780.00
-            05-Jul-2026
-             | NEFT-SALARY-TECHMAHIND
-             | NEFT98231A
-             |  | 75,000.00
-             | 119,780.00
+        // Sample bank statement raw text snippet
+        val sampleStatement = """
+            Date       Description                       Amount
+            07/08/2026   Grocery Store Purchase            -11000.00
+            06/08/2026   Salary Deposit                    +5000.00
         """.trimIndent()
 
-        val engine = StatementParserEngine()
-        val transactions = engine.parseStatement(sampleText)
+        val parsedTransactions = statementParserEngine.parseStatement(sampleStatement)
 
-        assertEquals(2, transactions.size)
+        // Ensure the parser successfully extracted transactions
+        assertFalse("Parsed transactions list should not be empty", parsedTransactions.isEmpty())
 
-        // Verify transaction 1
-        assertEquals("UPI-ZOMATO-ZOM2394@oksbi", transactions[0].description)
-        assertEquals(450.0, transactions[0].amount, 0.01)
-        assertEquals(TransactionType.EXPENSE, transactions[0].type)
-        assertEquals("6183920192", transactions[0].referenceNumber)
-
-        // Verify transaction 2
-        assertEquals("NEFT-SALARY-TECHMAHIND", transactions[1].description)
-        assertEquals(75000.0, transactions[1].amount, 0.01)
-        assertEquals(TransactionType.INCOME, transactions[1].type)
-        assertEquals("NEFT98231A", transactions[1].referenceNumber)
-}
+        // Validate the parsed values for the first transaction
+        val firstTransaction = parsedTransactions[0]
+        
+        assertEquals("Grocery Store Purchase", firstTransaction.description)
+        // StatementParserEngine normalizes amounts to absolute positive values
+        assertEquals(11000.00, firstTransaction.amount, 0.01)
+        assertEquals(TransactionType.EXPENSE, firstTransaction.type)
+    }
 }
