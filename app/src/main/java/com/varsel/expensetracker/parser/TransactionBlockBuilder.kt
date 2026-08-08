@@ -38,19 +38,24 @@ class TransactionBlockBuilder @Inject constructor() {
 
         for (line in transactionLines) {
 
-            if (dateRegex.containsMatchIn(line)) {
+    // Ignore table header
+    if (line.uppercase().startsWith("DATE TRANSACTION")) {
+        continue
+    }
 
-                if (current.isNotEmpty()) {
+    if (dateRegex.containsMatchIn(line)) {
 
-                    blocks.add(
-                        TransactionBlock(current.toList())
-                    )
+        if (current.isNotEmpty()) {
 
-                    current.clear()
-                }
-            }
+            blocks.add(
+                TransactionBlock(current.toList())
+            )
 
-            current.add(line)
+            current.clear()
+        }
+    }
+
+    current.add(line)
         }
 
         if (current.isNotEmpty()) {
