@@ -5,9 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
-/**
- * Unit test class for validating bank statement parsing logic with reference numbers and tabular statements.
- */
 class StatementParserEngineTest {
 
     private val statementParserEngine = StatementParserEngine()
