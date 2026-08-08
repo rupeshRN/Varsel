@@ -97,26 +97,25 @@ class StatementParserEngine @Inject constructor() {
             }
         }
 
-        val amountRegex = Regex("\\b\\d{1,3}(?:,\\d{3})*\\.\\d{2}\\b|\\b\\d+\\.\\d{2}\\b")
-        val amounts = amountRegex.findAll(cleanedChunk).map { it.value.replace(",", "").toDouble() }.toList()
+        val amountRegex = Regex("[-+]?\\b\\d{1,3}(?:,\\d{3})*\\.\\d{2}\\b|[-+]?\\b\\d+\\.\\d{2}\\b")
+        val amountMatch = amountRegex.find(cleanedChunk)
+        val allAmounts = amountRegex.findAll(cleanedChunk).map { it.value.replace(",", "").toDouble() }.toList()
 
-        if (amounts.isEmpty()) {
+        if (allAmounts.isEmpty()) {
             return null
         }
 
-        val transactionAmount: Double = if (amounts.size >= 2 && upper.contains("CR")) {
-            amounts[0]
-        } else {
-            amounts.last()
-        }
+        val rawAmountStr = amountMatch?.value ?: allAmounts.last().toString()
+        val transactionAmount = rawAmountStr.replace(",", "").toDouble()
 
-        val isDebit = upper.contains("DR") || upper.contains("DEBIT") || upper.contains("WITHDRAWAL") || upper.contains("IMPS") || upper.contains("UPI")
+        val isDebit = upper.contains("DR") || upper.contains("DEBIT") || upper.contains("WITHDRAWAL") || upper.contains("IMPS") || upper.contains("UPI") || rawAmountStr.startsWith("-")
         val transactionType = if (isDebit) TransactionType.EXPENSE else TransactionType.INCOME
 
         var description = cleanedChunk
             .replace(Regex("^\\d{1,2}[-/]\\d{1,2}(?:[-/]\\d{2,4})?\\b"), "")
             .replace("ATM SERVICE BRANCH", "")
             .replace(amountRegex, "")
+            .replace(refPattern, "")
             .replace(Regex("\\b\\d+\\.\\d{2}CR\\b"), "")
             .replace("CR", "")
             .replace("DR", "")
