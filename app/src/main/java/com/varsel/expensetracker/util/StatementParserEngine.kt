@@ -24,7 +24,8 @@ class StatementParserEngine @Inject constructor() {
 
     fun parseStatement(rawText: String): List<Transaction> {
         val transactions = mutableListOf<Transaction>()
-        val lines = rawText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+        val normalizedText = rawText.replace("\r\n", "\n")
+        val lines = normalizedText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
 
         val dateRegex = Regex("\\b\\d{1,2}[-/][A-Za-z]{3}[-/]\\d{2,4}\\b|\\b\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4}\\b")
         val amountRegex = Regex("[-+]?\\d{1,3}(?:[\\s,]*\\d{3})*(?:\\.\\d{2})?|[-+]?\\d+(?:\\.\\d{2})?")
@@ -51,6 +52,10 @@ class StatementParserEngine @Inject constructor() {
 
                 i++
                 while (i < lines.size && dateRegex.find(lines[i]) == null) {
+                    if (isMetadataLine(lines[i])) {
+                        i++
+                        continue
+                    }
                     blockLines.add(lines[i])
                     i++
                 }
@@ -75,11 +80,16 @@ class StatementParserEngine @Inject constructor() {
                 upper.contains("TOTAL DEBITS") ||
                 upper.contains("TOTAL CREDITS") ||
                 upper.contains("TRANSACTION HISTORY") ||
+                upper.contains("VALUE DATE") ||
+                upper.contains("POST DATE") ||
+                upper.contains("REMITTER BRANCH") ||
+                upper.contains("CHEQUE NO") ||
                 (upper.startsWith("DATE") && !upper.contains("DESCRIPTION")) ||
                 upper.startsWith("BRANCH:") ||
                 upper.startsWith("ACCOUNT:") ||
                 upper.startsWith("CURRENCY:") ||
-                upper.contains("PAGE ")
+                upper.contains("PAGE ") ||
+                upper == "DR" || upper == "CR" || upper == "BALANCE" || upper == "DESCRIPTION"
     }
 
     private fun parseDateSafely(dateStr: String): Long {
@@ -115,9 +125,21 @@ class StatementParserEngine @Inject constructor() {
         var referenceNumber: String? = null
 
         val refPattern = Regex("(?i)\\b(REF|UTR|TXN|ID)[:\\s]*([A-Za-z0-9]+)\\b")
+        val implicitRefPattern = Regex("\\b\\d{10,16}\\b")
+
         val descBuilder = StringBuilder()
+        var foundDebitIndicator = false
+        var foundCreditIndicator = false
 
         for (item in cleanedBlock) {
+            val upperItem = item.uppercase()
+            if (upperItem.contains("DR") || upperItem.contains("DEBIT") || upperItem.contains("WITHDRAWAL")) {
+                foundDebitIndicator = true
+            }
+            if (upperItem.contains("CR") || upperItem.contains("CREDIT") || upperItem.contains("DEPOSIT")) {
+                foundCreditIndicator = true
+            }
+
             val refMatch = refPattern.find(item)
             if (refMatch != null && referenceNumber == null) {
                 referenceNumber = refMatch.value.trim()
@@ -128,22 +150,32 @@ class StatementParserEngine @Inject constructor() {
                 continue
             }
 
+            if (referenceNumber == null) {
+                val implicitMatch = implicitRefPattern.find(item)
+                if (implicitMatch != null && !item.contains(".") && implicitMatch.value.length >= 10) {
+                    referenceNumber = implicitMatch.value
+                }
+            }
+
             val amountMatch = amountRegex.find(item)
             if (amountMatch != null && transactionAmount == null) {
                 val rawAmountStr = amountMatch.value.replace(" ", "").replace(",", "")
-                transactionAmount = rawAmountStr.toDoubleOrNull()
-                
-                val upperItem = item.uppercase()
-                transactionType = if (upperItem.contains("(DR)") || upperItem.contains(" DR") || rawAmountStr.startsWith("-")) {
-                    TransactionType.EXPENSE
-                } else if (upperItem.contains("(CR)") || upperItem.contains(" CR") || upperItem.contains("DEPOSIT")) {
-                    TransactionType.INCOME
-                } else {
-                    if (transactionAmount != null && transactionAmount < 0) TransactionType.EXPENSE else TransactionType.INCOME
+                val parsedAmt = rawAmountStr.toDoubleOrNull()
+                if (parsedAmt != null) {
+                    if (upperItem.endsWith("CR") && !upperItem.contains("DR") && item.contains("BALANCE")) {
+                        descBuilder.append(" ").append(item)
+                        continue
+                    }
+                    transactionAmount = parsedAmt
+                    if (upperItem.contains("(DR)") || upperItem.contains(" DR") || rawAmountStr.startsWith("-") || upperItem == "DR") {
+                        transactionType = TransactionType.EXPENSE
+                    } else if (upperItem.contains("(CR)") || upperItem.contains(" CR") || upperItem.contains("DEPOSIT") || upperItem == "CR") {
+                        transactionType = TransactionType.INCOME
+                    } else {
+                        transactionType = if (foundCreditIndicator && !foundDebitIndicator) TransactionType.INCOME else TransactionType.EXPENSE
+                    }
+                    continue
                 }
-                
-                // CRITICAL FIX: Skip appending the amount line to the description builder
-                continue
             }
 
             descBuilder.append(" ").append(item)
