@@ -7,120 +7,121 @@ import java.util.Locale
 import javax.inject.Inject
 
 class IndianBankParser @Inject constructor(
-    private val blockBuilder: TransactionBlockBuilder,
-    private val descriptionCleaner: DescriptionCleaner,
-    private val slashTokenizer: SlashTokenizer,
-    private val fieldInterpreter: FieldInterpreter,
-    private val descriptionBuilder: DescriptionBuilder
+private val blockBuilder: TransactionBlockBuilder,
+private val merchantExtractor: MerchantExtractor,
+private val descriptionCleaner: DescriptionCleaner,
+private val slashTokenizer: SlashTokenizer,
+private val fieldInterpreter: FieldInterpreter
 ) : StatementParser {
 
-    override fun canParse(rawText: String): Boolean {
+override fun canParse(rawText: String): Boolean {  
 
-        val text = rawText.uppercase()
+    val text = rawText.uppercase()  
 
-        return text.contains("ACCOUNT ACTIVITY") ||
-                text.contains("ACCOUNT SUMMARY") ||
-                text.contains("ACCOUNT DETAILS")
-    }
+    return text.contains("ACCOUNT ACTIVITY") ||  
+            text.contains("ACCOUNT SUMMARY") ||  
+            text.contains("ACCOUNT DETAILS")  
+}  
 
-    override fun parse(rawText: String): List<Transaction> {
+override fun parse(rawText: String): List<Transaction> {  
 
-        val blocks = blockBuilder.build(rawText)
+    val blocks = blockBuilder.build(rawText)  
 
-        val transactions = mutableListOf<Transaction>()
+    val transactions = mutableListOf<Transaction>()  
 
-        val dateRegex =
-            Regex("^\\d{1,2}\\s*[A-Za-z]{3}\\s+\\d{4}")
+    val dateRegex =  
+Regex("^\\d{1,2}\\s*[A-Za-z]{3}\\s+\\d{4}")  
 
-        val amountRegex =
-            Regex("INR\\s*([\\d,]+\\.\\d{2})")
+    val amountRegex =  
+        Regex("INR\\s*([\\d,]+\\.\\d{2})")  
 
-        val dateFormatter =
-            SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)
+    val dateFormatter =  
+        SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH)  
 
-        for (block in blocks) {
+    for (block in blocks) {  
 
-            if (block.lines.isEmpty()) continue
+        if (block.lines.isEmpty()) continue  
 
-            val firstLine = block.lines.first()
+        val firstLine = block.lines.first()  
 
-            val dateMatch = dateRegex.find(firstLine) ?: continue
+        val dateMatch = dateRegex.find(firstLine) ?: continue  
 
-            val date = try {
-                dateFormatter.parse(dateMatch.value)
-            } catch (e: Exception) {
-                null
-            } ?: continue
+        val date = try {  
+            dateFormatter.parse(dateMatch.value)  
+        } catch (e: Exception) {  
+            null  
+        } ?: continue  
 
-            val allText = block.lines.joinToString(" ")
+        val allText = block.lines.joinToString(" ")  
 
-            val amounts = amountRegex.findAll(allText).toList()
+        val amounts = amountRegex.findAll(allText).toList()  
 
-            // First amount = transaction amount
-            // Second amount = running balance
-            if (amounts.size < 2) continue
+        // We expect:  
+        // First amount = Transaction amount  
+        // Second amount = Running balance  
+        if (amounts.size < 2) continue  
 
-            val amount = amounts[0]
-                .groupValues[1]
-                .replace(",", "")
-                .toDoubleOrNull() ?: continue
+        val amount = amounts[0]  
+            .groupValues[1]  
+            .replace(",", "")  
+            .toDoubleOrNull() ?: continue  
 
-            var rawDescription = allText
+        var rawDescription = allText
 
-            rawDescription = rawDescription.replace(dateMatch.value, "")
-            rawDescription = rawDescription.replace(amounts[0].value, "")
-            rawDescription = rawDescription.replace(amounts[1].value, "")
-            rawDescription = rawDescription.trim()
+rawDescription = rawDescription.replace(dateMatch.value, "")
+rawDescription = rawDescription.replace(amounts[0].value, "")
+rawDescription = rawDescription.replace(amounts[1].value, "")
 
-            // Remove IFSC codes, UPI IDs, account numbers, etc.
-            val cleanedDescription =
-                descriptionCleaner.clean(rawDescription)
+rawDescription = rawDescription.trim()
 
-            // Break into logical fields
-            val tokens =
-                slashTokenizer.tokenize(cleanedDescription)
+val tokens =
+slashTokenizer.tokenize(rawDescription)
 
-            // Interpret merchant / purpose
-            val fields =
-                fieldInterpreter.interpret(tokens)
+val fields =
+fieldInterpreter.interpret(tokens)
 
-            // Build final user-facing description
-            val description =
-                descriptionBuilder.build(
-                    listOfNotNull(
-                        fields.purpose,
-                        fields.merchant
-                    )
-                )
+val description =
+when {
 
-            val upper = description.uppercase()
+!fields.purpose.isNullOrBlank() ->  
+        fields.purpose!!  
 
-            val type =
-                if (
-                    upper.contains("ACHCR") ||
-                    upper.contains(" CREDIT") ||
-                    upper.contains("CR ") ||
-                    upper.contains("SALARY") ||
-                    upper.contains("NEFTCR") ||
-                    upper.contains("IMPSCR")
-                ) {
-                    TransactionType.INCOME
-                } else {
-                    TransactionType.EXPENSE
-                }
+    !fields.merchant.isNullOrBlank() ->  
+        fields.merchant!!  
 
-            transactions.add(
-                Transaction(
-                    amount = amount,
-                    type = type,
-                    description = description,
-                    category = "Uncategorized",
-                    dateTimestamp = date.time,
-                    referenceNumber = null
-                )
-            )
-        }
+    else ->  
+        descriptionCleaner.clean(rawDescription)  
+}  
 
-        return transactions
-    }
+        val upper = description.uppercase()  
+
+        val type =  
+            if (  
+                upper.contains("ACHCR") ||  
+                upper.contains(" CREDIT") ||  
+                upper.contains("CR ") ||  
+                upper.contains("SALARY") ||  
+                upper.contains("NEFTCR") ||  
+                upper.contains("IMPSCR")  
+            ) {  
+                TransactionType.INCOME  
+            } else {  
+                TransactionType.EXPENSE  
+            }  
+
+        transactions.add(  
+            Transaction(  
+                amount = amount,  
+                type = type,  
+                description = description,  
+                category = "Uncategorized",  
+                dateTimestamp = date.time,  
+                referenceNumber = null  
+            )  
+        )  
+    }  
+
+    return transactions  
+}
+
 }
