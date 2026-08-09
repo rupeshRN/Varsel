@@ -4,65 +4,55 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.repository.TransactionRepository
+import com.varsel.expensetracker.ui.mapper.DashboardUiMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.varsel.expensetracker.ui.model.TransactionUiMapper
-import com.varsel.expensetracker.ui.model.BalanceSummaryUiModel
-import com.varsel.expensetracker.ui.model.TransactionUiModel
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
+
     private val transactionRepository: TransactionRepository,
-    private val transactionUiMapper: TransactionUiMapper
+
+    private val dashboardUiMapper: DashboardUiMapper
+
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
-    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    val uiState: StateFlow<DashboardUiState> =
+        _uiState.asStateFlow()
 
     init {
         loadTransactions()
     }
 
     private fun loadTransactions() {
+
         viewModelScope.launch(Dispatchers.IO) {
-            transactionRepository.getAllTransactions().collect { transactions ->
-                val totalIncome = transactions.filter { it.type == com.varsel.expensetracker.domain.model.TransactionType.INCOME }.sumOf { it.amount }
-                val totalExpense = transactions.filter { it.type == com.varsel.expensetracker.domain.model.TransactionType.EXPENSE }.sumOf { it.amount }
-                val totalBalance = totalIncome - totalExpense
 
-                val balanceSummary = BalanceSummaryUiModel(
-                                                             totalBalance = totalBalance,
-                                                            totalIncome = totalIncome,
-                                                             totalExpense = totalExpense,
-                                                         savings = totalIncome - totalExpense,
-                                                            accounts = emptyList()
-                                                            )
+            transactionRepository
+                .getAllTransactions()
+                .collect { transactions ->
 
-                _uiState.update {
-
-    it.copy(
-
-        balanceSummary = balanceSummary,
-
-        recentTransactions = transactions
-            .take(10)
-            .map { transaction ->
-                transactionUiMapper.map(transaction)
-            },
-
-        isLoading = false
-    )
-}
-            }
+                    _uiState.value =
+                        dashboardUiMapper.map(transactions)
+                }
         }
     }
 
-    fun updateTransaction(transaction: Transaction) {
+    fun updateTransaction(
+        transaction: Transaction
+    ) {
+
         viewModelScope.launch(Dispatchers.IO) {
-            transactionRepository.updateTransaction(transaction)
+
+            transactionRepository
+                .updateTransaction(transaction)
         }
     }
 }
