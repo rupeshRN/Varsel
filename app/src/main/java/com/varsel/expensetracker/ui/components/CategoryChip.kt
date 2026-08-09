@@ -1,65 +1,68 @@
 package com.varsel.expensetracker.ui.components
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.varsel.expensetracker.ui.design.CategoryPalette
+import com.varsel.expensetracker.ui.mapper.CategoryUiMapper
 
 @Composable
 fun CategoryChip(
+
     category: String,
+
     modifier: Modifier = Modifier
+
 ) {
 
-    val color = categoryColor(category)
+    val uiCategory = remember(category) {
 
-    AssistChip(
-        onClick = { },
-        modifier = modifier,
-        label = {
-            Text(
-                text = category,
-                style = MaterialTheme.typography.labelMedium
+        CategoryUiMapper().map(category)
+
+    }
+
+    Row(
+
+        modifier = modifier
+            .background(
+                color = uiCategory.backgroundColor,
+                shape = RoundedCornerShape(50)
             )
-        },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = color.copy(alpha = 0.15f),
-            labelColor = color
-        ),
-        border = null
-    )
-}
+            .padding(
+                horizontal = 12.dp,
+                vertical = 6.dp
+            ),
 
-private fun categoryColor(
-    category: String
-): Color {
+        verticalAlignment = Alignment.CenterVertically,
 
-    return when (category.lowercase()) {
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
 
-        "food" -> CategoryPalette.Food
+    ) {
 
-        "travel" -> CategoryPalette.Travel
+        Text(
 
-        "shopping" -> CategoryPalette.Shopping
+            text = uiCategory.emoji,
 
-        "fuel" -> CategoryPalette.Fuel
+            style = MaterialTheme.typography.labelLarge
 
-        "medical" -> CategoryPalette.Medical
+        )
 
-        "salary" -> CategoryPalette.Salary
+        Text(
 
-        "investment" -> CategoryPalette.Investment
+            text = uiCategory.name,
 
-        "bills" -> CategoryPalette.Bills
+            style = MaterialTheme.typography.labelMedium,
 
-        "transfer" -> CategoryPalette.Transfer
+            color = uiCategory.textColor
 
-        else -> CategoryPalette.Uncategorized
+        )
     }
 }
