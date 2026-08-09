@@ -4,6 +4,7 @@ import com.varsel.expensetracker.domain.model.Transaction
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
+import com.varsel.expensetracker.category.CategoryRuleEngine
 
 class IndianBankParser @Inject constructor(
     private val blockBuilder: TransactionBlockBuilder,
@@ -13,7 +14,8 @@ class IndianBankParser @Inject constructor(
     private val fieldInterpreter: FieldInterpreter,
     private val amountInterpreter: AmountInterpreter,
     private val parserConfidenceEngine: ParserConfidenceEngine,
-    private val displayDescriptionBuilder: DisplayDescriptionBuilder
+    private val displayDescriptionBuilder: DisplayDescriptionBuilder,
+    private val categoryRuleEngine: CategoryRuleEngine
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
@@ -105,6 +107,35 @@ class IndianBankParser @Inject constructor(
             descriptionCleaner.clean(rawDescription)
     )
 
+    val category =
+    categoryRuleEngine.categorize(fields)
+
+    //--------------------------------------------------
+// TEMP DEBUG
+//--------------------------------------------------
+
+throw IllegalArgumentException(
+    buildString {
+
+        appendLine("Description : $description")
+        appendLine()
+
+        appendLine("Category : ${category.category}")
+        appendLine("Category Confidence : ${category.confidence}%")
+        appendLine()
+
+        appendLine("Overall Parser Confidence : ${confidence.overallScore}%")
+        appendLine()
+
+        confidence.fields.forEach {
+
+            appendLine(
+                "${it.field} : ${it.value} (${it.confidence}%)"
+            )
+        }
+    }
+)
+
             //--------------------------------------------------
             // Transaction
             //--------------------------------------------------
@@ -114,7 +145,7 @@ class IndianBankParser @Inject constructor(
                     amount = parsedAmount.amount,
                     type = parsedAmount.type,
                     description = description,
-                    category = "Uncategorized",
+                    category = category.category,
                     dateTimestamp = date.time,
                     referenceNumber = null
                 )
