@@ -28,9 +28,9 @@ class DescriptionCleaner @Inject constructor() {
 
         // Remove UPI handles
         text = text.replace(
-            Regex("\\b\\S+@\\S+\\b", RegexOption.IGNORE_CASE),
-            " "
-        )
+    Regex("\\b[A-Za-z0-9._-]+@[A-Za-z0-9._-]+\\b", RegexOption.IGNORE_CASE),
+    " "
+)
 
         // Remove INR
         text = text.replace("INR", " ", ignoreCase = true)
