@@ -1,6 +1,8 @@
 package com.varsel.expensetracker.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.varsel.expensetracker.ui.dashboard.DashboardScreen
@@ -13,18 +15,26 @@ fun NavGraph(
     navController: NavHostController
 ) {
 
+    val navigationViewModel: NavigationViewModel =
+        hiltViewModel()
+
+    val currentDestination by
+        navigationViewModel
+            .currentDestination
+            .collectAsStateWithLifecycle()
+
     AppShell(
 
-        currentDestination = AppDestination.Home,
+        currentDestination = currentDestination,
 
         onDestinationSelected = {
-            // Temporary
-            // Navigation logic comes in Milestone 2
+
+            navigationViewModel.navigateTo(it)
         }
 
-    ) { padding ->
+    ) { innerPadding ->
 
-        when (AppDestination.Home) {
+        when (currentDestination) {
 
             AppDestination.Home -> {
 
@@ -33,15 +43,18 @@ fun NavGraph(
                     viewModel = hiltViewModel(),
 
                     onNavigateToImport = {
-                        // handled later inside More
+                        // Will open from More screen later
                     },
 
                     onNavigateToAllTransactions = {
-                        // handled by bottom navigation
+
+                        navigationViewModel.navigateTo(
+                            AppDestination.Transactions
+                        )
                     },
 
                     onNavigateToCategories = {
-                        // handled later inside More
+                        // Will open from More screen later
                     }
                 )
             }
@@ -52,7 +65,11 @@ fun NavGraph(
 
                     viewModel = hiltViewModel(),
 
-                    onBackClick = {}
+                    onBackClick = {
+                        navigationViewModel.navigateTo(
+                            AppDestination.Home
+                        )
+                    }
                 )
             }
 
