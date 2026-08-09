@@ -103,30 +103,6 @@ item(
         }
     )
 }
-                
-                if (uiState.recentTransactions.isEmpty()) {
-                    item(key = "empty_state") {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("No recent transactions found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                } else {
-                    // Stable key provided for LazyColumn items to prevent recomposition glitches
-                    items(
-    items = uiState.recentTransactions,
-    key = { it.id }
-) { transaction ->
-
-    TransactionCard(
-        transaction = transaction
-    )
-}
-                }
             }
         }
 
