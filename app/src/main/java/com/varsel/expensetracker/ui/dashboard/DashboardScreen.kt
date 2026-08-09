@@ -78,10 +78,7 @@ fun DashboardScreen(
 
                 item(key = "balance_card") 
                 {
-                    BalanceCard(
-                        balance = uiState.totalBalance,
-                        income = uiState.totalIncome,
-                        expense = uiState.totalExpense)
+                    BalanceCard(summary = uiState.balanceSummary)
                 }
 
                 item(key = "insights") 
