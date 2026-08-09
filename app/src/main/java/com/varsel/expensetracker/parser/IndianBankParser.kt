@@ -16,7 +16,6 @@ class IndianBankParser @Inject constructor(
     private val parserConfidenceEngine: ParserConfidenceEngine,
     private val displayDescriptionBuilder: DisplayDescriptionBuilder,
     private val categoryRuleEngine: CategoryRuleEngine
-    private const val ENABLE_PARSER_DEBUG = false
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
@@ -115,29 +114,27 @@ class IndianBankParser @Inject constructor(
 // TEMP DEBUG
 //--------------------------------------------------
 
-if (ENABLE_PARSER_DEBUG)
-            {
-            throw IllegalArgumentException(
-  buildString {
 
-        appendLine("Description : $description")
-        appendLine()
-
-      appendLine("Category : ${category.category}")
-    appendLine("Category Confidence : ${category.confidence}%")
- appendLine()
-      appendLine("Overall Parser Confidence : ${confidence.overallScore}%")
-    appendLine()
-
-     confidence.fields.forEach {
-
-          appendLine(
-            "${it.field} : ${it.value} (${it.confidence}%)"
-      )
-}
-    }
-)
-            }
+           // throw IllegalArgumentException(
+  //buildString {
+//
+  //      appendLine("Description : $description")
+   //     appendLine()
+//
+  //    appendLine("Category : ${category.category}")
+//    appendLine("Category Confidence : ${category.confidence}%")
+// appendLine()
+ //     appendLine("Overall Parser Confidence : ${confidence.overallScore}%")
+  //  appendLine()
+//
+ //    confidence.fields.forEach {
+//
+   //       appendLine(
+    //        "${it.field} : ${it.value} (${it.confidence}%)"
+//      )/}
+   // }
+//)
+            
 
             //--------------------------------------------------
             // Transaction
