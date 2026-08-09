@@ -114,27 +114,27 @@ class IndianBankParser @Inject constructor(
 // TEMP DEBUG
 //--------------------------------------------------
 
-throw IllegalArgumentException(
-    buildString {
-
-        appendLine("Description : $description")
-        appendLine()
-
-        appendLine("Category : ${category.category}")
-        appendLine("Category Confidence : ${category.confidence}%")
-        appendLine()
-
-        appendLine("Overall Parser Confidence : ${confidence.overallScore}%")
-        appendLine()
-
-        confidence.fields.forEach {
-
-            appendLine(
-                "${it.field} : ${it.value} (${it.confidence}%)"
-            )
-        }
-    }
-)
+//throw IllegalArgumentException(
+  //  buildString {
+//
+  //      appendLine("Description : $description")
+    //    appendLine()
+//
+  //      appendLine("Category : ${category.category}")
+    //    appendLine("Category Confidence : ${category.confidence}%")
+      //  appendLine()
+//
+  //      appendLine("Overall Parser Confidence : ${confidence.overallScore}%")
+    //    appendLine()
+//
+  //      confidence.fields.forEach {
+//
+  //          appendLine(
+    //            "${it.field} : ${it.value} (${it.confidence}%)"
+      //      )
+        //}
+    //}
+//)
 
             //--------------------------------------------------
             // Transaction
