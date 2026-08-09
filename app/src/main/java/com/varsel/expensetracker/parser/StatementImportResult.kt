@@ -6,5 +6,7 @@ data class StatementImportResult(
 
     val summary: StatementSummary,
 
+    val reconciliation: ReconciliationResult,
+
     val transactions: List<Transaction>
 )
