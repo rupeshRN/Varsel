@@ -8,9 +8,10 @@ import javax.inject.Inject
 
 class IndianBankParser @Inject constructor(
     private val blockBuilder: TransactionBlockBuilder,
-    private val descriptionCleaner: DescriptionCleaner,
     private val merchantExtractor: MerchantExtractor,
-    private val ocrWordRepair: OcrWordRepair
+    private val descriptionCleaner: DescriptionCleaner,
+    private val slashTokenizer: SlashTokenizer,
+    private val fieldInterpreter: FieldInterpreter
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
