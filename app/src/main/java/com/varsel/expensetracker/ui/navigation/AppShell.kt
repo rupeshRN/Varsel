@@ -13,7 +13,7 @@ fun AppShell(
     ) -> Unit
 ) {
 
-    var currentDestination by rememberSaveable {
+    var currentDestination by remember {
         mutableStateOf<AppDestination>(
             AppDestination.Home
         )
