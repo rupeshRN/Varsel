@@ -8,6 +8,7 @@ import javax.inject.Inject
 
 class IndianBankParser @Inject constructor(
     private val blockBuilder: TransactionBlockBuilder,
+    private val merchantExtractor: MerchantExtractor,
     private val descriptionCleaner: DescriptionCleaner
 ) : StatementParser {
 
