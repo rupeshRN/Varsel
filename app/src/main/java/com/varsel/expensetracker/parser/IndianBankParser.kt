@@ -11,7 +11,8 @@ class IndianBankParser @Inject constructor(
     private val merchantExtractor: MerchantExtractor,
     private val descriptionCleaner: DescriptionCleaner,
     private val slashTokenizer: SlashTokenizer,
-    private val fieldInterpreter: FieldInterpreter
+    private val fieldInterpreter: FieldInterpreter,
+    private val descriptionBuilder: DescriptionBuilder
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
@@ -30,7 +31,7 @@ class IndianBankParser @Inject constructor(
         val transactions = mutableListOf<Transaction>()
 
         val dateRegex =
-    Regex("^\\d{1,2}\\s*[A-Za-z]{3}\\s+\\d{4}")
+            Regex("^\\d{1,2}\\s*[A-Za-z]{3}\\s+\\d{4}")
 
         val amountRegex =
             Regex("INR\\s*([\\d,]+\\.\\d{2})")
@@ -56,9 +57,8 @@ class IndianBankParser @Inject constructor(
 
             val amounts = amountRegex.findAll(allText).toList()
 
-            // We expect:
-            // First amount = Transaction amount
-            // Second amount = Running balance
+            // First amount = transaction amount
+            // Second amount = running balance
             if (amounts.size < 2) continue
 
             val amount = amounts[0]
@@ -68,30 +68,31 @@ class IndianBankParser @Inject constructor(
 
             var rawDescription = allText
 
-rawDescription = rawDescription.replace(dateMatch.value, "")
-rawDescription = rawDescription.replace(amounts[0].value, "")
-rawDescription = rawDescription.replace(amounts[1].value, "")
+            rawDescription = rawDescription.replace(dateMatch.value, "")
+            rawDescription = rawDescription.replace(amounts[0].value, "")
+            rawDescription = rawDescription.replace(amounts[1].value, "")
+            rawDescription = rawDescription.trim()
 
-rawDescription = rawDescription.trim()
+            // Remove IFSC codes, UPI IDs, account numbers, etc.
+            val cleanedDescription =
+                descriptionCleaner.clean(rawDescription)
 
-val tokens =
-    slashTokenizer.tokenize(rawDescription)
+            // Break into logical fields
+            val tokens =
+                slashTokenizer.tokenize(cleanedDescription)
 
-val fields =
-    fieldInterpreter.interpret(tokens)
+            // Interpret merchant / purpose
+            val fields =
+                fieldInterpreter.interpret(tokens)
 
-val description =
-    when {
-
-        !fields.purpose.isNullOrBlank() ->
-            fields.purpose!!
-
-        !fields.merchant.isNullOrBlank() ->
-            fields.merchant!!
-
-        else ->
-            descriptionCleaner.clean(rawDescription)
-    }
+            // Build final user-facing description
+            val description =
+                descriptionBuilder.build(
+                    listOfNotNull(
+                        fields.purpose,
+                        fields.merchant
+                    )
+                )
 
             val upper = description.uppercase()
 
