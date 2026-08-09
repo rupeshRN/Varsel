@@ -82,36 +82,37 @@ class ImportViewModel @Inject constructor(
 
                 // TEMPORARY DEBUG MODE
 
-                val summary = statementSummaryExtractor.extract(rawText)
+               // val summary = statementSummaryExtractor.extract(rawText)
 
-_uiState.value = ImportUiState.Error(
-    buildString {
-        appendLine("ACCOUNT SUMMARY")
-        appendLine()
-        appendLine("Opening Balance : ${summary.openingBalance}")
-        appendLine("Total Credits   : ${summary.totalCredits}")
-        appendLine("Total Debits    : ${summary.totalDebits}")
-        appendLine("Ending Balance  : ${summary.endingBalance}")
-    }
-)
+//_uiState.value = ImportUiState.Error(
+  //  buildString {
+     //   appendLine("ACCOUNT SUMMARY")
+    //   appendLine()
+     //   appendLine("Opening Balance : ${summary.openingBalance}")
+     //   appendLine("Total Credits   : ${summary.totalCredits}")
+     //   appendLine("Total Debits    : ${summary.totalDebits}")
+                //appendLine("Ending Balance  : ${summary.endingBalance}")
+//    }
+//)
 
-return@launch
+//return@launch
                 // ======================================================
 
                // _uiState.value = ImportUiState.Error(rawText)
                 // return@launch
+val result =
+    statementParserEngine.parseStatement(rawText)
 
-                val transactions =
-                    statementParserEngine.parseStatement(rawText)
+if (result.transactions.isEmpty()) {
+    _uiState.value =
+        ImportUiState.Error("No transactions found.")
+    return@launch
+}
 
-                if (transactions.isEmpty()) {
-                    _uiState.value =
-                        ImportUiState.Error("No transactions found.")
-                    return@launch
-                }
-
-                _uiState.value =
-                    ImportUiState.ParsedTransactions(transactions)
+_uiState.value =
+    ImportUiState.ParsedTransactions(
+        result.transactions
+    )
 
             } catch (e: Exception) {
 
