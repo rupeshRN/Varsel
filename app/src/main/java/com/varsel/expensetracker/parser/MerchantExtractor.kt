@@ -29,7 +29,13 @@ class MerchantExtractor @Inject constructor() {
             "YESBOM",
 
             "ATM",
-            "POS"
+            "POS",
+
+            "GPAY",
+"GOOGLEPAY",
+"PHONEPE",
+"PAYTM",
+"BHIM",
 
         )
 
