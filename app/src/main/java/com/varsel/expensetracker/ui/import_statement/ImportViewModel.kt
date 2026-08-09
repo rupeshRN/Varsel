@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.varsel.expensetracker.parser.StatementSummaryExtractor
 
 sealed interface ImportUiState {
     object Idle : ImportUiState
@@ -43,6 +44,7 @@ class ImportViewModel @Inject constructor(
     private val statementParserEngine: StatementParserEngine,
     private val pdfTextExtractor: PdfTextExtractor,
     private val ocrManager: OcrManager,
+    private val statementSummaryExtractor: StatementSummaryExtractor,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -78,12 +80,20 @@ class ImportViewModel @Inject constructor(
                     return@launch
                 }
 
-                // ======================================================
                 // TEMPORARY DEBUG MODE
-                // ======================================================
-                // Instead of parsing, display the extracted text.
-                // This helps us understand how PDFBox is reading
-                // the Indian Bank statement.
+
+                val summary = statementSummaryExtractor.extract(rawText)
+
+_uiState.value = ImportUiState.Error(
+    """
+    Opening : ${summary.openingBalance}
+    Credits : ${summary.totalCredits}
+    Debits  : ${summary.totalDebits}
+    Ending  : ${summary.endingBalance}
+    """.trimIndent()
+)
+
+return@launch
                 // ======================================================
 
                // _uiState.value = ImportUiState.Error(rawText)
