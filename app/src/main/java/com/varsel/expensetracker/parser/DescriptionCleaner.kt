@@ -10,7 +10,7 @@ class DescriptionCleaner @Inject constructor() {
 
         // Remove IFSC-like bank codes
         text = text.replace(
-            Regex("\\b[A-Z]{4}\\d{7}\\b"),
+            Regex("\\b[A-Z]{4}0[A-Z0-9]{6}\\b"),
             " "
         )
 
