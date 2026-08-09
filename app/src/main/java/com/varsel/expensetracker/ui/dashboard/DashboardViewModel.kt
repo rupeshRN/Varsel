@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.varsel.expensetracker.ui.model.TransactionUiMapper
 
 data class DashboardUiState(
     val totalBalance: Double = 0.0,
@@ -20,7 +21,8 @@ data class DashboardUiState(
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val transactionUiMapper: TransactionUiMapper
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
