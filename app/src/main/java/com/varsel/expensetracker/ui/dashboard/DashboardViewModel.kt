@@ -3,7 +3,6 @@ package com.varsel.expensetracker.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.varsel.expensetracker.domain.model.Transaction
-import com.varsel.expensetracker.ui.model.TransactionUiModel
 import com.varsel.expensetracker.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
