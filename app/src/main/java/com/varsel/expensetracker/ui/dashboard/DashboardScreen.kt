@@ -18,6 +18,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.varsel.expensetracker.ui.model.TransactionUiModel
+import com.varsel.expensetracker.ui.components.TransactionCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -119,28 +121,28 @@ fun DashboardScreen(
                 } else {
                     // Stable key provided for LazyColumn items to prevent recomposition glitches
                     items(
-                        items = uiState.recentTransactions,
-                        key = { it.id }
-                    ) { transaction ->
-                        TransactionItemCard(
-                            transaction = transaction,
-                            onClick = { selectedTransaction = transaction }
-                        )
-                    }
+    items = uiState.recentTransactions,
+    key = { it.id }
+) { transaction ->
+
+    TransactionCard(
+        transaction = transaction
+    )
+}
                 }
             }
         }
 
-        selectedTransaction?.let { transaction ->
-            EditTransactionCategoryDialog(
-                transaction = transaction,
-                onDismiss = { selectedTransaction = null },
-                onSave = { updatedTransaction ->
-                    viewModel.updateTransaction(updatedTransaction)
-                    selectedTransaction = null
-                }
-            )
-        }
+       // selectedTransaction?.let { transaction ->
+         //   EditTransactionCategoryDialog(
+           //     transaction = transaction,
+             //   onDismiss = { selectedTransaction = null },
+               // onSave = { updatedTransaction ->
+                 //   viewModel.updateTransaction(updatedTransaction)
+                   // selectedTransaction = null
+              //  }
+            //)
+        //}
     }
 }
 
