@@ -11,14 +11,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.varsel.expensetracker.ui.model.TransactionUiMapper
-
-data class DashboardUiState(
-    val totalBalance: Double = 0.0,
-    val totalIncome: Double = 0.0,
-    val totalExpense: Double = 0.0,
-    val recentTransactions: List<TransactionUiModel> = emptyList(),
-    val isLoading: Boolean = true
-)
+import com.varsel.expensetracker.ui.model.BalanceSummaryUiModel
+import com.varsel.expensetracker.ui.model.TransactionUiModel
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
@@ -40,18 +34,29 @@ class DashboardViewModel @Inject constructor(
                 val totalExpense = transactions.filter { it.type == com.varsel.expensetracker.domain.model.TransactionType.EXPENSE }.sumOf { it.amount }
                 val totalBalance = totalIncome - totalExpense
 
+                val balanceSummary = BalanceSummaryUiModel(
+                                                             totalBalance = totalBalance,
+                                                            totalIncome = totalIncome,
+                                                             totalExpense = totalExpense,
+                                                         savings = totalIncome - totalExpense,
+                                                            accounts = emptyList()
+                                                            )
+
                 _uiState.update {
-                    it.copy(
-                        totalBalance = totalBalance,
-                        totalIncome = totalIncome,
-                        totalExpense = totalExpense,
-                        recentTransactions =
-    transactionUiMapper.map(
-        transactions.take(10)
-    ),
-                        isLoading = false
-                    )
-                }
+
+    it.copy(
+
+        balanceSummary = balanceSummary,
+
+        recentTransactions = transactions
+            .take(10)
+            .map { transaction ->
+                TransactionUiModel.fromDomain(transaction)
+            },
+
+        isLoading = false
+    )
+}
             }
         }
     }
