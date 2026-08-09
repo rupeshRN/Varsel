@@ -93,24 +93,7 @@ class IndianBankParser @Inject constructor(
                 fieldInterpreter.interpret(tokens)
 
             val confidence =
-    parserConfidenceEngine.evaluate(fields)
-
-    throw IllegalArgumentException(
-    buildString {
-
-        appendLine(description)
-        appendLine()
-
-        appendLine("Overall = ${confidence.overallScore}")
-
-        confidence.fields.forEach {
-
-            appendLine(
-                "${it.field} : ${it.value} (${it.confidence}%)"
-            )
-        }
-    }
-)
+                parserConfidenceEngine.evaluate(fields)
 
             val description =
                 when {
@@ -124,6 +107,28 @@ class IndianBankParser @Inject constructor(
                     else ->
                         descriptionCleaner.clean(rawDescription)
                 }
+
+            //--------------------------------------------------
+            // TEMP DEBUG
+            //--------------------------------------------------
+
+            throw IllegalArgumentException(
+                buildString {
+
+                    appendLine("Description : $description")
+                    appendLine()
+
+                    appendLine("Overall = ${confidence.overallScore}")
+                    appendLine()
+
+                    confidence.fields.forEach {
+
+                        appendLine(
+                            "${it.field} : ${it.value} (${it.confidence}%)"
+                        )
+                    }
+                }
+            )
 
             //--------------------------------------------------
             // Transaction
