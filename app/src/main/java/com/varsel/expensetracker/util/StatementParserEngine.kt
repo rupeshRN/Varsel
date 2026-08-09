@@ -1,24 +1,36 @@
 package com.varsel.expensetracker.util
 
-import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.parser.BankDetector
+import com.varsel.expensetracker.parser.StatementImportResult
+import com.varsel.expensetracker.parser.StatementSummaryExtractor
 import com.varsel.expensetracker.parser.TextNormalizer
 import javax.inject.Inject
 
 class StatementParserEngine @Inject constructor(
     private val bankDetector: BankDetector,
-    private val textNormalizer: TextNormalizer
+    private val textNormalizer: TextNormalizer,
+    private val statementSummaryExtractor: StatementSummaryExtractor
 ) {
 
-    fun parseStatement(rawText: String): List<Transaction> {
+    fun parseStatement(
+        rawText: String
+    ): StatementImportResult {
 
-        // Normalize the extracted text
-        val normalizedText = textNormalizer.normalize(rawText)
+        val normalizedText =
+            textNormalizer.normalize(rawText)
 
-        // Detect the correct bank parser
-        val parser = bankDetector.detect(normalizedText)
+        val summary =
+            statementSummaryExtractor.extract(normalizedText)
 
-        // Parse transactions
-        return parser.parse(normalizedText)
+        val parser =
+            bankDetector.detect(normalizedText)
+
+        val transactions =
+            parser.parse(normalizedText)
+
+        return StatementImportResult(
+            summary = summary,
+            transactions = transactions
+        )
     }
 }
