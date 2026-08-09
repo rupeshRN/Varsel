@@ -45,7 +45,10 @@ class DashboardViewModel @Inject constructor(
                         totalBalance = totalBalance,
                         totalIncome = totalIncome,
                         totalExpense = totalExpense,
-                        recentTransactions = transactions.take(10),
+                        recentTransactions =
+    transactionUiMapper.map(
+        transactions.take(10)
+    ),
                         isLoading = false
                     )
                 }
