@@ -4,6 +4,7 @@ import com.varsel.expensetracker.parser.BankDetector
 import com.varsel.expensetracker.parser.StatementImportResult
 import com.varsel.expensetracker.parser.StatementSummaryExtractor
 import com.varsel.expensetracker.parser.TextNormalizer
+import com.varsel.expensetracker.parser.ReconciliationEngine
 import javax.inject.Inject
 
 class StatementParserEngine @Inject constructor(
