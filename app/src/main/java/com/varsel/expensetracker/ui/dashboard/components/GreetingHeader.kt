@@ -23,7 +23,7 @@ fun GreetingHeader(
 
         in 17..21 -> "Good Evening"
 
-        else -> "Good Night"
+        else -> "Get some sleep, money can wait!"
     }
 
     Column(
