@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.varsel.expensetracker.parser.StatementSummaryExtractor
 
 sealed interface ImportUiState {
     object Idle : ImportUiState
@@ -44,7 +43,6 @@ class ImportViewModel @Inject constructor(
     private val statementParserEngine: StatementParserEngine,
     private val pdfTextExtractor: PdfTextExtractor,
     private val ocrManager: OcrManager,
-    private val statementSummaryExtractor: StatementSummaryExtractor,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -80,22 +78,6 @@ class ImportViewModel @Inject constructor(
                     return@launch
                 }
 
-                // TEMPORARY DEBUG MODE
-
-               // val summary = statementSummaryExtractor.extract(rawText)
-
-//_uiState.value = ImportUiState.Error(
-  //  buildString {
-     //   appendLine("ACCOUNT SUMMARY")
-    //   appendLine()
-     //   appendLine("Opening Balance : ${summary.openingBalance}")
-     //   appendLine("Total Credits   : ${summary.totalCredits}")
-     //   appendLine("Total Debits    : ${summary.totalDebits}")
-                //appendLine("Ending Balance  : ${summary.endingBalance}")
-//    }
-//)
-
-//return@launch
                 // ======================================================
 
                // _uiState.value = ImportUiState.Error(rawText)
