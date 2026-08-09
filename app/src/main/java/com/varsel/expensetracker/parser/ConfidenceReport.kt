@@ -2,7 +2,9 @@ package com.varsel.expensetracker.parser
 
 data class ConfidenceReport(
 
-    val fields: List<FieldConfidence>
+    val fields: List<FieldConfidence>,
+
+    val rules: RuleReport
 ) {
 
     val overallScore: Int
