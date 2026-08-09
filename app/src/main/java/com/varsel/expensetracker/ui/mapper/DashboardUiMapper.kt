@@ -4,6 +4,7 @@ import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.ui.dashboard.DashboardUiState
 import com.varsel.expensetracker.ui.model.BalanceSummaryUiModel
+import com.varsel.expensetracker.ui.mapper.TransactionUiMapper
 import javax.inject.Inject
 
 class DashboardUiMapper @Inject constructor(
