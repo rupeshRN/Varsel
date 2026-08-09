@@ -95,6 +95,23 @@ class IndianBankParser @Inject constructor(
             val confidence =
     parserConfidenceEngine.evaluate(fields)
 
+    throw IllegalArgumentException(
+    buildString {
+
+        appendLine(description)
+        appendLine()
+
+        appendLine("Overall = ${confidence.overallScore}")
+
+        confidence.fields.forEach {
+
+            appendLine(
+                "${it.field} : ${it.value} (${it.confidence}%)"
+            )
+        }
+    }
+)
+
             val description =
                 when {
 
