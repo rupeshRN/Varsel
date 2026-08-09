@@ -1,87 +1,75 @@
 package com.varsel.expensetracker.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.varsel.expensetracker.ui.category.CategoryScreen
 import com.varsel.expensetracker.ui.dashboard.DashboardScreen
-import com.varsel.expensetracker.ui.more.MoreScreen
-import com.varsel.expensetracker.ui.reports.ReportsScreen
+import com.varsel.expensetracker.ui.import_statement.ImportScreen
 import com.varsel.expensetracker.ui.transaction.TransactionScreen
+
+sealed class Screen(val route: String) {
+    object Dashboard : Screen("dashboard")
+    object Transactions : Screen("transactions")
+    object Categories : Screen("categories")
+    object ImportStatement : Screen("import_statement")
+}
 
 @Composable
 fun NavGraph(
     navController: NavHostController
 ) {
 
-    val navigationViewModel: NavigationViewModel =
-        hiltViewModel()
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Dashboard.route
+    ) {
 
-    val currentDestination by
-        navigationViewModel
-            .currentDestination
-            .collectAsStateWithLifecycle()
+        composable(Screen.Dashboard.route) {
 
-    AppShell(
-
-        currentDestination = currentDestination,
-
-        onDestinationSelected = {
-
-            navigationViewModel.navigateTo(it)
+            DashboardScreen(
+                viewModel = hiltViewModel(),
+                onNavigateToImport = {
+                    navController.navigate(Screen.ImportStatement.route)
+                },
+                onNavigateToAllTransactions = {
+                    navController.navigate(Screen.Transactions.route)
+                },
+                onNavigateToCategories = {
+                    navController.navigate(Screen.Categories.route)
+                }
+            )
         }
 
-    ) { innerPadding ->
+        composable(Screen.Transactions.route) {
 
-        when (currentDestination) {
+            TransactionScreen(
+                viewModel = hiltViewModel(),
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
 
-            AppDestination.Home -> {
+        composable(Screen.Categories.route) {
 
-                DashboardScreen(
+            CategoryScreen(
+                viewModel = hiltViewModel(),
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
 
-                    viewModel = hiltViewModel(),
+        composable(Screen.ImportStatement.route) {
 
-                    onNavigateToImport = {
-                        // Will open from More screen later
-                    },
-
-                    onNavigateToAllTransactions = {
-
-                        navigationViewModel.navigateTo(
-                            AppDestination.Transactions
-                        )
-                    },
-
-                    onNavigateToCategories = {
-                        // Will open from More screen later
-                    }
-                )
-            }
-
-            AppDestination.Transactions -> {
-
-                TransactionScreen(
-
-                    viewModel = hiltViewModel(),
-
-                    onBackClick = {
-                        navigationViewModel.navigateTo(
-                            AppDestination.Home
-                        )
-                    }
-                )
-            }
-
-            AppDestination.Reports -> {
-
-                ReportsScreen()
-            }
-
-            AppDestination.More -> {
-
-                MoreScreen()
-            }
+            ImportScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }
