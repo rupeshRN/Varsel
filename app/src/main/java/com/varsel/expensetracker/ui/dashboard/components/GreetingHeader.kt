@@ -9,17 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.varsel.expensetracker.ui.design.AppDimensions
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun GreetingHeader(
     modifier: Modifier = Modifier
 ) {
 
-    val now = LocalDateTime.now()
-
-    val greeting = when (now.hour) {
+    val greeting = when (LocalDateTime.now().hour) {
 
         in 5..11 -> "Good Morning"
 
@@ -29,13 +25,6 @@ fun GreetingHeader(
 
         else -> "Good Night"
     }
-
-    val monthYear = now.format(
-        DateTimeFormatter.ofPattern(
-            "MMMM yyyy",
-            Locale.ENGLISH
-        )
-    )
 
     Column(
         modifier = modifier
@@ -48,14 +37,14 @@ fun GreetingHeader(
 
         Text(
             text = greeting,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Text(
-            text = monthYear,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground
+            text = "Here's your financial overview",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
