@@ -9,7 +9,8 @@ import javax.inject.Inject
 class IndianBankParser @Inject constructor(
     private val blockBuilder: TransactionBlockBuilder,
     private val descriptionCleaner: DescriptionCleaner,
-    private val merchantExtractor: MerchantExtractor
+    private val merchantExtractor: MerchantExtractor,
+    private val ocrWordRepair: OcrWordRepair
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
@@ -77,6 +78,9 @@ class IndianBankParser @Inject constructor(
 
             // Clean spaces (general)
             description = descriptionCleaner.clean(description)
+
+            //clean ocr word break
+            description = ocrWordRepair.repair(description)
 
             //merchant clean
             description = merchantExtractor.clean(description)
