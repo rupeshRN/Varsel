@@ -5,52 +5,51 @@ import javax.inject.Inject
 class DisplayDescriptionBuilder @Inject constructor() {
 
     fun build(
-        fields: TransactionFields,
-        fallback: String
-    ): String {
+    fields: TransactionFields,
+    fallback: String
+): String {
 
-        val merchant =
-            fields.merchant?.trim()
+    val merchant =
+        fields.merchant
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
 
-        val purpose =
-            fields.purpose?.trim()
+    val purpose =
+        fields.purpose
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
 
-        //----------------------------------------------------
-        // Both merchant and purpose available
-        //----------------------------------------------------
+    //----------------------------------------------------
+    // Prefer a meaningful purpose
+    //----------------------------------------------------
 
-        if (!merchant.isNullOrBlank() &&
-            !purpose.isNullOrBlank()
-        ) {
+    if (purpose != null &&
+        !isGenericPurpose(purpose)
+    ) {
+        return purpose
+    }
 
-            if (isGenericPurpose(purpose))
-                return merchant
+    //----------------------------------------------------
+    // Otherwise use merchant
+    //----------------------------------------------------
 
-            if (looksLikePersonName(merchant))
-                return purpose
+    if (merchant != null) {
+        return merchant
+    }
 
-            return "$merchant • $purpose"
-        }
+    //----------------------------------------------------
+    // Otherwise use purpose (generic)
+    //----------------------------------------------------
 
-        //----------------------------------------------------
-        // Merchant only
-        //----------------------------------------------------
+    if (purpose != null) {
+        return purpose
+    }
 
-        if (!merchant.isNullOrBlank())
-            return merchant
+    //----------------------------------------------------
+    // Fallback
+    //----------------------------------------------------
 
-        //----------------------------------------------------
-        // Purpose only
-        //----------------------------------------------------
-
-        if (!purpose.isNullOrBlank())
-            return purpose
-
-        //----------------------------------------------------
-        // Fallback
-        //----------------------------------------------------
-
-        return fallback
+    return fallback
     }
 
     //----------------------------------------------------
@@ -66,6 +65,7 @@ class DisplayDescriptionBuilder @Inject constructor() {
                 text == "transfer" ||
                 text == "payment" ||
                 text == "pay" ||
+                text == "fund transfer" ||
                 text.startsWith("pay to")
     }
 
