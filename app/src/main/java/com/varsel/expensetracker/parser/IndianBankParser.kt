@@ -8,7 +8,8 @@ import javax.inject.Inject
 
 class IndianBankParser @Inject constructor(
     private val blockBuilder: TransactionBlockBuilder,
-    private val descriptionCleaner: DescriptionCleaner
+    private val descriptionCleaner: DescriptionCleaner,
+    private val merchantExtractor: MerchantExtractor
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
@@ -74,8 +75,11 @@ class IndianBankParser @Inject constructor(
             // Remove balance amount
             description = description.replace(amounts[1].value, "")
 
-            // Clean spaces
+            // Clean spaces (general)
             description = descriptionCleaner.clean(description)
+
+            //merchant clean
+            description = merchantExtractor.clean(description)
 
             val upper = description.uppercase()
 
