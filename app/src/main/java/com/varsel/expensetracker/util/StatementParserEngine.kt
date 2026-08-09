@@ -1,17 +1,17 @@
 package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.parser.BankDetector
+import com.varsel.expensetracker.parser.ReconciliationEngine
 import com.varsel.expensetracker.parser.StatementImportResult
 import com.varsel.expensetracker.parser.StatementSummaryExtractor
 import com.varsel.expensetracker.parser.TextNormalizer
-import com.varsel.expensetracker.parser.ReconciliationEngine
 import javax.inject.Inject
 
 class StatementParserEngine @Inject constructor(
     private val bankDetector: BankDetector,
     private val textNormalizer: TextNormalizer,
     private val statementSummaryExtractor: StatementSummaryExtractor,
-   // private val reconciliationEngine: ReconciliationEngine
+    private val reconciliationEngine: ReconciliationEngine
 ) {
 
     fun parseStatement(
@@ -31,21 +31,15 @@ class StatementParserEngine @Inject constructor(
             parser.parse(normalizedText)
 
         val reconciliation =
-    reconciliationEngine.reconcile(
-        summary,
-        transactions
-    )
+            reconciliationEngine.reconcile(
+                summary,
+                transactions
+            )
 
-return StatementImportResult(
-    summary = summary,
-    reconciliation = ReconciliationResult(
-        calculatedCredits = 0.0,
-        calculatedDebits = 0.0,
-        creditDifference = 0.0,
-        debitDifference = 0.0,
-        isBalanced = false
-    ),
-    transactions = transactions
-)
+        return StatementImportResult(
+            summary = summary,
+            reconciliation = reconciliation,
+            transactions = transactions
+        )
     }
 }
