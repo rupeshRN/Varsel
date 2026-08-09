@@ -11,7 +11,7 @@ class StatementParserEngine @Inject constructor(
     private val bankDetector: BankDetector,
     private val textNormalizer: TextNormalizer,
     private val statementSummaryExtractor: StatementSummaryExtractor,
-    private val reconciliationEngine: ReconciliationEngine
+   // private val reconciliationEngine: ReconciliationEngine
 ) {
 
     fun parseStatement(
@@ -38,7 +38,13 @@ class StatementParserEngine @Inject constructor(
 
 return StatementImportResult(
     summary = summary,
-    reconciliation = reconciliation,
+    reconciliation = ReconciliationResult(
+        calculatedCredits = 0.0,
+        calculatedDebits = 0.0,
+        creditDifference = 0.0,
+        debitDifference = 0.0,
+        isBalanced = false
+    ),
     transactions = transactions
 )
     }
