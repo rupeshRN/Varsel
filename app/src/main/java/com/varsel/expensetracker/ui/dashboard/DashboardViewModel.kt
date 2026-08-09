@@ -50,7 +50,7 @@ class DashboardViewModel @Inject constructor(
         recentTransactions = transactions
             .take(10)
             .map { transaction ->
-                TransactionUiModel.fromDomain(transaction)
+                transactionUiMapper.map(transaction)
             },
 
         isLoading = false
