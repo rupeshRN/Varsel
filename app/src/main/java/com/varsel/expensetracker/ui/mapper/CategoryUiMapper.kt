@@ -15,14 +15,14 @@ class CategoryUiMapper @Inject constructor() {
                 name = category,
                 emoji = "🍔",
                 backgroundColor = Color(0xFFFFF3E0),
-                contentColor = Color(0xFFE65100)
+                textColor = Color(0xFFE65100)
             )
 
             "groceries" -> CategoryUiModel(
                 name = category,
                 emoji = "🛒",
                 backgroundColor = Color(0xFFE8F5E9),
-                contentColor = Color(0xFF2E7D32)
+                textColor = Color(0xFF2E7D32)
             )
 
             "travel",
@@ -30,14 +30,14 @@ class CategoryUiMapper @Inject constructor() {
                 name = category,
                 emoji = "🚕",
                 backgroundColor = Color(0xFFE3F2FD),
-                contentColor = Color(0xFF1565C0)
+                textColor = Color(0xFF1565C0)
             )
 
             "shopping" -> CategoryUiModel(
                 name = category,
                 emoji = "🛍️",
                 backgroundColor = Color(0xFFF3E5F5),
-                contentColor = Color(0xFF7B1FA2)
+                textColor = Color(0xFF7B1FA2)
             )
 
             "salary",
@@ -45,7 +45,7 @@ class CategoryUiMapper @Inject constructor() {
                 name = category,
                 emoji = "💰",
                 backgroundColor = Color(0xFFE8F5E9),
-                contentColor = Color(0xFF1B5E20)
+                textColor = Color(0xFF1B5E20)
             )
 
             "subscription",
@@ -53,21 +53,21 @@ class CategoryUiMapper @Inject constructor() {
                 name = category,
                 emoji = "📱",
                 backgroundColor = Color(0xFFEDE7F6),
-                contentColor = Color(0xFF512DA8)
+                textColor = Color(0xFF512DA8)
             )
 
             "utilities" -> CategoryUiModel(
                 name = category,
                 emoji = "💡",
                 backgroundColor = Color(0xFFFFF8E1),
-                contentColor = Color(0xFFF9A825)
+                textColor = Color(0xFFF9A825)
             )
 
             else -> CategoryUiModel(
                 name = category.ifBlank { "Uncategorized" },
                 emoji = "🏷️",
                 backgroundColor = Color(0xFFEEEEEE),
-                contentColor = Color(0xFF616161)
+                textColor = Color(0xFF616161)
             )
         }
     }
