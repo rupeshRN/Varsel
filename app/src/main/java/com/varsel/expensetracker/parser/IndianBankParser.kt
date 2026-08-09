@@ -40,8 +40,21 @@ Regex("^\\d{1,2}\\s*[A-Za-z]{3}\\s+\\d{4}")
 
     for (block in blocks) {  
 
-        if (block.lines.isEmpty()) continue  
+        if (block.lines.isEmpty()) continue
+        //temporary debug
+        throw IllegalArgumentException(
 
+    buildString {
+
+        appendLine("LINES = ${block.lines.size}")
+        appendLine()
+
+        block.lines.forEachIndexed { index, line ->
+
+            appendLine("[$index] -> '$line'")
+        }
+    }
+)
         val firstLine = block.lines.first()  
 
         val dateMatch = dateRegex.find(firstLine) ?: continue  
