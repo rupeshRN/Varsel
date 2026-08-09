@@ -2,22 +2,19 @@ package com.varsel.expensetracker.ui.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.Composable
 
 @Composable
 fun AppShell(
+
+    currentDestination: AppDestination,
+
+    onDestinationSelected: (AppDestination) -> Unit,
+
     content: @Composable (
-        currentDestination: AppDestination,
-        innerPadding: PaddingValues
+        PaddingValues
     ) -> Unit
 ) {
-
-    var currentDestination by remember {
-        mutableStateOf<AppDestination>(
-            AppDestination.Home
-        )
-    }
 
     Scaffold(
 
@@ -27,18 +24,12 @@ fun AppShell(
 
                 currentDestination = currentDestination,
 
-                onDestinationSelected = {
-
-                    currentDestination = it
-                }
+                onDestinationSelected = onDestinationSelected
             )
         }
 
     ) { padding ->
 
-        content(
-            currentDestination,
-            padding
-        )
+        content(padding)
     }
 }
