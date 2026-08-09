@@ -9,7 +9,8 @@ import javax.inject.Inject
 class StatementParserEngine @Inject constructor(
     private val bankDetector: BankDetector,
     private val textNormalizer: TextNormalizer,
-    private val statementSummaryExtractor: StatementSummaryExtractor
+    private val statementSummaryExtractor: StatementSummaryExtractor,
+    private val reconciliationEngine: ReconciliationEngine
 ) {
 
     fun parseStatement(
@@ -28,9 +29,16 @@ class StatementParserEngine @Inject constructor(
         val transactions =
             parser.parse(normalizedText)
 
-        return StatementImportResult(
-            summary = summary,
-            transactions = transactions
-        )
+        val reconciliation =
+    reconciliationEngine.reconcile(
+        summary,
+        transactions
+    )
+
+return StatementImportResult(
+    summary = summary,
+    reconciliation = reconciliation,
+    transactions = transactions
+)
     }
 }
