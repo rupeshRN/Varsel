@@ -7,6 +7,28 @@ class TransactionBlockBuilder @Inject constructor() {
     private val dateRegex =
         Regex("^\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
 
+        private val footerKeywords = listOf(
+
+    "ENDING BALANCE",
+
+    "TOTAL CREDITS",
+    "TOTAL DEBITS",
+
+    "OPENING BALANCE",
+
+    "ACCOUNT SUMMARY",
+
+    "ACCOUNT DETAILS",
+
+    "CUSTOMER'S ADDRESS",
+
+    "IFSC",
+
+    "ACCOUNT HOLDER",
+
+    "ACCOUNT NUMBER"
+)
+
     fun build(normalizedText: String): List<TransactionBlock> {
 
         val lines = normalizedText
@@ -20,16 +42,28 @@ class TransactionBlockBuilder @Inject constructor() {
 
         for (line in lines) {
 
-            if (!accountActivityFound) {
+    val upper = line.uppercase()
 
-                if (line.uppercase().contains("ACCOUNT ACTIVITY")) {
-                    accountActivityFound = true
-                }
+    if (!accountActivityFound) {
 
-                continue
-            }
+        if (upper.contains("ACCOUNT ACTIVITY")) {
+            accountActivityFound = true
+        }
 
-            transactionLines.add(line)
+        continue
+    }
+
+    // Skip table header
+    if (upper.contains("DATE TRANSACTION DETAILS")) {
+        continue
+    }
+
+    // Stop when footer starts
+    if (footerKeywords.any { upper.contains(it) }) {
+        break
+    }
+
+    transactionLines.add(line)
         }
 
         val blocks = mutableListOf<TransactionBlock>()
