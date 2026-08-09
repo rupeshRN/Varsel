@@ -85,12 +85,14 @@ class ImportViewModel @Inject constructor(
                 val summary = statementSummaryExtractor.extract(rawText)
 
 _uiState.value = ImportUiState.Error(
-    """
-    Opening : ${summary.openingBalance}
-    Credits : ${summary.totalCredits}
-    Debits  : ${summary.totalDebits}
-    Ending  : ${summary.endingBalance}
-    """.trimIndent()
+    buildString {
+        appendLine("ACCOUNT SUMMARY")
+        appendLine()
+        appendLine("Opening Balance : ${summary.openingBalance}")
+        appendLine("Total Credits   : ${summary.totalCredits}")
+        appendLine("Total Debits    : ${summary.totalDebits}")
+        appendLine("Ending Balance  : ${summary.endingBalance}")
+    }
 )
 
 return@launch
