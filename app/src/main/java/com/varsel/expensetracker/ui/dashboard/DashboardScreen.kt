@@ -3,7 +3,6 @@ package com.varsel.expensetracker.ui.dashboard
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,10 +18,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.varsel.expensetracker.ui.model.TransactionUiModel
-import com.varsel.expensetracker.ui.components.TransactionCard
 import com.varsel.expensetracker.ui.dashboard.components.BalanceCard
 import com.varsel.expensetracker.ui.dashboard.components.GreetingHeader
 import com.varsel.expensetracker.ui.dashboard.components.InsightsCard
+import com.varsel.expensetracker.ui.dashboard.components.DashboardRecentSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,23 +85,25 @@ fun DashboardScreen(
                     InsightsCard()
                 }
 
-                item(key = "recent_header") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Recent Transactions",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        TextButton(onClick = onNavigateToAllTransactions) {
-                            Text("View All")
-                        }
-                    }
-                }
+item(
+    key = "recent_transactions"
+) {
 
+    DashboardRecentSection(
+
+        transactions = uiState.recentTransactions,
+
+        onViewAll = onNavigateToAllTransactions,
+
+        onTransactionClick = {
+
+            // We'll reconnect editing
+            // after the UI layer migration.
+
+        }
+    )
+}
+                
                 if (uiState.recentTransactions.isEmpty()) {
                     item(key = "empty_state") {
                         Box(
