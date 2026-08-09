@@ -101,7 +101,7 @@ fun RecentTransactionCard(
 
                 CategoryChip(
 
-                    text = transaction.category
+                    category = transaction.category
                 )
 
                 Spacer(
