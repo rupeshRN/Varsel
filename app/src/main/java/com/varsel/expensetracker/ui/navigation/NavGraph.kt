@@ -3,73 +3,68 @@ package com.varsel.expensetracker.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import com.varsel.expensetracker.ui.category.CategoryScreen
 import com.varsel.expensetracker.ui.dashboard.DashboardScreen
-import com.varsel.expensetracker.ui.import_statement.ImportScreen
+import com.varsel.expensetracker.ui.more.MoreScreen
+import com.varsel.expensetracker.ui.reports.ReportsScreen
 import com.varsel.expensetracker.ui.transaction.TransactionScreen
-
-sealed class Screen(val route: String) {
-    object Dashboard : Screen("dashboard")
-    object Transactions : Screen("transactions")
-    object Categories : Screen("categories")
-    object ImportStatement : Screen("import_statement")
-}
 
 @Composable
 fun NavGraph(
     navController: NavHostController
 ) {
 
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Dashboard.route
-    ) {
+    AppShell(
 
-        composable(Screen.Dashboard.route) {
+        currentDestination = AppDestination.Home,
 
-            DashboardScreen(
-                viewModel = hiltViewModel(),
-                onNavigateToImport = {
-                    navController.navigate(Screen.ImportStatement.route)
-                },
-                onNavigateToAllTransactions = {
-                    navController.navigate(Screen.Transactions.route)
-                },
-                onNavigateToCategories = {
-                    navController.navigate(Screen.Categories.route)
-                }
-            )
+        onDestinationSelected = {
+            // Temporary
+            // Navigation logic comes in Milestone 2
         }
 
-        composable(Screen.Transactions.route) {
+    ) { padding ->
 
-            TransactionScreen(
-                viewModel = hiltViewModel(),
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
-        }
+        when (AppDestination.Home) {
 
-        composable(Screen.Categories.route) {
+            AppDestination.Home -> {
 
-            CategoryScreen(
-                viewModel = hiltViewModel(),
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
-        }
+                DashboardScreen(
 
-        composable(Screen.ImportStatement.route) {
+                    viewModel = hiltViewModel(),
 
-            ImportScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
+                    onNavigateToImport = {
+                        // handled later inside More
+                    },
+
+                    onNavigateToAllTransactions = {
+                        // handled by bottom navigation
+                    },
+
+                    onNavigateToCategories = {
+                        // handled later inside More
+                    }
+                )
+            }
+
+            AppDestination.Transactions -> {
+
+                TransactionScreen(
+
+                    viewModel = hiltViewModel(),
+
+                    onBackClick = {}
+                )
+            }
+
+            AppDestination.Reports -> {
+
+                ReportsScreen()
+            }
+
+            AppDestination.More -> {
+
+                MoreScreen()
+            }
         }
     }
 }
