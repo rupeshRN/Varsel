@@ -106,28 +106,6 @@ class IndianBankParser @Inject constructor(
     )
 
             //--------------------------------------------------
-            // TEMP DEBUG
-            //--------------------------------------------------
-
-            throw IllegalArgumentException(
-                buildString {
-
-                    appendLine("Description : $description")
-                    appendLine()
-
-                    appendLine("Overall = ${confidence.overallScore}")
-                    appendLine()
-
-                    confidence.fields.forEach {
-
-                        appendLine(
-                            "${it.field} : ${it.value} (${it.confidence}%)"
-                        )
-                    }
-                }
-            )
-
-            //--------------------------------------------------
             // Transaction
             //--------------------------------------------------
 
