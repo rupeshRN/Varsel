@@ -66,25 +66,32 @@ class IndianBankParser @Inject constructor(
                 .replace(",", "")
                 .toDoubleOrNull() ?: continue
 
-            var description = allText
+            var rawDescription = allText
 
-            // Remove date
-            description = description.replace(dateMatch.value, "")
+rawDescription = rawDescription.replace(dateMatch.value, "")
+rawDescription = rawDescription.replace(amounts[0].value, "")
+rawDescription = rawDescription.replace(amounts[1].value, "")
 
-            // Remove first INR amount
-            description = description.replace(amounts[0].value, "")
+rawDescription = rawDescription.trim()
 
-            // Remove balance amount
-            description = description.replace(amounts[1].value, "")
+val tokens =
+    slashTokenizer.tokenize(rawDescription)
 
-            // Clean spaces (general)
-            description = descriptionCleaner.clean(description)
+val fields =
+    fieldInterpreter.interpret(tokens)
 
-            //clean ocr word break
-            description = ocrWordRepair.repair(description)
+val description =
+    when {
 
-            //merchant clean
-            description = merchantExtractor.clean(description)
+        !fields.purpose.isNullOrBlank() ->
+            fields.purpose!!
+
+        !fields.merchant.isNullOrBlank() ->
+            fields.merchant!!
+
+        else ->
+            descriptionCleaner.clean(rawDescription)
+    }
 
             val upper = description.uppercase()
 
