@@ -12,7 +12,8 @@ class IndianBankParser @Inject constructor(
     private val slashTokenizer: SlashTokenizer,
     private val fieldInterpreter: FieldInterpreter,
     private val amountInterpreter: AmountInterpreter,
-    private val parserConfidenceEngine: ParserConfidenceEngine
+    private val parserConfidenceEngine: ParserConfidenceEngine,
+    private val displayDescriptionBuilder: DisplayDescriptionBuilder
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
@@ -96,17 +97,13 @@ class IndianBankParser @Inject constructor(
                 parserConfidenceEngine.evaluate(fields)
 
             val description =
-                when {
+    displayDescriptionBuilder.build(
 
-                    !fields.purpose.isNullOrBlank() ->
-                        fields.purpose!!
+        fields = fields,
 
-                    !fields.merchant.isNullOrBlank() ->
-                        fields.merchant!!
-
-                    else ->
-                        descriptionCleaner.clean(rawDescription)
-                }
+        fallback =
+            descriptionCleaner.clean(rawDescription)
+    )
 
             //--------------------------------------------------
             // TEMP DEBUG
