@@ -1,39 +1,27 @@
 package com.varsel.expensetracker.ui.design
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.Assessment
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.ReceiptLong
 
 object AppIcons {
 
-    val Dashboard = Icons.Default.Home
+    val Dashboard = Icons.Outlined.Home
 
-    val Transactions = Icons.Default.List
+    val Transactions = Icons.Outlined.ReceiptLong
 
-    val Import = Icons.Default.Upload
+    val Reports = Icons.Outlined.Assessment
 
-    val Reports = Icons.Default.BarChart
+    val Categories = Icons.Outlined.Category
 
-    val Categories = Icons.Default.Category
+    val Insights = Icons.Outlined.Lightbulb
 
-    val Settings = Icons.Default.Settings
+    val Wallet = Icons.Outlined.AccountBalanceWallet
 
-    val Search = Icons.Default.Search
-
-    val Filter = Icons.Default.FilterList
-
-    val Edit = Icons.Default.Edit
-
-    val Delete = Icons.Default.Delete
-
-    val Add = Icons.Default.Add
-
-    val Income = Icons.Default.ArrowDownward
-
-    val Expense = Icons.Default.ArrowUpward
-
-    val Success = Icons.Default.CheckCircle
-
-    val Warning = Icons.Default.Warning
-
-    val Error = Icons.Default.Error
+    val More = Icons.Outlined.MoreHoriz
 }
