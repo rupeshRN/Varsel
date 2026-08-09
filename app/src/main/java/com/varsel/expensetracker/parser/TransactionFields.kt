@@ -16,5 +16,7 @@ data class TransactionFields(
 
     val purpose: String? = null,
 
-    val unknown: List<String> = emptyList()
+    val unknown: List<String> = emptyList(),
+
+    val confidence: ConfidenceReport? = null
 )
