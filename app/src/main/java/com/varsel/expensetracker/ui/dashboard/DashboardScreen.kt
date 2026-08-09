@@ -20,6 +20,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.varsel.expensetracker.ui.model.TransactionUiModel
 import com.varsel.expensetracker.ui.components.TransactionCard
+import com.varsel.expensetracker.ui.dashboard.components.BalanceCard
+import com.varsel.expensetracker.ui.dashboard.components.GreetingHeader
+import com.varsel.expensetracker.ui.dashboard.components.InsightsCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,29 +68,25 @@ fun DashboardScreen(
                     .padding(paddingValues)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item(key = "summary_card") {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Total Balance", style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                text = "₹%.2f".format(uiState.totalBalance),
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("Income: ₹%.2f".format(uiState.totalIncome), color = Color(0xFF2E7D32))
-                                Text("Expense: ₹%.2f".format(uiState.totalExpense), color = Color(0xFFC62828))
-                            }
-                        }
-                    }
+            ) 
+            
+            {
+                item(key = "greeting") 
+                {
+                     GreetingHeader()
+                }
+
+                item(key = "balance_card") 
+                {
+                    BalanceCard(
+                        balance = uiState.totalBalance,
+                        income = uiState.totalIncome,
+                        expense = uiState.totalExpense)
+                }
+
+                item(key = "insights") 
+                {
+                    InsightsCard()
                 }
 
                 item(key = "recent_header") {
