@@ -1,3 +1,13 @@
+package com.varsel.expensetracker.ui.navigation
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Assessment
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.ListAlt
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.UploadFile
+import androidx.compose.ui.graphics.vector.ImageVector
+
 sealed class AppDestination(
 
     val route: String,
