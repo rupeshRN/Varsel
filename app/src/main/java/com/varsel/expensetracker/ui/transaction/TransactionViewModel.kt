@@ -6,13 +6,13 @@ import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.domain.repository.TransactionRepository
 import com.varsel.expensetracker.ui.model.TransactionUiMapper
-import com.varsel.expensetracker.ui.model.TransactionUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,11 +25,11 @@ class TransactionViewModel @Inject constructor(
 
 ) : ViewModel() {
 
-    private val _transactions =
-        MutableStateFlow<List<TransactionUiModel>>(emptyList())
+    private val _uiState =
+        MutableStateFlow(TransactionUiState())
 
-    val transactions: StateFlow<List<TransactionUiModel>> =
-        _transactions.asStateFlow()
+    val uiState: StateFlow<TransactionUiState> =
+        _uiState.asStateFlow()
 
     init {
 
@@ -45,10 +45,50 @@ class TransactionViewModel @Inject constructor(
                 .getAllTransactions()
                 .collectLatest { transactions ->
 
-                    _transactions.value =
-                        transactionUiMapper.map(transactions)
+                    _uiState.update {
+
+                        it.copy(
+
+                            transactions =
+                                transactionUiMapper.map(transactions),
+
+                            isLoading = false
+
+                        )
+
+                    }
 
                 }
+
+        }
+
+    }
+
+    fun updateSearchQuery(query: String) {
+
+        _uiState.update {
+
+            it.copy(searchQuery = query)
+
+        }
+
+    }
+
+    fun updateSelectedMonth(month: String) {
+
+        _uiState.update {
+
+            it.copy(selectedMonth = month)
+
+        }
+
+    }
+
+    fun updateFilter(filter: TransactionFilter) {
+
+        _uiState.update {
+
+            it.copy(selectedFilter = filter)
 
         }
 
