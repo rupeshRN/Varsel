@@ -14,10 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
+import javax.inject.Inject
 
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
@@ -29,16 +29,37 @@ class TransactionViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState =
-        MutableStateFlow(TransactionUiState())
-
-        private var allTransactions: List<Transaction> = emptyList()
+        MutableStateFlow(
+            TransactionUiState()
+        )
 
     val uiState: StateFlow<TransactionUiState> =
         _uiState.asStateFlow()
 
+    private var allTransactions: List<Transaction> =
+        emptyList()
+
     init {
 
         loadTransactions()
+
+    }
+
+    private fun loadTransactions() {
+
+        viewModelScope.launch {
+
+            repository
+                .getAllTransactions()
+                .collectLatest { transactions ->
+
+                    allTransactions = transactions
+
+                    recalculateUi()
+
+                }
+
+        }
 
     }
 
@@ -47,7 +68,6 @@ class TransactionViewModel @Inject constructor(
     val state = _uiState.value
 
     val months = allTransactions
-
         .map {
 
             YearMonth.from(
@@ -61,13 +81,10 @@ class TransactionViewModel @Inject constructor(
             )
 
         }
-
         .distinct()
-
         .sortedDescending()
 
     val availableMonths =
-
         months.map { yearMonth ->
 
             TransactionMonth(
@@ -75,204 +92,239 @@ class TransactionViewModel @Inject constructor(
                 yearMonth = yearMonth,
 
                 displayName =
-    yearMonth.month
-        .name
-        .lowercase()
-        .replaceFirstChar {
+                    yearMonth.month.name
+                        .lowercase()
+                        .replaceFirstChar {
 
-            it.uppercase()
+                            it.uppercase()
 
-        }
-        .take(3)
+                        }
+                        .take(3)
 
             )
 
         }
 
     val selectedMonth =
-
         state.selectedMonth
-
             ?: availableMonths.firstOrNull()
 
-val monthFilteredTransactions =
+    val monthTransactions =
+        allTransactions.filter {
 
-    allTransactions.filter {
+            isInSelectedMonth(
 
-        isInSelectedMonth(
+                it,
 
-            it,
+                selectedMonth
 
-            selectedMonth
-
-        )
-
-    }
-
-val searchFilteredTransactions =
-
-    if (state.searchQuery.isBlank()) {
-
-        monthFilteredTransactions
-
-    } else {
-
-        val query = state.searchQuery.trim().lowercase()
-
-        monthFilteredTransactions.filter { transaction ->
-
-            transaction.description.lowercase().contains(query) ||
-
-            transaction.category.lowercase().contains(query) ||
-
-            (transaction.referenceNumber
-                ?.lowercase()
-                ?.contains(query) == true)
+            )
 
         }
 
-    }
+    val searchTransactions =
+        if (state.searchQuery.isBlank()) {
 
-val finalTransactions = when (state.selectedFilter) {
+            monthTransactions
 
-    TransactionFilter.All -> {
+        } else {
 
-        searchFilteredTransactions
+            val query =
+                state.searchQuery
+                    .trim()
+                    .lowercase()
 
-    }
+            monthTransactions.filter { transaction ->
 
-    TransactionFilter.Income -> {
+                transaction.description
+                    .lowercase()
+                    .contains(query)
 
-        searchFilteredTransactions.filter {
+                        ||
 
-            it.type == TransactionType.INCOME
+                        transaction.category
+                            .lowercase()
+                            .contains(query)
+
+                        ||
+
+                        (transaction.referenceNumber
+                            ?.lowercase()
+                            ?.contains(query) == true)
+
+            }
 
         }
 
-    }
+    val finalTransactions =
+        when (state.selectedFilter) {
 
-    TransactionFilter.Expense -> {
+            TransactionFilter.All ->
 
-        searchFilteredTransactions.filter {
+                searchTransactions
 
-            it.type == TransactionType.EXPENSE
+            TransactionFilter.Income ->
 
-        }
+                searchTransactions.filter {
 
-    }
+                    it.type ==
+                            TransactionType.INCOME
 
-}
-    
-    val income = finalTransactions
-            .filter {it.type == TransactionType.INCOME}
-            .sumOf {it.amount}
+                }
 
-    val expense = finalTransactions
-            .filter {it.type == TransactionType.EXPENSE}
-            .sumOf {it.amount}
+            TransactionFilter.Expense ->
 
-    _uiState.update {
-        it.copy(
-            transactions = transactionUiMapper.map(finalTransactions),
-            availableMonths = availableMonths,
-            selectedMonth = selectedMonth,
-            monthlyIncome = income,
-            monthlyExpense = expense,
-            isLoading = false
-                )
+                searchTransactions.filter {
 
-                    }
+                    it.type ==
+                            TransactionType.EXPENSE
 
-}
-
-    private fun isInSelectedMonth(
-    transaction: Transaction,
-    selectedMonth: TransactionMonth?
-): Boolean {
-    if (selectedMonth == null) 
-        {return true}
-
-    val transactionMonth = YearMonth.from(
-        Instant.ofEpochMilli(
-            transaction.dateTimestamp
-        ).atZone(
-            ZoneId.systemDefault()
-        )
-
-    )
-
-    return transactionMonth == selectedMonth.yearMonth
-
-}
-
-    private fun loadTransactions() 
-    {
-        viewModelScope.launch 
-        {
-            repository
-                .getAllTransactions()
-                .collectLatest 
-                { 
-                    transactions ->
-                    allTransactions = transactions
-                    recalculateUi()
                 }
 
         }
 
+    val income =
+        finalTransactions
+            .filter {
+
+                it.type ==
+                        TransactionType.INCOME
+
+            }
+            .sumOf {
+
+                it.amount
+
+            }
+
+    val expense =
+        finalTransactions
+            .filter {
+
+                it.type ==
+                        TransactionType.EXPENSE
+
+            }
+            .sumOf {
+
+                it.amount
+
+            }
+
+    _uiState.update {
+
+        it.copy(
+
+            transactions =
+                transactionUiMapper.map(
+                    finalTransactions
+                ),
+
+            availableMonths =
+                availableMonths,
+
+            selectedMonth =
+                selectedMonth,
+
+            monthlyIncome =
+                income,
+
+            monthlyExpense =
+                expense,
+
+            isLoading = false
+
+        )
+
     }
+
+}
+
+private fun isInSelectedMonth(
+
+    transaction: Transaction,
+
+    selectedMonth: TransactionMonth?
+
+): Boolean {
+
+    if (selectedMonth == null) {
+
+        return true
+
+    }
+
+    val transactionMonth =
+        YearMonth.from(
+
+            Instant.ofEpochMilli(
+                transaction.dateTimestamp
+            ).atZone(
+                ZoneId.systemDefault()
+            )
+
+        )
+
+    return transactionMonth ==
+            selectedMonth.yearMonth
+
+}
 
     fun updateSearchQuery(query: String) {
 
-    _uiState.update {
+        _uiState.update {
 
-        it.copy(
+            it.copy(
 
-            searchQuery = query
+                searchQuery = query
 
-        )
+            )
+
+        }
+
+        recalculateUi()
 
     }
-
-    recalculateUi()
-
-}
 
     fun updateSelectedMonth(
 
-    month: TransactionMonth
+        month: TransactionMonth
 
-) {
+    ) {
 
-    _uiState.update {
+        _uiState.update {
 
-        it.copy(
+            it.copy(
 
-            selectedMonth = month
+                selectedMonth = month
 
-        )
+            )
 
-    }
+        }
 
-    recalculateUi()
-
-}
-
-fun updateFilter(filter: TransactionFilter) {
-
-    _uiState.update {
-
-        it.copy(
-
-            selectedFilter = filter
-
-        )
+        recalculateUi()
 
     }
 
-    recalculateUi()
+    fun updateFilter(
 
-}
+        filter: TransactionFilter
+
+    ) {
+
+        _uiState.update {
+
+            it.copy(
+
+                selectedFilter = filter
+
+            )
+
+        }
+
+        recalculateUi()
+
+    }
 
     fun addTransaction(
 
