@@ -92,14 +92,36 @@ class TransactionViewModel @Inject constructor(
                 yearMonth = yearMonth,
 
                 displayName =
-                    yearMonth.month.name
-                        .lowercase()
-                        .replaceFirstChar {
 
-                            it.uppercase()
+    buildString {
 
-                        }
-                        .take(3)
+        append(
+
+            yearMonth.month.name
+                .lowercase()
+                .replaceFirstChar {
+
+                    it.uppercase()
+
+                }
+                .take(3)
+
+        )
+
+        if (
+
+            yearMonth.year !=
+            YearMonth.now().year
+
+        ) {
+
+            append(" ")
+
+            append(yearMonth.year)
+
+        }
+
+    }
 
             )
 
