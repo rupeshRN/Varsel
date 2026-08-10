@@ -152,6 +152,14 @@ Card(
             Text(
                 "Last Parsed Date : ${diagnostics.lastParsedDate}"
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
+Text(
+    "Stop Reason",
+    style = MaterialTheme.typography.titleSmall
+)
+
+Text(diagnostics.stopReason)
 
             //added for diagnosis
             if (diagnostics.missedDateLines.isNotEmpty()) {
