@@ -134,6 +134,32 @@ val searchFilteredTransactions =
 
     }
 
+    val finalTransactions =
+
+    when (state.selectedFilter) {
+
+        TransactionFilter.ALL ->
+
+            searchFilteredTransactions
+
+        TransactionFilter.INCOME ->
+
+            searchFilteredTransactions.filter {
+
+                it.type == TransactionType.INCOME
+
+            }
+
+        TransactionFilter.EXPENSE ->
+
+            searchFilteredTransactions.filter {
+
+                it.type == TransactionType.EXPENSE
+
+            }
+
+    }
+
     val income =
 
         searchFilteredTransactions
@@ -277,15 +303,21 @@ recalculateUi()
 
 }
 
-    fun updateFilter(filter: TransactionFilter) {
+fun updateFilter(filter: TransactionFilter) {
 
-        _uiState.update {
+    _uiState.update {
 
-            it.copy(selectedFilter = filter)
+        it.copy(
 
-        }
+            selectedFilter = filter
+
+        )
 
     }
+
+    recalculateUi()
+
+}
 
     fun addTransaction(
 
