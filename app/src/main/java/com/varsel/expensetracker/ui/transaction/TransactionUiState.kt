@@ -6,7 +6,9 @@ data class TransactionUiState(
 
     val transactions: List<TransactionUiModel> = emptyList(),
 
-    val selectedMonth: String = currentMonth(),
+    val availableMonths: List<TransactionMonth> = emptyList(),
+
+val selectedMonth: TransactionMonth? = null,
 
     val selectedFilter: TransactionFilter = TransactionFilter.All,
 
