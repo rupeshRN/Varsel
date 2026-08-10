@@ -18,7 +18,7 @@ data class ParserDiagnostics(
 
     val lastParsedDate: String = "—",
 
-    val notes: List<String> = emptyList()
+    val notes: List<String> = emptyList(),
 
     val missedDateLines: List<String> = emptyList()
 )
