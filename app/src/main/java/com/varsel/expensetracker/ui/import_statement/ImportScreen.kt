@@ -152,6 +152,25 @@ Card(
             Text(
                 "Last Parsed Date : ${diagnostics.lastParsedDate}"
             )
+
+            //added for diagnosis
+            if (diagnostics.missedDateLines.isNotEmpty()) {
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    Text(
+        "Missed Date Lines",
+        style = MaterialTheme.typography.titleSmall
+    )
+
+    diagnostics.missedDateLines.forEach {
+
+        Text(
+            text = it,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
         }
     }
 }
