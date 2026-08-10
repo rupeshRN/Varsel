@@ -12,7 +12,9 @@ data class TransactionUiState(
 
     val searchQuery: String = "",
 
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val monthlyIncome: Double = 0.0,
+    val monthlyExpense: Double = 0.0,
 
 )
 
