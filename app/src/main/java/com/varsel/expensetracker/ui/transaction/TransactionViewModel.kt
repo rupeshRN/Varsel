@@ -40,6 +40,142 @@ class TransactionViewModel @Inject constructor(
 
     }
 
+    private fun recalculateUi() {
+
+    val state = _uiState.value
+
+    val months = allTransactions
+
+        .map {
+
+            YearMonth.from(
+
+                Instant.ofEpochMilli(
+                    it.dateTimestamp
+                ).atZone(
+                    ZoneId.systemDefault()
+                )
+
+            )
+
+        }
+
+        .distinct()
+
+        .sortedDescending()
+
+    val availableMonths =
+
+        months.map { yearMonth ->
+
+            TransactionMonth(
+
+                yearMonth = yearMonth,
+
+                displayName = yearMonth.month.name
+
+                    .lowercase()
+
+                    .replaceFirstChar {
+
+                        it.uppercase()
+
+                    }
+
+                    .take(3)
+
+            )
+
+        }
+
+    val selectedMonth =
+
+        state.selectedMonth
+
+            ?: availableMonths.firstOrNull()
+
+    val filteredTransactions =
+
+        allTransactions.filter {
+
+            isInSelectedMonth(
+
+                it,
+
+                selectedMonth
+
+            )
+
+        }
+
+    val income =
+
+        filteredTransactions
+
+            .filter {
+
+                it.type == TransactionType.INCOME
+
+            }
+
+            .sumOf {
+
+                it.amount
+
+            }
+
+    val expense =
+
+        filteredTransactions
+
+            .filter {
+
+                it.type == TransactionType.EXPENSE
+
+            }
+
+            .sumOf {
+
+                it.amount
+
+            }
+
+    _uiState.update {
+
+        it.copy(
+
+            transactions =
+
+                transactionUiMapper.map(
+
+                    filteredTransactions
+
+                ),
+
+            availableMonths =
+
+                availableMonths,
+
+            selectedMonth =
+
+                selectedMonth,
+
+            monthlyIncome =
+
+                income,
+
+            monthlyExpense =
+
+                expense,
+
+            isLoading = false
+
+        )
+
+    }
+
+}
+
     private fun isInSelectedMonth(
 
     transaction: Transaction,
@@ -75,109 +211,10 @@ class TransactionViewModel @Inject constructor(
 
             repository
                 .getAllTransactions()
-                .collectLatest { transactions ->
+                .collectLatest { allTransactions = transactions
 
-val months = transactions
-
-    .map {
-
-        YearMonth.from(
-
-            Instant.ofEpochMilli(it.dateTimestamp)
-                .atZone(ZoneId.systemDefault())
-
-        )
-
-    }
-
-    .distinct()
-
-    .sortedDescending()
-
-val availableMonths = months.map { yearMonth ->
-
-    TransactionMonth(
-
-        yearMonth = yearMonth,
-
-        displayName = yearMonth.month.name
-            .lowercase()
-            .replaceFirstChar {
-
-                it.uppercase()
-
-            }
-            .take(3)
-
-    )
-
-}
-
-val selectedMonth =
-
-    _uiState.value.selectedMonth
-        ?: availableMonths.firstOrNull()
-
-        val filteredTransactions =
-
-    transactions.filter {
-
-        isInSelectedMonth(
-
-            it,
-
-            selectedMonth
-
-        )
-
-    }
-                    
-                    val income = filteredTransactions
-        .filter {
-
-            it.type == TransactionType.INCOME
-
-        }
-        .sumOf {
-
-            it.amount
-
-        }
-
-    val expense = filteredTransactions
-        .filter {
-
-            it.type == TransactionType.EXPENSE
-
-        }
-        .sumOf {
-
-            it.amount
-
-        }
-
-    _uiState.update { state ->
-
-    state.copy(
-
-        transactions =
-            transactionUiMapper.map(filteredTransactions),
-
-        availableMonths = availableMonths,
-
-        selectedMonth = selectedMonth,
-
-        monthlyIncome = income,
-
-        monthlyExpense = expense,
-
-        isLoading = false
-
-    )
-
-}
-
-}
+recalculateUi()
+                }
 
         }
 
@@ -208,6 +245,8 @@ val selectedMonth =
         )
 
     }
+
+    recalculateUi()
 
 }
 
