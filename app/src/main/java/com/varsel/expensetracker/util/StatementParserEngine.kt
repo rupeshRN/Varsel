@@ -6,7 +6,7 @@ import com.varsel.expensetracker.parser.StatementImportResult
 import com.varsel.expensetracker.parser.StatementSummaryExtractor
 import com.varsel.expensetracker.parser.TextNormalizer
 import javax.inject.Inject
-import android.util.Log
+import com.varsel.expensetracker.developer.ParserDiagnosticsManager
 
 class StatementParserEngine @Inject constructor(
     private val bankDetector: BankDetector,
@@ -19,20 +19,44 @@ class StatementParserEngine @Inject constructor(
         rawText: String
     ): StatementImportResult {
 
+        ParserDiagnosticsManager.reset() // To Populate Diagnostics
+
         val normalizedText =
             textNormalizer.normalize(rawText)
+
+            // val rawLines is to Populate Diagnostics
+        val rawLines =
+    rawText
+        .lines()
+        .count { it.isNotBlank() }
+
+val normalizedLines =
+    normalizedText
+        .lines()
+        .count { it.isNotBlank() }
+
+ParserDiagnosticsManager.latest =
+    ParserDiagnosticsManager.latest.copy(
+
+        rawLines = rawLines,
+
+        normalizedLines = normalizedLines
+
+    )
             
- //below dateregex and detecteddates and Log.d is for debug purpose only
+ //below dateregex and detecteddates and ParserDiagnosticsManager is for debug purpose only
         val dateRegex =
             Regex("\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
 
         val detectedDates =
             dateRegex.findAll(normalizedText).count()
 
-            Log.d(
-    "StatementParser",
-    "Dates detected = $detectedDates"
-)
+      ParserDiagnosticsManager.latest =
+    ParserDiagnosticsManager.latest.copy(
+
+        datesDetected = detectedDates
+
+    )
 
         val summary =
             statementSummaryExtractor.extract(normalizedText)
@@ -43,11 +67,27 @@ class StatementParserEngine @Inject constructor(
         val transactions =
             parser.parse(normalizedText)
 
-    //below Log.d is for debug purpose only
-        Log.d(
-    "StatementParser",
-    "Transactions parsed = ${transactions.size}"
-)
+            //below parser diagnostic is for debug
+           ParserDiagnosticsManager.latest =
+    ParserDiagnosticsManager.latest.copy(
+
+        transactionsParsed = transactions.size,
+
+        lastParsedDate =
+            transactions
+                .maxByOrNull { it.dateTimestamp }
+                ?.let {
+
+                    java.text.SimpleDateFormat(
+                        "dd MMM yyyy",
+                        java.util.Locale.ENGLISH
+                    ).format(
+                        java.util.Date(it.dateTimestamp)
+                    )
+
+                } ?: "—"
+
+    )
 
         val reconciliation =
             reconciliationEngine.reconcile(
