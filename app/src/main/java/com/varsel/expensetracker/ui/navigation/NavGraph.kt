@@ -12,6 +12,7 @@ import com.varsel.expensetracker.ui.dashboard.DashboardScreen
 import com.varsel.expensetracker.ui.import_statement.ImportScreen
 import com.varsel.expensetracker.ui.transaction.TransactionScreen
 import androidx.compose.ui.Modifier
+import com.varsel.expensetracker.ui.more.MoreScreen
 
 @Composable
 fun NavGraph(
@@ -61,7 +62,33 @@ fun NavGraph(
 
         composable(AppDestination.More.route) {
 
-            androidx.compose.material3.Text("More - Coming Soon")
+    MoreScreen(
+
+        onImportClick = {
+            navController.navigate("import_statement")
+        },
+
+        onCategoriesClick = {
+            navController.navigate("categories")
+        },
+
+        onLearningRulesClick = {
+            // Phase C
+        },
+
+        onAppearanceClick = {
+            // Phase D
+        },
+
+        onDeveloperClick = {
+            // Phase E
+        },
+
+        onAboutClick = {
+            // Phase F
+        }
+
+    )
         }
 
         composable("categories") {
