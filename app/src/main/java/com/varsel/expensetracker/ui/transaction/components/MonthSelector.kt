@@ -13,15 +13,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.varsel.expensetracker.ui.design.AppDimensions
+import com.varsel.expensetracker.ui.transaction.TransactionMonth
 
 @Composable
 fun MonthSelector(
 
-    months: List<String>,
+    months: List<TransactionMonth>,
 
-    selectedMonth: String,
+    selectedMonth: TransactionMonth?,
 
-    onMonthSelected: (String) -> Unit,
+    onMonthSelected: (TransactionMonth) -> Unit,
 
     modifier: Modifier = Modifier
 
@@ -44,11 +45,15 @@ fun MonthSelector(
                 selected = month == selectedMonth,
 
                 onClick = {
+
                     onMonthSelected(month)
+
                 },
 
                 label = {
-                    Text(month)
+
+                    Text(month.displayName)
+
                 },
 
                 colors = FilterChipDefaults.filterChipColors(
@@ -62,6 +67,9 @@ fun MonthSelector(
                 )
 
             )
+
         }
+
     }
+
 }
