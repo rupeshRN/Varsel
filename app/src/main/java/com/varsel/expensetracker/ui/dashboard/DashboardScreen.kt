@@ -26,9 +26,7 @@ import com.varsel.expensetracker.ui.dashboard.components.DashboardRecentSection
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
-    onNavigateToImport: () -> Unit,
-    onNavigateToAllTransactions: () -> Unit,
-    onNavigateToCategories: () -> Unit
+    onNavigateToAllTransactions: () -> Unit
 ) {
     // Lifecycle-aware flow collection to prevent background CPU cycles
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
