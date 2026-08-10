@@ -213,7 +213,8 @@ class TransactionViewModel @Inject constructor(
 
             repository
                 .getAllTransactions()
-                .collectLatest { allTransactions = transactions
+                .collectLatest { transactions ->
+                    allTransactions = transactions
 
 recalculateUi()
                 }
