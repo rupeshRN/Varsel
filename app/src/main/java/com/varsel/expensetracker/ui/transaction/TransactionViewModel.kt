@@ -106,8 +106,14 @@ class TransactionViewModel @Inject constructor(
         }
 
     val selectedMonth =
-        state.selectedMonth
-            ?: availableMonths.firstOrNull()
+
+    availableMonths.firstOrNull {
+
+        it.yearMonth == state.selectedMonth?.yearMonth
+
+    }
+
+    ?: availableMonths.firstOrNull()
 
     val monthTransactions =
         allTransactions.filter {
