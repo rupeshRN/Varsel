@@ -74,17 +74,16 @@ class TransactionViewModel @Inject constructor(
 
                 yearMonth = yearMonth,
 
-                displayName = yearMonth.month.name
+                displayName =
+    yearMonth.month
+        .name
+        .lowercase()
+        .replaceFirstChar {
 
-                    .lowercase()
+            it.uppercase()
 
-                    .replaceFirstChar {
-
-                        it.uppercase()
-
-                    }
-
-                    .take(3)
+        }
+        .take(3)
 
             )
 
@@ -134,32 +133,36 @@ val searchFilteredTransactions =
 
     }
 
-    val finalTransactions =
+val finalTransactions = when (state.selectedFilter) {
 
-    when (state.selectedFilter) {
+    TransactionFilter.All -> {
 
-        TransactionFilter.ALL ->
-
-            searchFilteredTransactions
-
-        TransactionFilter.INCOME ->
-
-            searchFilteredTransactions.filter {
-
-                it.type == TransactionType.INCOME
-
-            }
-
-        TransactionFilter.EXPENSE ->
-
-            searchFilteredTransactions.filter {
-
-                it.type == TransactionType.EXPENSE
-
-            }
+        searchFilteredTransactions
 
     }
 
+    TransactionFilter.Income -> {
+
+        searchFilteredTransactions.filter {
+
+            it.type == TransactionType.INCOME
+
+        }
+
+    }
+
+    TransactionFilter.Expense -> {
+
+        searchFilteredTransactions.filter {
+
+            it.type == TransactionType.EXPENSE
+
+        }
+
+    }
+
+}
+    
     val income = finalTransactions
             .filter {it.type == TransactionType.INCOME}
             .sumOf {it.amount}
@@ -170,7 +173,7 @@ val searchFilteredTransactions =
 
     _uiState.update {
         it.copy(
-            transactions = transactionUiMapper.map(searchFilteredTransactions),
+            transactions = transactionUiMapper.map(finalTransactions),
             availableMonths = availableMonths,
             selectedMonth = selectedMonth,
             monthlyIncome = income,
