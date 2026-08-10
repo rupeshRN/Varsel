@@ -14,6 +14,12 @@ import com.varsel.expensetracker.ui.dashboard.DashboardScreen
 import com.varsel.expensetracker.ui.import_statement.ImportScreen
 import com.varsel.expensetracker.ui.more.MoreScreen
 import com.varsel.expensetracker.ui.transaction.TransactionScreen
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Palette
+import com.varsel.expensetracker.ui.more.SettingsDetailScreen
 
 @Composable
 fun NavGraph(
@@ -65,20 +71,20 @@ fun NavGraph(
                 },
 
                 onLearningRulesClick = {
-                    // TODO Phase C
-                },
+    navController.navigate("learning_rules")
+}
 
-                onAppearanceClick = {
-                    // TODO Phase D
-                },
+onAppearanceClick = {
+    navController.navigate("appearance")
+}
 
-                onDeveloperClick = {
-                    // TODO Phase E
-                },
+onDeveloperClick = {
+    navController.navigate("developer")
+}
 
-                onAboutClick = {
-                    // TODO Phase F
-                }
+onAboutClick = {
+    navController.navigate("about")
+}
             )
         }
 
@@ -100,5 +106,54 @@ fun NavGraph(
                 }
             )
         }
+
+        composable("learning_rules") {
+
+    SettingsDetailScreen(
+
+        title = "Learning Rules",
+
+        description = "View and manage the rules that help Varsel automatically categorize your transactions.",
+
+        icon = Icons.Outlined.AutoAwesome
+    )
+}
+
+composable("appearance") {
+
+    SettingsDetailScreen(
+
+        title = "Appearance",
+
+        description = "Customize themes, colors and other display preferences.",
+
+        icon = Icons.Outlined.Palette
+    )
+}
+
+composable("developer") {
+
+    SettingsDetailScreen(
+
+        title = "Developer",
+
+        description = "Parser diagnostics, logs and development tools for troubleshooting.",
+
+        icon = Icons.Outlined.Code
+    )
+}
+
+composable("about") {
+
+    SettingsDetailScreen(
+
+        title = "About Varsel",
+
+        description = "Varsel is a smart personal finance application designed to automatically import, understand and organize your financial statements.",
+
+        icon = Icons.Outlined.Info
+    )
+}
+        
     }
 }
