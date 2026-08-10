@@ -48,7 +48,43 @@ class TransactionViewModel @Inject constructor(
                 .getAllTransactions()
                 .collectLatest { transactions ->
 
-    val income = transactions
+val months = transactions
+
+    .map {
+
+        YearMonth.from(
+
+            Instant.ofEpochMilli(it.dateTimestamp)
+                .atZone(ZoneId.systemDefault())
+
+        )
+
+    }
+
+    .distinct()
+
+    .sortedDescending()
+
+val availableMonths = months.map { yearMonth ->
+
+    TransactionMonth(
+
+        yearMonth = yearMonth,
+
+        displayName = yearMonth.month.name
+            .lowercase()
+            .replaceFirstChar {
+
+                it.uppercase()
+
+            }
+            .take(3)
+
+    )
+
+}
+                    
+                    val income = transactions
         .filter {
 
             it.type == TransactionType.INCOME
@@ -72,22 +108,29 @@ class TransactionViewModel @Inject constructor(
 
         }
 
-    _uiState.update {
+    _uiState.update { state ->
 
-        it.copy(
+    state.copy(
 
-            transactions =
-                transactionUiMapper.map(transactions),
+        transactions =
+            transactionUiMapper.map(transactions),
 
-            monthlyIncome = income,
+        availableMonths = availableMonths,
 
-            monthlyExpense = expense,
+        selectedMonth =
 
-            isLoading = false
+            state.selectedMonth
+                ?: availableMonths.firstOrNull(),
 
-        )
+        monthlyIncome = income,
 
-    }
+        monthlyExpense = expense,
+
+        isLoading = false
+
+    )
+
+}
 
 }
 
@@ -105,15 +148,23 @@ class TransactionViewModel @Inject constructor(
 
     }
 
-    fun updateSelectedMonth(month: String) {
+    fun updateSelectedMonth(
 
-        _uiState.update {
+    month: TransactionMonth
 
-            it.copy(selectedMonth = month)
+) {
 
-        }
+    _uiState.update {
+
+        it.copy(
+
+            selectedMonth = month
+
+        )
 
     }
+
+}
 
     fun updateFilter(filter: TransactionFilter) {
 
