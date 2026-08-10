@@ -96,23 +96,47 @@ class TransactionViewModel @Inject constructor(
 
             ?: availableMonths.firstOrNull()
 
-    val filteredTransactions =
+val monthFilteredTransactions =
 
-        allTransactions.filter {
+    allTransactions.filter {
 
-            isInSelectedMonth(
+        isInSelectedMonth(
 
-                it,
+            it,
 
-                selectedMonth
+            selectedMonth
 
-            )
+        )
+
+    }
+
+val searchFilteredTransactions =
+
+    if (state.searchQuery.isBlank()) {
+
+        monthFilteredTransactions
+
+    } else {
+
+        val query = state.searchQuery.trim().lowercase()
+
+        monthFilteredTransactions.filter { transaction ->
+
+            transaction.description.lowercase().contains(query) ||
+
+            transaction.category.lowercase().contains(query) ||
+
+            (transaction.referenceNumber
+                ?.lowercase()
+                ?.contains(query) == true)
 
         }
 
+    }
+
     val income =
 
-        filteredTransactions
+        searchFilteredTransactions
 
             .filter {
 
@@ -128,7 +152,7 @@ class TransactionViewModel @Inject constructor(
 
     val expense =
 
-        filteredTransactions
+        searchFilteredTransactions
 
             .filter {
 
