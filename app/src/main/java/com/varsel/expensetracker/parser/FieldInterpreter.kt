@@ -118,22 +118,26 @@ class FieldInterpreter @Inject constructor() {
         // Purpose
         //--------------------------------------------------------
 
-        var purpose: String? = null
+      var purpose: String? = null
 
-        for (i in remaining.indices.reversed()) {
+for (i in remaining.indices.reversed()) {
 
-            val value = remaining[i]
+    val value = remaining[i]
 
-            if (isNoise(value))
-                continue
+    if (isNoise(value))
+        continue
 
-            if (!value.any { ch -> ch.isLetter() })
-                continue
+    if (isStatementMetadata(value))
+        continue
 
-            purpose = value
+    if (!value.any { ch -> ch.isLetter() })
+        continue
 
-            break
-        }
+    purpose = value
+
+    break
+
+}
 
         return TransactionFields(
             ifsc = ifsc,
@@ -174,4 +178,38 @@ class FieldInterpreter @Inject constructor() {
 
         return false
     }
+
+    private fun isStatementMetadata(
+
+    value: String
+
+): Boolean {
+
+    val text = value.uppercase().trim()
+
+    val metadata = listOf(
+
+        "BRANCH",
+        "ATM SERVICE BRANCH",
+        "ACCOUNT",
+        "ACCOUNT NO",
+        "ACCOUNT NUMBER",
+        "CUSTOMER ID",
+        "IFSC",
+        "MICR",
+        "AVAILABLE BALANCE",
+        "CLOSING BALANCE",
+        "OPENING BALANCE",
+        "STATEMENT",
+        "PAGE"
+
+    )
+
+    return metadata.any {
+
+        text.contains(it)
+
+    }
+
+}
 }
