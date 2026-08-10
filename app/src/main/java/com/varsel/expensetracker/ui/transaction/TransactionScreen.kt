@@ -12,6 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.varsel.expensetracker.ui.transaction.components.TransactionHeader
+import com.varsel.expensetracker.ui.transaction.components.MonthlySummaryCard
+import com.varsel.expensetracker.ui.transaction.components.MonthSelector
+import com.varsel.expensetracker.ui.transaction.components.TransactionFilterBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,11 +117,109 @@ fun TransactionScreen(
                 shape = MaterialTheme.shapes.medium
             )
 
+            // temporary placeholder
+            var selectedMonth by remember {
+
+    mutableStateOf("Aug")
+
+}
+
+var selectedFilter by remember {
+
+    mutableStateOf("All")
+
+}
+
+val months = listOf(
+
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug"
+
+)
+
+val filters = listOf(
+
+    "All",
+    "Income",
+    "Expense",
+    "Food",
+    "Bills",
+    "Travel"
+
+)
+
             // 3. List of All Transactions
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            )
+
+            item {
+
+    TransactionHeader(
+
+        transactionCount = uiState.transactions.size
+
+    )
+
+}
+
+item {
+
+    MonthlySummaryCard(
+
+        monthTitle = "August",
+
+        income = 52340.00,
+
+        expense = 19480.00
+
+    )
+
+}
+
+item {
+
+    MonthSelector(
+
+        months = months,
+
+        selectedMonth = selectedMonth,
+
+        onMonthSelected = {
+
+            selectedMonth = it
+
+        }
+
+    )
+
+}
+
+item {
+
+    TransactionFilterBar(
+
+        filters = filters,
+
+        selectedFilter = selectedFilter,
+
+        onFilterSelected = {
+
+            selectedFilter = it
+
+        }
+
+    )
+
+}
+            {
                 items(5) { index -> // Replace with viewModel filtered items state
                     Card(
                         modifier = Modifier.fillMaxWidth()
