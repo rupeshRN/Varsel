@@ -62,9 +62,23 @@ class TransactionBlockBuilder @Inject constructor() {
     }
 
     // Stop when footer starts
-    if (footerKeywords.any { upper.contains(it) }) {
-        break
+    val matchedFooter =
+    footerKeywords.firstOrNull {
+        upper.contains(it)
     }
+
+if (matchedFooter != null) {
+
+    ParserDiagnosticsManager.latest =
+        ParserDiagnosticsManager.latest.copy(
+
+            stopReason =
+                "Stopped by footer [$matchedFooter]\nLine: $line"
+
+        )
+
+    break
+}
 
     transactionLines.add(line)
         }
@@ -132,5 +146,16 @@ ParserDiagnosticsManager.latest =
     )
 
 return blocks
+
+        if (ParserDiagnosticsManager.latest.stopReason == "Not Stopped") {
+
+    ParserDiagnosticsManager.latest =
+        ParserDiagnosticsManager.latest.copy(
+
+            stopReason =
+                "Reached end of normalized text normally"
+
+        )
+        }
     }
 }
