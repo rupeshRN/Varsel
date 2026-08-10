@@ -5,7 +5,6 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
 import com.varsel.expensetracker.category.CategoryRuleEngine
-import android.util.Log
 
 class IndianBankParser @Inject constructor(
     private val blockBuilder: TransactionBlockBuilder,
@@ -31,12 +30,6 @@ class IndianBankParser @Inject constructor(
     override fun parse(rawText: String): List<Transaction> {
 
         val blocks = blockBuilder.build(rawText)
-
-    //below log.d is for debug purpose only
-        Log.d(
-    "StatementParser",
-    "Blocks built = ${blocks.size}"
-)
 
         val transactions = mutableListOf<Transaction>()
 
