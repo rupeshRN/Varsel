@@ -39,6 +39,8 @@ class TransactionBlockBuilder @Inject constructor() {
 
         val transactionLines = mutableListOf<String>()
 
+        val missedDateLines = mutableListOf<String>() //to diagnose the bug
+
         var accountActivityFound = false
 
         for (line in lines) {
