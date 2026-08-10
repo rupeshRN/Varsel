@@ -1,3 +1,5 @@
+package com.varsel.expensetracker.developer
+
 data class ParserDiagnostics(
 
     val pdfPages: Int = 0,
