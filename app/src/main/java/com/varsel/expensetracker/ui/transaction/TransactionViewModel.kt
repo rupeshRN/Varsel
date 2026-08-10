@@ -249,13 +249,19 @@ recalculateUi()
 
     fun updateSearchQuery(query: String) {
 
-        _uiState.update {
+    _uiState.update {
 
-            it.copy(searchQuery = query)
+        it.copy(
 
-        }
+            searchQuery = query
+
+        )
 
     }
+
+    recalculateUi()
+
+}
 
     fun updateSelectedMonth(
 
