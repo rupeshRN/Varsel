@@ -45,20 +45,48 @@ class TransactionViewModel @Inject constructor(
                 .getAllTransactions()
                 .collectLatest { transactions ->
 
-                    _uiState.update {
+    val income = transactions
+        .filter {
 
-                        it.copy(
+            it.type == TransactionType.INCOME
 
-                            transactions =
-                                transactionUiMapper.map(transactions),
+        }
+        .sumOf {
 
-                            isLoading = false
+            it.amount
 
-                        )
+        }
 
-                    }
+    val expense = transactions
+        .filter {
 
-                }
+            it.type == TransactionType.EXPENSE
+
+        }
+        .sumOf {
+
+            it.amount
+
+        }
+
+    _uiState.update {
+
+        it.copy(
+
+            transactions =
+                transactionUiMapper.map(transactions),
+
+            monthlyIncome = income,
+
+            monthlyExpense = expense,
+
+            isLoading = false
+
+        )
+
+    }
+
+}
 
         }
 
