@@ -40,6 +40,35 @@ class TransactionViewModel @Inject constructor(
 
     }
 
+    private fun isInSelectedMonth(
+
+    transaction: Transaction,
+
+    selectedMonth: TransactionMonth?
+
+): Boolean {
+
+    if (selectedMonth == null) {
+
+        return true
+
+    }
+
+    val transactionMonth = YearMonth.from(
+
+        Instant.ofEpochMilli(
+            transaction.dateTimestamp
+        ).atZone(
+            ZoneId.systemDefault()
+        )
+
+    )
+
+    return transactionMonth ==
+            selectedMonth.yearMonth
+
+}
+
     private fun loadTransactions() {
 
         viewModelScope.launch {
@@ -83,8 +112,27 @@ val availableMonths = months.map { yearMonth ->
     )
 
 }
+
+val selectedMonth =
+
+    _uiState.value.selectedMonth
+        ?: availableMonths.firstOrNull()
+
+        val filteredTransactions =
+
+    transactions.filter {
+
+        isInSelectedMonth(
+
+            it,
+
+            selectedMonth
+
+        )
+
+    }
                     
-                    val income = transactions
+                    val income = filteredTransactions
         .filter {
 
             it.type == TransactionType.INCOME
@@ -96,7 +144,7 @@ val availableMonths = months.map { yearMonth ->
 
         }
 
-    val expense = transactions
+    val expense = filteredTransactions
         .filter {
 
             it.type == TransactionType.EXPENSE
@@ -113,14 +161,11 @@ val availableMonths = months.map { yearMonth ->
     state.copy(
 
         transactions =
-            transactionUiMapper.map(transactions),
+            transactionUiMapper.map(filteredTransactions),
 
         availableMonths = availableMonths,
 
-        selectedMonth =
-
-            state.selectedMonth
-                ?: availableMonths.firstOrNull(),
+        selectedMonth = selectedMonth,
 
         monthlyIncome = income,
 
