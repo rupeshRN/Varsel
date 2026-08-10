@@ -1,13 +1,12 @@
 package com.varsel.expensetracker.ui.more
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.item
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Category
@@ -39,112 +38,84 @@ fun MoreScreen(
 
 ) {
 
-    LazyColumn(
+    Column(
 
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 16.dp),
-
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 16.dp)
 
     ) {
 
-        item {
+        Text(
+            text = "More",
+            modifier = Modifier.padding(horizontal = 20.dp),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
 
-            Column(
-                modifier = Modifier.padding(horizontal = 20.dp)
-            ) {
+        Spacer(modifier = Modifier.height(4.dp))
 
-                Text(
-                    text = "More",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
+        Text(
+            text = "Settings",
+            modifier = Modifier.padding(horizontal = 20.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
-                Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-                Text(
-                    text = "Settings",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        MoreMenuItem(
+            icon = Icons.Outlined.UploadFile,
+            title = "Import Statement",
+            subtitle = "Import PDF bank statements",
+            onClick = onImportClick
+        )
 
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-        }
+        MoreMenuItem(
+            icon = Icons.Outlined.Category,
+            title = "Categories",
+            subtitle = "Manage spending categories",
+            onClick = onCategoriesClick
+        )
 
-        item {
+        MoreMenuItem(
+            icon = Icons.Outlined.AutoAwesome,
+            title = "Learning Rules",
+            subtitle = "View offline AI categorization rules",
+            onClick = onLearningRulesClick
+        )
 
-            MoreMenuItem(
-                icon = Icons.Outlined.UploadFile,
-                title = "Import Statement",
-                subtitle = "Import PDF bank statements",
-                onClick = onImportClick
-            )
-        }
+        MoreMenuItem(
+            icon = Icons.Outlined.Palette,
+            title = "Appearance",
+            subtitle = "Theme & display preferences",
+            onClick = onAppearanceClick
+        )
 
-        item {
+        MoreMenuItem(
+            icon = Icons.Outlined.Code,
+            title = "Developer",
+            subtitle = "Parser tools & diagnostics",
+            onClick = onDeveloperClick
+        )
 
-            MoreMenuItem(
-                icon = Icons.Outlined.Category,
-                title = "Categories",
-                subtitle = "Manage spending categories",
-                onClick = onCategoriesClick
-            )
-        }
+        MoreMenuItem(
+            icon = Icons.Outlined.Info,
+            title = "About",
+            subtitle = "About Varsel",
+            onClick = onAboutClick
+        )
 
-        item {
+        Spacer(modifier = Modifier.height(24.dp))
 
-            MoreMenuItem(
-                icon = Icons.Outlined.AutoAwesome,
-                title = "Learning Rules",
-                subtitle = "View AI categorization rules",
-                onClick = onLearningRulesClick
-            )
-        }
+        Text(
+            text = "Varsel • Version 1.0.0",
+            modifier = Modifier.padding(horizontal = 20.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
-        item {
-
-            MoreMenuItem(
-                icon = Icons.Outlined.Palette,
-                title = "Appearance",
-                subtitle = "Theme & display preferences",
-                onClick = onAppearanceClick
-            )
-        }
-
-        item {
-
-            MoreMenuItem(
-                icon = Icons.Outlined.Code,
-                title = "Developer",
-                subtitle = "Parser tools & diagnostics",
-                onClick = onDeveloperClick
-            )
-        }
-
-        item {
-
-            MoreMenuItem(
-                icon = Icons.Outlined.Info,
-                title = "About",
-                subtitle = "About Varsel",
-                onClick = onAboutClick
-            )
-        }
-
-        item {
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Varsel  •  Version 1.0.0",
-                modifier = Modifier.padding(horizontal = 20.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-        }
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
