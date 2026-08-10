@@ -20,5 +20,7 @@ data class ParserDiagnostics(
 
     val notes: List<String> = emptyList(),
 
-    val missedDateLines: List<String> = emptyList()
+    val missedDateLines: List<String> = emptyList(),
+
+    val stopReason: String = "Not Stopped"
 )
