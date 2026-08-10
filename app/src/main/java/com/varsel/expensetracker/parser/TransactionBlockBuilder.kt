@@ -1,6 +1,7 @@
 package com.varsel.expensetracker.parser
 
 import javax.inject.Inject
+import com.varsel.expensetracker.developer.ParserDiagnosticsManager
 
 class TransactionBlockBuilder @Inject constructor() {
 
@@ -92,13 +93,27 @@ class TransactionBlockBuilder @Inject constructor() {
     current.add(line)
         }
 
-        if (current.isNotEmpty()) {
+        //updated below code with parser diagnosis
+if (current.isNotEmpty()) {
 
-            blocks.add(
-                TransactionBlock(current.toList())
+    blocks.add(
+        TransactionBlock(current.toList())
+    )
+}
+
+ParserDiagnosticsManager.latest =
+    ParserDiagnosticsManager.latest.copy(
+
+        blocksBuilt = blocks.size,
+
+        rejectedBlocks =
+            maxOf(
+                0,
+                ParserDiagnosticsManager.latest.datesDetected - blocks.size
             )
-        }
 
-        return blocks
+    )
+
+return blocks
     }
 }
