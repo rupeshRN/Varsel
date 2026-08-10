@@ -80,19 +80,32 @@ class TransactionBlockBuilder @Inject constructor() {
         continue
     }
 
-    if (dateRegex.containsMatchIn(line)) {
+    val hasDateAnywhere =
+    Regex("\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
+        .containsMatchIn(line)
 
-        if (current.isNotEmpty()) {
+val startsWithDate =
+    dateRegex.containsMatchIn(line)
 
-            blocks.add(
-                TransactionBlock(current.toList())
-            )
+if (hasDateAnywhere && !startsWithDate) {
 
-            current.clear()
-        }
+    missedDateLines.add(line)
+
+}
+
+if (startsWithDate) {
+
+    if (current.isNotEmpty()) {
+
+        blocks.add(
+            TransactionBlock(current.toList())
+        )
+
+        current.clear()
     }
+}
 
-    current.add(line)
+current.add(line)
         }
 
         //updated below code with parser diagnosis
@@ -112,7 +125,9 @@ ParserDiagnosticsManager.latest =
             maxOf(
                 0,
                 ParserDiagnosticsManager.latest.datesDetected - blocks.size
-            )
+            ),
+
+        missedDateLines = missedDateLines.take(10)
 
     )
 
