@@ -125,16 +125,11 @@ fun TransactionScreen(
 
                 MonthSelector(
 
-                    months = months,
+                    months = uiState.availableMonths,
 
-                    selectedMonth =
-                        uiState.selectedMonth,
+                    selectedMonth = uiState.selectedMonth,
 
-                    onMonthSelected = {
-
-                        viewModel.updateSelectedMonth(it)
-
-                    }
+                    onMonthSelected = viewModel::updateSelectedMonth
 
                 )
 
