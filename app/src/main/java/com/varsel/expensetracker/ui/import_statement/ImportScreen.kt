@@ -23,6 +23,12 @@ fun ImportScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    val diagnostics by viewModel.diagnostics.collectAsState()
+
+    var showDiagnostics by remember {
+    mutableStateOf(false)
+}
+
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -98,6 +104,59 @@ fun ImportScreen(
                                 }
                             }
                         }
+
+Spacer(modifier = Modifier.height(12.dp)) //adding layer in the screen to view expandable diagnostic results
+
+Card(
+    modifier = Modifier.fillMaxWidth()
+) {
+
+    Column(
+        modifier = Modifier.padding(16.dp)
+    ) {
+
+        TextButton(
+            onClick = {
+                showDiagnostics = !showDiagnostics
+            }
+        ) {
+
+            Text(
+                if (showDiagnostics)
+                    "Developer Diagnostics ▼"
+                else
+                    "Developer Diagnostics ▶"
+            )
+        }
+
+        if (showDiagnostics) {
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text("Raw Lines : ${diagnostics.rawLines}")
+
+            Text("Normalized Lines : ${diagnostics.normalizedLines}")
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text("Dates Detected : ${diagnostics.datesDetected}")
+
+            Text("Blocks Built : ${diagnostics.blocksBuilt}")
+
+            Text("Transactions Parsed : ${diagnostics.transactionsParsed}")
+
+            Text("Rejected Blocks : ${diagnostics.rejectedBlocks}")
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                "Last Parsed Date : ${diagnostics.lastParsedDate}"
+            )
+        }
+    }
+}
+
+Spacer(modifier = Modifier.height(12.dp))
 
                         Button(
                             onClick = {
