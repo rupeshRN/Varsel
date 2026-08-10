@@ -72,15 +72,15 @@ fun NavGraph(
 
                 onLearningRulesClick = {
     navController.navigate("learning_rules")
-}
+},
 
 onAppearanceClick = {
     navController.navigate("appearance")
-}
+},
 
 onDeveloperClick = {
     navController.navigate("developer")
-}
+},
 
 onAboutClick = {
     navController.navigate("about")
