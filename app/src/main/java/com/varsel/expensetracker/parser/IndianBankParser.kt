@@ -31,6 +31,12 @@ class IndianBankParser @Inject constructor(
 
         val blocks = blockBuilder.build(rawText)
 
+    //below log.d is for debug purpose only
+        Log.d(
+    "StatementParser",
+    "Blocks built = ${blocks.size}"
+)
+
         val transactions = mutableListOf<Transaction>()
 
         val dateRegex =
