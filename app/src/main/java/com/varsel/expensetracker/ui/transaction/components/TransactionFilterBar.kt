@@ -17,7 +17,7 @@ import com.varsel.expensetracker.ui.transaction.TransactionFilter
 @Composable
 fun TransactionFilterBar(
 
-    filters: List<TransactionFilter>,
+    filters: Iterable<TransactionFilter>,
 
     selectedFilter: TransactionFilter,
 
