@@ -6,6 +6,7 @@ import com.varsel.expensetracker.parser.StatementImportResult
 import com.varsel.expensetracker.parser.StatementSummaryExtractor
 import com.varsel.expensetracker.parser.TextNormalizer
 import javax.inject.Inject
+import android.util.Log
 
 class StatementParserEngine @Inject constructor(
     private val bankDetector: BankDetector,
@@ -20,6 +21,18 @@ class StatementParserEngine @Inject constructor(
 
         val normalizedText =
             textNormalizer.normalize(rawText)
+            
+ //below dateregex and detecteddates and Log.d is for debug purpose only
+        val dateRegex =
+            Regex("\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
+
+        val detectedDates =
+            dateRegex.findAll(normalizedText).count()
+
+            Log.d(
+    "StatementParser",
+    "Dates detected = $detectedDates"
+)
 
         val summary =
             statementSummaryExtractor.extract(normalizedText)
@@ -29,6 +42,12 @@ class StatementParserEngine @Inject constructor(
 
         val transactions =
             parser.parse(normalizedText)
+
+    //below Log.d is for debug purpose only
+        Log.d(
+    "StatementParser",
+    "Transactions parsed = ${transactions.size}"
+)
 
         val reconciliation =
             reconciliationEngine.reconcile(
