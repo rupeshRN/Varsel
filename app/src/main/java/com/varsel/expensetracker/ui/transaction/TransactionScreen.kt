@@ -110,12 +110,11 @@ fun TransactionScreen(
 
                 MonthlySummaryCard(
 
-                    monthTitle =
-                        uiState.selectedMonth,
+                  monthTitle = uiState.selectedMonth?.displayName ?: "",
 
-                    income = 0.0,
+                income = uiState.monthlyIncome,
 
-                    expense = 0.0
+                expense = uiState.monthlyExpense
 
                 )
 
