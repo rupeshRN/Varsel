@@ -94,6 +94,7 @@ class ImportViewModel @Inject constructor(
 val result =
     statementParserEngine.parseStatement(rawText)
 
+    //adding additional layer to see diagnostics report in the app screen, safe to remove all at once.
     _diagnostics.value =
     ParserDiagnosticsManager.latest
 
