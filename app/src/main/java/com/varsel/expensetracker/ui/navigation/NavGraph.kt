@@ -31,16 +31,8 @@ fun NavGraph(
             DashboardScreen(
                 viewModel = hiltViewModel(),
 
-                onNavigateToImport = {
-                    navController.navigate("import_statement")
-                },
-
                 onNavigateToAllTransactions = {
                     navController.navigate(AppDestination.Transactions.route)
-                },
-
-                onNavigateToCategories = {
-                    navController.navigate("categories")
                 }
             )
         }
