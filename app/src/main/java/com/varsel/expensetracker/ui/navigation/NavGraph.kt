@@ -2,7 +2,9 @@ package com.varsel.expensetracker.ui.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -10,9 +12,8 @@ import androidx.navigation.compose.composable
 import com.varsel.expensetracker.ui.category.CategoryScreen
 import com.varsel.expensetracker.ui.dashboard.DashboardScreen
 import com.varsel.expensetracker.ui.import_statement.ImportScreen
-import com.varsel.expensetracker.ui.transaction.TransactionScreen
-import androidx.compose.ui.Modifier
 import com.varsel.expensetracker.ui.more.MoreScreen
+import com.varsel.expensetracker.ui.transaction.TransactionScreen
 
 @Composable
 fun NavGraph(
@@ -30,7 +31,6 @@ fun NavGraph(
 
             DashboardScreen(
                 viewModel = hiltViewModel(),
-
                 onNavigateToAllTransactions = {
                     navController.navigate(AppDestination.Transactions.route)
                 }
@@ -49,38 +49,37 @@ fun NavGraph(
 
         composable(AppDestination.Reports.route) {
 
-            androidx.compose.material3.Text("Reports - Coming Soon")
+            Text("Reports - Coming Soon")
         }
 
         composable(AppDestination.More.route) {
 
-    MoreScreen(
+            MoreScreen(
 
-        onImportClick = {
-            navController.navigate("import_statement")
-        },
+                onImportClick = {
+                    navController.navigate("import_statement")
+                },
 
-        onCategoriesClick = {
-            navController.navigate("categories")
-        },
+                onCategoriesClick = {
+                    navController.navigate("categories")
+                },
 
-        onLearningRulesClick = {
-            // Phase C
-        },
+                onLearningRulesClick = {
+                    // TODO Phase C
+                },
 
-        onAppearanceClick = {
-            // Phase D
-        },
+                onAppearanceClick = {
+                    // TODO Phase D
+                },
 
-        onDeveloperClick = {
-            // Phase E
-        },
+                onDeveloperClick = {
+                    // TODO Phase E
+                },
 
-        onAboutClick = {
-            // Phase F
-        }
-
-    )
+                onAboutClick = {
+                    // TODO Phase F
+                }
+            )
         }
 
         composable("categories") {
