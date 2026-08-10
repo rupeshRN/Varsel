@@ -154,71 +154,148 @@ val filters = listOf(
 
 )
 
-            // 3. List of All Transactions
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            )
+            // 3. List of All Transaction
 
-            item {
+LazyColumn(
 
-    TransactionHeader(
+    modifier = Modifier.fillMaxWidth(),
 
-        transactionCount = uiState.transactions.size
+    verticalArrangement = Arrangement.spacedBy(8.dp)
 
-    )
+) {
 
-}
+    item {
 
-item {
+        TransactionHeader(
 
-    MonthlySummaryCard(
+            transactionCount = 5
 
-        monthTitle = "August",
+        )
 
-        income = 52340.00,
+    }
 
-        expense = 19480.00
+    item {
 
-    )
+        MonthlySummaryCard(
 
-}
+            monthTitle = "August",
 
-item {
+            income = 52340.00,
 
-    MonthSelector(
+            expense = 19480.00
 
-        months = months,
+        )
 
-        selectedMonth = selectedMonth,
+    }
 
-        onMonthSelected = {
+    item {
 
-            selectedMonth = it
+        MonthSelector(
+
+            months = months,
+
+            selectedMonth = selectedMonth,
+
+            onMonthSelected = {
+
+                selectedMonth = it
+
+            }
+
+        )
+
+    }
+
+    item {
+
+        TransactionFilterBar(
+
+            filters = filters,
+
+            selectedFilter = selectedFilter,
+
+            onFilterSelected = {
+
+                selectedFilter = it
+
+            }
+
+        )
+
+    }
+
+    items(5) { index ->
+
+        Card(
+
+            modifier = Modifier.fillMaxWidth()
+
+        ) {
+
+            Row(
+
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+
+                horizontalArrangement = Arrangement.SpaceBetween,
+
+                verticalAlignment = Alignment.CenterVertically
+
+            ) {
+
+                Column(
+
+                    modifier = Modifier.weight(1f)
+
+                ) {
+
+                    Text(
+
+                        text = "Grocery Store Payment #${index + 1}",
+
+                        style = MaterialTheme.typography.bodyLarge,
+
+                        fontWeight = FontWeight.Medium
+
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
+
+                    Text(
+
+                        text = "07 Aug 2026, 21:08",
+
+                        style = MaterialTheme.typography.bodySmall,
+
+                        color = MaterialTheme.colorScheme.outline
+
+                    )
+
+                }
+
+                Text(
+
+                    text = "-₹11,000.00",
+
+                    style = MaterialTheme.typography.bodyLarge,
+
+                    fontWeight = FontWeight.Bold,
+
+                    color = MaterialTheme.colorScheme.error
+
+                )
+
+            }
 
         }
 
-    )
+    }
 
 }
-
-item {
-
-    TransactionFilterBar(
-
-        filters = filters,
-
-        selectedFilter = selectedFilter,
-
-        onFilterSelected = {
-
-            selectedFilter = it
-
-        }
-
-    )
-
-}
+            
             {
                 items(5) { index -> // Replace with viewModel filtered items state
                     Card(
