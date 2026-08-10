@@ -1,17 +1,27 @@
 package com.varsel.expensetracker.ui.transaction
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.varsel.expensetracker.ui.transaction.components.MonthSelector
+import com.varsel.expensetracker.ui.transaction.components.MonthlySummaryCard
+import com.varsel.expensetracker.ui.transaction.components.TransactionFilterBar
+import com.varsel.expensetracker.ui.transaction.components.TransactionHeader
+import com.varsel.expensetracker.ui.transaction.components.TransactionSearchBar
+import com.varsel.expensetracker.ui.transaction.components.transactionList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,140 +29,159 @@ fun TransactionScreen(
     viewModel: TransactionViewModel,
     onBackClick: () -> Unit
 ) {
-    var searchQuery by remember { mutableStateOf("") }
+
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val months = listOf(
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+    )
 
     Scaffold(
+
         topBar = {
-            TopAppBar(
-                title = { Text("All Transactions") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 1. Month-wise Income & Expenses Summary Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                ) {
-                    Text(
-                        text = "August 2026 Summary",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(
-                                text = "Income",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "+$5,000.00",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "Expenses",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "-$24,540.00",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-            }
 
-            // 2. Search Bar for filtering transactions
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search transactions by keyword...") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search Icon"
-                    )
+            CenterAlignedTopAppBar(
+
+                title = {
+
+                    Text("Transactions")
+
                 },
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium
+
+                navigationIcon = {
+
+                    IconButton(
+
+                        onClick = onBackClick
+
+                    ) {
+
+                        Icon(
+
+                            imageVector = Icons.Default.ArrowBack,
+
+                            contentDescription = "Back"
+
+                        )
+
+                    }
+
+                }
+
             )
 
-            // 3. List of All Transactions
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(5) { index -> // Replace with viewModel filtered items state
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Grocery Store Payment #${index + 1}",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "07 Aug 2026, 21:08",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
-                            }
-                            Text(
-                                text = "-$11,000.00",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-            }
         }
-  
+
+    ) { padding ->
+
+        LazyColumn(
+
+            modifier = Modifier,
+
+            contentPadding = PaddingValues(16.dp),
+
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+
+        ) {
+
+            item {
+
+                TransactionHeader(
+
+                    transactionCount =
+                        uiState.transactions.size
+
+                )
+
+            }
+
+            item {
+
+                MonthlySummaryCard(
+
+                    monthTitle =
+                        uiState.selectedMonth,
+
+                    income = 0.0,
+
+                    expense = 0.0
+
+                )
+
+            }
+
+            item {
+
+                MonthSelector(
+
+                    months = months,
+
+                    selectedMonth =
+                        uiState.selectedMonth,
+
+                    onMonthSelected = {
+
+                        viewModel.updateSelectedMonth(it)
+
+                    }
+
+                )
+
+            }
+
+            item {
+
+                TransactionSearchBar(
+
+                    query =
+                        uiState.searchQuery,
+
+                    onQueryChange =
+
+                        viewModel::updateSearchQuery
+
+                )
+
+            }
+
+            item {
+
+                TransactionFilterBar(
+
+                    filters =
+                        TransactionFilter.entries,
+
+                    selectedFilter =
+                        uiState.selectedFilter,
+
+                    onFilterSelected =
+
+                        viewModel::updateFilter
+
+                )
+
+            }
+
+            transactionList(
+
+                transactions =
+                    uiState.transactions
+
+            )
+
+        }
+
     }
+
 }
