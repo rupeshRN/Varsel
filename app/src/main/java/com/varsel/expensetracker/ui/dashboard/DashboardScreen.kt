@@ -23,7 +23,6 @@ import com.varsel.expensetracker.ui.dashboard.components.GreetingHeader
 import com.varsel.expensetracker.ui.dashboard.components.InsightsCard
 import com.varsel.expensetracker.ui.dashboard.components.DashboardRecentSection
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
@@ -33,90 +32,75 @@ fun DashboardScreen(
 ) {
     // Lifecycle-aware flow collection to prevent background CPU cycles
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
     var selectedTransaction by remember { mutableStateOf<Transaction?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Dashboard") },
-                actions = {
-                    TextButton(onClick = onNavigateToCategories) {
-                        Text("Categories")
-                    }
-                    TextButton(onClick = onNavigateToImport) {
-                        Text("Import")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) 
-            
-            {
-                item(key = "greeting") 
-                {
-                     GreetingHeader()
-                }
-
-                item(key = "balance_card") 
-                {
-                    BalanceCard(summary = uiState.balanceSummary)
-                }
-
-                item(key = "insights") 
-                {
-                    InsightsCard()
-                }
-
-item(
-    key = "recent_transactions"
+    
+    Box(
+    modifier = Modifier.fillMaxSize()
 ) {
 
-    DashboardRecentSection(
+    if (uiState.isLoading) {
 
-        transactions = uiState.recentTransactions,
-
-        onViewAll = onNavigateToAllTransactions,
-
-        onTransactionClick = {
-
-            // We'll reconnect editing
-            // after the UI layer migration.
-
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
         }
-    )
-}
+
+    } else {
+
+        LazyColumn(
+
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+
+        ) {
+
+            item(key = "greeting") {
+
+                GreetingHeader()
+
+            }
+
+            item(key = "balance_card") {
+
+                BalanceCard(
+                    summary = uiState.balanceSummary
+                )
+
+            }
+
+            item(key = "insights") {
+
+                InsightsCard()
+
+            }
+
+            item(
+                key = "recent_transactions"
+            ) {
+
+                DashboardRecentSection(
+
+                    transactions = uiState.recentTransactions,
+
+                    onViewAll = onNavigateToAllTransactions,
+
+                    onTransactionClick = {
+
+                        // TODO: Reconnect edit dialog
+                        // after UI → Domain migration.
+
+                    }
+                )
             }
         }
-
-       // selectedTransaction?.let { transaction ->
-         //   EditTransactionCategoryDialog(
-           //     transaction = transaction,
-             //   onDismiss = { selectedTransaction = null },
-               // onSave = { updatedTransaction ->
-                 //   viewModel.updateTransaction(updatedTransaction)
-                   // selectedTransaction = null
-              //  }
-            //)
-        //}
     }
+}
 }
 
 @Composable
