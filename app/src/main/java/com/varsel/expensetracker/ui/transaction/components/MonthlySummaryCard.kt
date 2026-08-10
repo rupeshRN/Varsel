@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,8 +31,6 @@ fun MonthlySummaryCard(
 
 ) {
 
-    val balance = income - expense
-
     Card(
 
         modifier = modifier
@@ -53,64 +50,49 @@ fun MonthlySummaryCard(
         ) {
 
             Text(
+
                 text = monthTitle,
+
                 style = MaterialTheme.typography.titleLarge,
+
                 fontWeight = FontWeight.Bold
+
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(
+                modifier = Modifier.height(20.dp)
+            )
 
             Row(
+
                 modifier = Modifier.fillMaxWidth(),
+
                 horizontalArrangement = Arrangement.SpaceBetween
+
             ) {
 
                 SummaryMetric(
+
                     title = "Income",
+
                     amount = income
+
                 )
 
                 SummaryMetric(
+
                     title = "Expense",
+
                     amount = expense
+
                 )
 
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            HorizontalDivider()
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-
-                text = "Net Balance",
-
-                style = MaterialTheme.typography.labelLarge,
-
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-
-                text = "₹%,.2f".format(balance),
-
-                style = MaterialTheme.typography.headlineMedium,
-
-                fontWeight = FontWeight.Bold,
-
-                color = if (balance >= 0)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.error
-
-            )
         }
+
     }
+
 }
 
 @Composable
@@ -147,5 +129,7 @@ private fun SummaryMetric(
             fontWeight = FontWeight.SemiBold
 
         )
+
     }
+
 }
