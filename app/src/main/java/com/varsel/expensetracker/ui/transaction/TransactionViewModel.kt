@@ -170,13 +170,7 @@ val searchFilteredTransactions =
 
         it.copy(
 
-            transactions =
-
-                transactionUiMapper.map(
-
-                    filteredTransactions
-
-                ),
+            transactions = transactionUiMapper.map(filteredTransactions),
 
             availableMonths =
 
