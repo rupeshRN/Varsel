@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.varsel.expensetracker.developer.ParserDiagnostics
+import com.varsel.expensetracker.developer.ParserDiagnosticsManager
 
 sealed interface ImportUiState {
     object Idle : ImportUiState
@@ -48,6 +50,13 @@ class ImportViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
+
+//adding additional layer to see diagnostics report in the app screen
+    private val _diagnostics =
+    MutableStateFlow(ParserDiagnostics())
+
+    val diagnostics: StateFlow<ParserDiagnostics> =
+    _diagnostics.asStateFlow()
 
     fun processSelectedFile(
         uri: Uri,
@@ -84,6 +93,9 @@ class ImportViewModel @Inject constructor(
                 // return@launch
 val result =
     statementParserEngine.parseStatement(rawText)
+
+    _diagnostics.value =
+    ParserDiagnosticsManager.latest
 
 if (result.transactions.isEmpty()) {
     _uiState.value =
