@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
 import com.varsel.expensetracker.category.CategoryRuleEngine
+import android.util.Log
 
 class IndianBankParser @Inject constructor(
     private val blockBuilder: TransactionBlockBuilder,
