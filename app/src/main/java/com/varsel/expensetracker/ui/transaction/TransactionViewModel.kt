@@ -160,84 +160,36 @@ val searchFilteredTransactions =
 
     }
 
-    val income =
+    val income = finalTransactions
+            .filter {it.type == TransactionType.INCOME}
+            .sumOf {it.amount}
 
-        searchFilteredTransactions
-
-            .filter {
-
-                it.type == TransactionType.INCOME
-
-            }
-
-            .sumOf {
-
-                it.amount
-
-            }
-
-    val expense =
-
-        searchFilteredTransactions
-
-            .filter {
-
-                it.type == TransactionType.EXPENSE
-
-            }
-
-            .sumOf {
-
-                it.amount
-
-            }
+    val expense = finalTransactions
+            .filter {it.type == TransactionType.EXPENSE}
+            .sumOf {it.amount}
 
     _uiState.update {
-
         it.copy(
-
             transactions = transactionUiMapper.map(searchFilteredTransactions),
-
-            availableMonths =
-
-                availableMonths,
-
-            selectedMonth =
-
-                selectedMonth,
-
-            monthlyIncome =
-
-                income,
-
-            monthlyExpense =
-
-                expense,
-
+            availableMonths = availableMonths,
+            selectedMonth = selectedMonth,
+            monthlyIncome = income,
+            monthlyExpense = expense,
             isLoading = false
+                )
 
-        )
-
-    }
+                    }
 
 }
 
     private fun isInSelectedMonth(
-
     transaction: Transaction,
-
     selectedMonth: TransactionMonth?
-
 ): Boolean {
-
-    if (selectedMonth == null) {
-
-        return true
-
-    }
+    if (selectedMonth == null) 
+        {return true}
 
     val transactionMonth = YearMonth.from(
-
         Instant.ofEpochMilli(
             transaction.dateTimestamp
         ).atZone(
@@ -246,21 +198,21 @@ val searchFilteredTransactions =
 
     )
 
-    return transactionMonth ==
-            selectedMonth.yearMonth
+    return transactionMonth == selectedMonth.yearMonth
 
 }
 
-    private fun loadTransactions() {
-
-        viewModelScope.launch {
-
+    private fun loadTransactions() 
+    {
+        viewModelScope.launch 
+        {
             repository
                 .getAllTransactions()
-                .collectLatest { transactions ->
+                .collectLatest 
+                { 
+                    transactions ->
                     allTransactions = transactions
-
-recalculateUi()
+                    recalculateUi()
                 }
 
         }
