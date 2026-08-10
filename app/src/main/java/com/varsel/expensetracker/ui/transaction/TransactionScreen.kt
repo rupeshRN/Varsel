@@ -160,7 +160,7 @@ fun TransactionScreen(
                 TransactionFilterBar(
 
                     filters =
-                        TransactionFilter.entries,
+                        TransactionFilter.entries.toList()
 
                     selectedFilter =
                         uiState.selectedFilter,
