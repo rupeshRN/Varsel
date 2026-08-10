@@ -31,6 +31,8 @@ class TransactionViewModel @Inject constructor(
     private val _uiState =
         MutableStateFlow(TransactionUiState())
 
+        private var allTransactions: List<Transaction> = emptyList()
+
     val uiState: StateFlow<TransactionUiState> =
         _uiState.asStateFlow()
 
