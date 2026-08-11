@@ -15,6 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.varsel.expensetracker.ui.import_statement.components.DeveloperDiagnosticsCard
+import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,7 +99,23 @@ Card(
         .fillMaxWidth()
         .padding(vertical = 4.dp)
 ) {
-    Column(modifier = Modifier.padding(12.dp)) {
+Row(
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(12.dp),
+    verticalAlignment = Alignment.CenterVertically
+) {
+
+    Checkbox(
+        checked = selectable.selected,
+        onCheckedChange = null
+    )
+
+    Spacer(modifier = Modifier.width(12.dp))
+
+    Column(
+        modifier = Modifier.weight(1f)
+    ) {
 
         Text(
             text = selectable.transaction.description,
@@ -110,6 +129,7 @@ Card(
             style = MaterialTheme.typography.bodyMedium
         )
     }
+}
 }
                         }
                         }
