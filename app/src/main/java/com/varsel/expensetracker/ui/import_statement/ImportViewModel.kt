@@ -18,6 +18,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.varsel.expensetracker.developer.ParserDiagnostics
 import com.varsel.expensetracker.developer.ParserDiagnosticsManager
+import com.varsel.expensetracker.developer.DeveloperRepository
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 
 sealed interface ImportUiState {
     object Idle : ImportUiState
@@ -45,7 +48,8 @@ class ImportViewModel @Inject constructor(
     private val statementParserEngine: StatementParserEngine,
     private val pdfTextExtractor: PdfTextExtractor,
     private val ocrManager: OcrManager,
-    @ApplicationContext private val context: Context
+    private val developerRepository: DeveloperRepository,
+@ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
@@ -57,6 +61,15 @@ class ImportViewModel @Inject constructor(
 
     val diagnostics: StateFlow<ParserDiagnostics> =
     _diagnostics.asStateFlow()
+
+    val parserDiagnosticsEnabled =
+    developerRepository
+        .parserDiagnosticsEnabled
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
 
     fun processSelectedFile(
         uri: Uri,
