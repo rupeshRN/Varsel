@@ -159,6 +159,7 @@ Spacer(modifier = Modifier.height(12.dp))
                             onClick = {
                                 viewModel.confirmAndSaveTransactions(state.parsedTransactions)
                             },
+                            enabled = selectedCount > 0,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 16.dp)
