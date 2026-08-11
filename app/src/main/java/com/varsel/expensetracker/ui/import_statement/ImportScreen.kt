@@ -18,6 +18,7 @@ import com.varsel.expensetracker.ui.import_statement.components.DeveloperDiagnos
 import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,14 +103,19 @@ Card(
 Row(
     modifier = Modifier
         .fillMaxWidth()
-        .padding(12.dp),
+        .padding(12.dp)
+        .clickable {
+            selectable.selected = !selectable.selected
+        },
     verticalAlignment = Alignment.CenterVertically
 ) {
 
-    Checkbox(
-        checked = selectable.selected,
-        onCheckedChange = null
-    )
+Checkbox(
+    checked = selectable.selected,
+    onCheckedChange = { checked ->
+        selectable.selected = checked
+    }
+)
 
     Spacer(modifier = Modifier.width(12.dp))
 
