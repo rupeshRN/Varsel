@@ -139,18 +139,30 @@ _uiState.value =
 
             try {
 
-                transactions
-    .filter { it.selected }
-    .forEach {
-        transactionRepository.insertTransaction(
-            it.transaction
-        )
-    }
+val selectedTransactions =
+    transactions.filter { it.selected }
 
-                _uiState.value =
-                    ImportUiState.Saved(
-                        transactions.count { it.selected }
-)
+if (selectedTransactions.isEmpty()) {
+
+    _uiState.value =
+        ImportUiState.Error(
+            "Please select at least one transaction."
+        )
+
+    return@launch
+}
+
+selectedTransactions.forEach {
+
+    transactionRepository.insertTransaction(
+        it.transaction
+    )
+}
+
+             _uiState.value =
+    ImportUiState.Saved(
+        selectedTransactions.size
+    )
 
             } catch (e: Exception) {
 
