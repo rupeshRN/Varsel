@@ -226,7 +226,8 @@ Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
                 }
-                is ImportUiState.Error -> {
+                is ImportUiState.Error -> 
+                    {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
@@ -242,7 +243,8 @@ Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
                 }
-                is ImportUiState.PasswordRequired -> {
+                is ImportUiState.PasswordRequired -> 
+                    {
                     Box(contentAlignment = Alignment.Center) {
                         Text("Password protected documents are not supported.")
                     }
