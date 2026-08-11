@@ -88,6 +88,10 @@ fun ImportScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
+
+                        val selectedCount =
+    state.parsedTransactions.count { it.selected }
+    
                         LazyColumn(
                             modifier = Modifier
                                 .weight(1f)
@@ -159,7 +163,7 @@ Spacer(modifier = Modifier.height(12.dp))
                                 .fillMaxWidth()
                                 .padding(top = 16.dp)
                         ) {
-                            Text("Confirm & Save (${state.parsedTransactions.size} Transactions)")
+                            Text("Confirm & Save ($selectedCount)")
                         }
                     }
                 }
