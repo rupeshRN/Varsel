@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.material3.Checkbox
+import com.varsel.expensetracker.ui.import_statement.components.DeveloperDiagnosticsCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,85 +118,15 @@ Card(
 }
                         }
 
-Spacer(modifier = Modifier.height(12.dp)) // Developer diagnostics
+Spacer(modifier = Modifier.height(12.dp))
 
-if (parserDiagnosticsEnabled) {
-Card(
-    modifier = Modifier.fillMaxWidth()
-) {
+DeveloperDiagnosticsCard(
 
-    Column(
-        modifier = Modifier.padding(16.dp)
-    ) {
+    enabled = parserDiagnosticsEnabled,
 
-        TextButton(
-            onClick = {
-                showDiagnostics = !showDiagnostics
-            }
-        ) {
+    diagnostics = diagnostics
 
-            Text(
-                if (showDiagnostics)
-                    "Developer Diagnostics ▼"
-                else
-                    "Developer Diagnostics ▶"
-            )
-        }
-
-        if (showDiagnostics) {
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text("Raw Lines : ${diagnostics.rawLines}")
-
-            Text("Normalized Lines : ${diagnostics.normalizedLines}")
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text("Dates Detected : ${diagnostics.datesDetected}")
-
-            Text("Blocks Built : ${diagnostics.blocksBuilt}")
-
-            Text("Transactions Parsed : ${diagnostics.transactionsParsed}")
-
-            Text("Rejected Blocks : ${diagnostics.rejectedBlocks}")
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                "Last Parsed Date : ${diagnostics.lastParsedDate}"
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-Text(
-    "Stop Reason",
-    style = MaterialTheme.typography.titleSmall
 )
-
-Text(diagnostics.stopReason)
-
-            // Missed date diagnostics
-            if (diagnostics.missedDateLines.isNotEmpty()) {
-
-    Spacer(modifier = Modifier.height(12.dp))
-
-    Text(
-        "Missed Date Lines",
-        style = MaterialTheme.typography.titleSmall
-    )
-
-    diagnostics.missedDateLines.forEach {
-
-        Text(
-            text = it,
-            style = MaterialTheme.typography.bodySmall
-        )
-    }
-}
-        }
-    }
-}
-}
 
 Spacer(modifier = Modifier.height(12.dp))
 
