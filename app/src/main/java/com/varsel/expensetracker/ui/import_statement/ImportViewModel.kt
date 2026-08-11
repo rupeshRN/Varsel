@@ -55,7 +55,7 @@ class ImportViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ImportUiState>(ImportUiState.Idle)
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
 
-//adding additional layer to see diagnostics report in the app screen
+// Developer diagnostics
     private val _diagnostics =
     MutableStateFlow(ParserDiagnostics())
 
@@ -107,7 +107,7 @@ class ImportViewModel @Inject constructor(
 val result =
     statementParserEngine.parseStatement(rawText)
 
-    //adding additional layer to see diagnostics report in the app screen, safe to remove all at once.
+    // Update developer diagnostics
     _diagnostics.value =
     ParserDiagnosticsManager.latest
 
