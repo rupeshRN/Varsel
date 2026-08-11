@@ -12,6 +12,9 @@ class TransactionBlockBuilder @Inject constructor(
     private val transactionStartRegex =
     Regex("^\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}.*")
 
+    private val anyDateRegex =
+    Regex("\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
+
     fun build(normalizedText: String): List<TransactionBlock> {
 
         val lines = normalizedText
@@ -72,7 +75,7 @@ if (statementEndDetector.isStatementEnd(line)) {
     }
 
     val hasDateAnywhere =
-    Regex("\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
+    anyDateRegex.containsMatchIn(line)
         .containsMatchIn(line)
 
 val startsWithDate =
