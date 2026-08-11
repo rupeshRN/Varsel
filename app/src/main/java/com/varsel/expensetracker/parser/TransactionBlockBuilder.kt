@@ -3,32 +3,14 @@ package com.varsel.expensetracker.parser
 import javax.inject.Inject
 import com.varsel.expensetracker.developer.ParserDiagnosticsManager
 
-class TransactionBlockBuilder @Inject constructor() {
+class TransactionBlockBuilder @Inject constructor(
+
+    private val statementEndDetector: StatementEndDetector
+
+) {
 
     private val dateRegex =
         Regex("^\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
-
-        private val footerKeywords = listOf(
-
-    "ENDING BALANCE",
-
-    "TOTAL CREDITS",
-    "TOTAL DEBITS",
-
-    "OPENING BALANCE",
-
-    "ACCOUNT SUMMARY",
-
-    "ACCOUNT DETAILS",
-
-    "CUSTOMER'S ADDRESS",
-
-    "IFSC",
-
-    "ACCOUNT HOLDER",
-
-    "ACCOUNT NUMBER"
-)
 
     fun build(normalizedText: String): List<TransactionBlock> {
 
@@ -62,18 +44,13 @@ class TransactionBlockBuilder @Inject constructor() {
     }
 
     // Stop when footer starts
-    val matchedFooter =
-    footerKeywords.firstOrNull {
-        upper.contains(it)
-    }
-
-if (matchedFooter != null) {
+if (statementEndDetector.isStatementEnd(line)) {
 
     ParserDiagnosticsManager.latest =
         ParserDiagnosticsManager.latest.copy(
 
             stopReason =
-                "Stopped by footer [$matchedFooter]\nLine: $line"
+                "Stopped by statement end\nLine: $line"
 
         )
 
@@ -130,7 +107,18 @@ if (current.isNotEmpty()) {
     )
 }
 
-ParserDiagnosticsManager.latest =
+        if (ParserDiagnosticsManager.latest.stopReason == "Not Stopped") {
+
+    ParserDiagnosticsManager.latest =
+        ParserDiagnosticsManager.latest.copy(
+
+            stopReason =
+                "Reached end of normalized text normally"
+
+        )
+        }
+
+        ParserDiagnosticsManager.latest =
     ParserDiagnosticsManager.latest.copy(
 
         blocksBuilt = blocks.size,
@@ -146,16 +134,5 @@ ParserDiagnosticsManager.latest =
     )
 
 return blocks
-
-        if (ParserDiagnosticsManager.latest.stopReason == "Not Stopped") {
-
-    ParserDiagnosticsManager.latest =
-        ParserDiagnosticsManager.latest.copy(
-
-            stopReason =
-                "Reached end of normalized text normally"
-
-        )
-        }
     }
 }
