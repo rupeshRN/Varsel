@@ -28,8 +28,7 @@ fun ImportScreen(
 
     val parserDiagnosticsEnabled by
     viewModel.parserDiagnosticsEnabled.collectAsState()
-}
-
+    
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
