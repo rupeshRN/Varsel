@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import com.varsel.expensetracker.ui.more.SettingsDetailScreen
+import com.varsel.expensetracker.ui.developer.DeveloperSettingsScreen
 
 @Composable
 fun NavGraph(
@@ -133,13 +134,12 @@ composable("appearance") {
 
 composable("developer") {
 
-    SettingsDetailScreen(
+    DeveloperSettingsScreen(
 
-        title = "Developer",
+        onBackClick = {
+            navController.popBackStack()
+        }
 
-        description = "Parser diagnostics, logs and development tools for troubleshooting.",
-
-        icon = Icons.Outlined.Code
     )
 }
 
