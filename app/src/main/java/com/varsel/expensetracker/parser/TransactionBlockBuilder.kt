@@ -24,7 +24,7 @@ class TransactionBlockBuilder @Inject constructor(
 
         val transactionLines = mutableListOf<String>()
 
-        val missedDateLines = mutableListOf<String>() //to diagnose the bug
+        val missedDateLines = mutableListOf<String>()
 
         var accountActivityFound = false
 
@@ -100,8 +100,7 @@ if (startsWithDate) {
 
 current.add(line)
         }
-
-        //updated below code with parser diagnosis
+        
 if (current.isNotEmpty()) {
 
     blocks.add(
