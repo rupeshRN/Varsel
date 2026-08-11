@@ -17,7 +17,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.varsel.expensetracker.ui.import_statement.components.DeveloperDiagnosticsCard
 import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
