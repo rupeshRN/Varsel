@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.material3.Checkbox
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,24 +95,26 @@ fun ImportScreen(
                                 .fillMaxWidth()
                         ) {
                             items(state.parsedTransactions) { selectable ->
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                ) {
-                                    Column(modifier = Modifier.padding(12.dp)) {
-                                        Text(
-                                                text = selectable.transaction.description,
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-    text = "Amount: ${selectable.transaction.amount} (${selectable.transaction.type})",
-    style = MaterialTheme.typography.bodyMedium
-)
-                                    }
-                                }
-                            }
+Card(
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp)
+) {
+    Column(modifier = Modifier.padding(12.dp)) {
+
+        Text(
+            text = selectable.transaction.description,
+            style = MaterialTheme.typography.bodyLarge
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Amount: ${selectable.transaction.amount} (${selectable.transaction.type})",
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
                         }
 
 Spacer(modifier = Modifier.height(12.dp)) // Developer diagnostics
