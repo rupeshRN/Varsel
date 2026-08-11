@@ -1,11 +1,18 @@
 package com.varsel.expensetracker.ui.import_statement
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.varsel.expensetracker.domain.model.Transaction
 
-data class SelectableTransaction(
+class SelectableTransaction(
 
     val transaction: Transaction,
 
-    var selected: Boolean = true
+    selected: Boolean = true
 
-)
+) {
+
+    var selected by mutableStateOf(selected)
+
+}
