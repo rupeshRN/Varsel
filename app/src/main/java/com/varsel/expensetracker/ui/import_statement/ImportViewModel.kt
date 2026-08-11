@@ -27,9 +27,9 @@ sealed interface ImportUiState {
     object Loading : ImportUiState
     object Processing : ImportUiState
 
-    data class ParsedTransactions(
-        val parsedTransactions: List<Transaction>
-    ) : ImportUiState
+data class ParsedTransactions(
+    val parsedTransactions: List<SelectableTransaction>
+) : ImportUiState
 
     data class PasswordRequired(
         val isInvalidPasswordError: Boolean = false,
@@ -119,7 +119,9 @@ if (result.transactions.isEmpty()) {
 
 _uiState.value =
     ImportUiState.ParsedTransactions(
-        result.transactions
+        result.transactions.map {
+            SelectableTransaction(it)
+        }
     )
 
             } catch (e: Exception) {
@@ -131,18 +133,24 @@ _uiState.value =
     }
 
     fun confirmAndSaveTransactions(
-        transactions: List<Transaction>
-    ) {
+    transactions: List<SelectableTransaction>
+) {
         viewModelScope.launch {
 
             try {
 
-                transactions.forEach {
-                    transactionRepository.insertTransaction(it)
-                }
+                transactions
+    .filter { it.selected }
+    .forEach {
+        transactionRepository.insertTransaction(
+            it.transaction
+        )
+    }
 
                 _uiState.value =
-                    ImportUiState.Saved(transactions.size)
+                    ImportUiState.Saved(
+                        transactions.count { it.selected }
+)
 
             } catch (e: Exception) {
 
