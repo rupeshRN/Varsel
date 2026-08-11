@@ -108,7 +108,7 @@ fun ImportScreen(
                             }
                         }
 
-Spacer(modifier = Modifier.height(12.dp)) //adding layer in the screen to view expandable diagnostic results
+Spacer(modifier = Modifier.height(12.dp)) // Developer diagnostics
 
 if (parserDiagnosticsEnabled) {
 Card(
@@ -165,7 +165,7 @@ Text(
 
 Text(diagnostics.stopReason)
 
-            //added for diagnosis
+            // Missed date diagnostics
             if (diagnostics.missedDateLines.isNotEmpty()) {
 
     Spacer(modifier = Modifier.height(12.dp))
