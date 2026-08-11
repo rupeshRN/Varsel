@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.varsel.expensetracker.developer.DeveloperSettings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,6 +108,7 @@ fun ImportScreen(
 
 Spacer(modifier = Modifier.height(12.dp)) //adding layer in the screen to view expandable diagnostic results
 
+if (DeveloperSettings.PARSER_DIAGNOSTICS) {
 Card(
     modifier = Modifier.fillMaxWidth()
 ) {
@@ -181,6 +183,7 @@ Text(diagnostics.stopReason)
 }
         }
     }
+}
 }
 
 Spacer(modifier = Modifier.height(12.dp))
