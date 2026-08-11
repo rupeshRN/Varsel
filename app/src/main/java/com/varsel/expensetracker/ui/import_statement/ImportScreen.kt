@@ -93,16 +93,22 @@ fun ImportScreen(
                                 .weight(1f)
                                 .fillMaxWidth()
                         ) {
-                            items(state.parsedTransactions) { transaction ->
+                            items(state.parsedTransactions) { selectable ->
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
-                                        Text(text = transaction.description, style = MaterialTheme.typography.bodyLarge)
+                                        Text(
+                                                text = selectable.transaction.description,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "Amount: ${transaction.amount} (${transaction.type})", style = MaterialTheme.typography.bodyMedium)
+                                        Text(
+    text = "Amount: ${selectable.transaction.amount} (${selectable.transaction.type})",
+    style = MaterialTheme.typography.bodyMedium
+)
                                     }
                                 }
                             }
