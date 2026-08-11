@@ -76,7 +76,6 @@ if (statementEndDetector.isStatementEnd(line)) {
 
     val hasDateAnywhere =
     anyDateRegex.containsMatchIn(line)
-        .containsMatchIn(line)
 
 val startsWithDate =
     transactionStartRegex.matches(line)
