@@ -29,9 +29,6 @@ fun ImportScreen(
 
     val parserDiagnosticsEnabled by
     viewModel.parserDiagnosticsEnabled.collectAsState()
-
-    var showDiagnostics by remember {
-    mutableStateOf(false)
 }
 
     val launcher = rememberLauncherForActivityResult(
