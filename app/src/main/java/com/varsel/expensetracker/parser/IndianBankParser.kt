@@ -93,6 +93,12 @@ class IndianBankParser @Inject constructor(
             val tokens =
                 slashTokenizer.tokenize(rawDescription)
 
+                throw RuntimeException(
+    tokens.joinToString(
+        separator = "\n----------------\n"
+    )
+)
+
             val fields =
                 fieldInterpreter.interpret(tokens)
 
