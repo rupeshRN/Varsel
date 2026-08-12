@@ -93,11 +93,11 @@ class IndianBankParser @Inject constructor(
             val tokens =
                 slashTokenizer.tokenize(rawDescription)
 
-            val fields =
-                fieldInterpreter.interpret(tokens)
-
             val normalizedTokens =
                 tokenNormalizer.normalize(tokens)
+                
+            val fields =
+                fieldInterpreter.interpret(normalizedTokens)
 
             val confidence =
                 parserConfidenceEngine.evaluate(fields)
