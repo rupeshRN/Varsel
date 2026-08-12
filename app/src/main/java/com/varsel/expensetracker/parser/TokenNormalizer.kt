@@ -19,47 +19,78 @@ class TokenNormalizer @Inject constructor() {
     // Layout repair only
     //----------------------------------------------------
 
-    private fun repairHyphenArtifacts(
-        token: String
-    ): String {
+private fun repairHyphenArtifacts(
+    token: String
+): String {
 
-        var text = token.trim()
+    var text = token.trim()
 
-        //------------------------------------------------
-        // Remove spaces around layout hyphens
-        //
-        // Example:
-        // AJAY - SINGH
-        // Indian - Railways
-        //------------------------------------------------
+    //------------------------------------------------
+    // Rule 1
+    // Remove trailing layout hyphen
+    //
+    // DECATHLON -
+    // ->
+    // DECATHLON
+    //------------------------------------------------
 
-        text = text.replace(
-            Regex("\\s+-\\s+"),
+    text = text.replace(
+        Regex("\\s*-\\s*$"),
+        ""
+    )
+
+    //------------------------------------------------
+    // Rule 2
+    // Remove layout separator
+    //
+    // AJAY - SINGH
+    // Indian - Railways
+    // UPI - RVSL
+    //------------------------------------------------
+
+    text = text.replace(
+        Regex("\\s+-\\s+"),
+        " "
+    )
+
+    //------------------------------------------------
+    // Rule 3
+    // Join broken merchant words
+    //
+    // WAHEGUR U PETROLEUM
+    // ->
+    // WAHEGURU PETROLEUM
+    //
+    // HARIPRAS ATH K
+    // ->
+    // HARIPRASATH K
+    //
+    // Only joins if:
+    // - left word is reasonably long
+    // - middle fragment is short
+    //------------------------------------------------
+
+    text = text.replace(
+
+        Regex("\\b([A-Za-z]{5,})\\s+([A-Za-z]{1,3})\\b(?=\\s+[A-Za-z])")
+
+    ) {
+
+        val left = it.groupValues[1]
+        val right = it.groupValues[2]
+
+        left + right
+    }
+
+    //------------------------------------------------
+    // Cleanup
+    //------------------------------------------------
+
+    return text
+        .replace(
+            Regex("\\s+"),
             " "
         )
-
-        //------------------------------------------------
-        // Special case:
-        //
-        // WAHEGUR - U PETROLEUM
-        //
-        // becomes
-        //
-        // WAHEGURU PETROLEUM
-        //------------------------------------------------
-
-        text = text.replace(
-            Regex("([A-Za-z]{4,})\\s+([A-Z])\\s+"),
-            "$1$2 "
-        )
-
-        //------------------------------------------------
-
-        return text
-            .replace(
-                Regex("\\s+"),
-                " "
-            )
-            .trim()
-    }
+        .trim()
+}
 }
