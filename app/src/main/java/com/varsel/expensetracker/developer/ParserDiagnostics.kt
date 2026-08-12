@@ -22,5 +22,7 @@ data class ParserDiagnostics(
 
     val missedDateLines: List<String> = emptyList(),
 
-    val stopReason: String = "Not Stopped"
+    val stopReason: String = "Not Stopped",
+
+    val tokenizerOutput: List<String> = emptyList()
 )
