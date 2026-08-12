@@ -90,7 +90,7 @@ private fun isGenericPurpose(
         "pay to bharatpe merc",
         "gpay",
         "payment on cred",
-        "paid via cred"
+        "paid via cred",
 
         "monthly autopay",
         "monthly autopay.",
