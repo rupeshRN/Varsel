@@ -23,11 +23,25 @@ class DisplayDescriptionBuilder @Inject constructor() {
     // Prefer a meaningful purpose
     //----------------------------------------------------
 
-    if (purpose != null &&
-        !isGenericPurpose(purpose)
-    ) {
-        return purpose
+if (purpose != null) {
+
+    val cleanedPurpose =
+        purpose
+            .replace(Regex("\\.+$"), "")
+            .trim()
+
+    if (!isGenericPurpose(cleanedPurpose)) {
+
+        return cleanedPurpose
+            .replaceFirstChar {
+
+                if (it.isLowerCase())
+                    it.titlecase()
+                else
+                    it.toString()
+            }
     }
+}
 
     //----------------------------------------------------
     // Otherwise use merchant
@@ -54,20 +68,43 @@ class DisplayDescriptionBuilder @Inject constructor() {
 
     //----------------------------------------------------
 
-    private fun isGenericPurpose(
-        purpose: String
-    ): Boolean {
+private fun isGenericPurpose(
+    purpose: String
+): Boolean {
 
-        val text =
-            purpose.lowercase()
+    val text = purpose
+        .lowercase()
+        .trim()
 
-        return text == "upi" ||
-                text == "transfer" ||
-                text == "payment" ||
-                text == "pay" ||
-                text == "fund transfer" ||
-                text.startsWith("pay to")
+    val genericPhrases = listOf(
+
+        "upi",
+        "payment",
+        "pay",
+        "transfer",
+        "fund transfer",
+
+        "pay for intent",
+        "payment from phonepe",
+        "pay to bharatpe",
+        "pay to bharatpe merc",
+        "gpay",
+        "payment on cred",
+        "paid via cred"
+
+        "monthly autopay",
+        "monthly autopay.",
+        "autopay",
+        "intent"
+
+    )
+
+    return genericPhrases.any {
+
+        text.startsWith(it)
+
     }
+}
 
     //----------------------------------------------------
 
