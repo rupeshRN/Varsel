@@ -93,18 +93,6 @@ class IndianBankParser @Inject constructor(
             val tokens =
                 slashTokenizer.tokenize(rawDescription)
 
-            // ---------- TEMP DEBUG ----------
-println("===================================")
-println("RAW DESCRIPTION:")
-println(rawDescription)
-
-println("TOKENS:")
-tokens.forEachIndexed { index, value ->
-    println("$index -> [$value]")
-}
-println("===================================")
-// ---------- END DEBUG ----------
-
             val fields =
                 fieldInterpreter.interpret(tokens)
 
