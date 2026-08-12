@@ -11,6 +11,7 @@ class IndianBankParser @Inject constructor(
     private val merchantExtractor: MerchantExtractor,
     private val descriptionCleaner: DescriptionCleaner,
     private val slashTokenizer: SlashTokenizer,
+    private val tokenNormalizer: TokenNormalizer,
     private val fieldInterpreter: FieldInterpreter,
     private val amountInterpreter: AmountInterpreter,
     private val parserConfidenceEngine: ParserConfidenceEngine,
@@ -94,6 +95,9 @@ class IndianBankParser @Inject constructor(
 
             val fields =
                 fieldInterpreter.interpret(tokens)
+
+            val normalizedTokens =
+                tokenNormalizer.normalize(tokens)
 
             val confidence =
                 parserConfidenceEngine.evaluate(fields)
