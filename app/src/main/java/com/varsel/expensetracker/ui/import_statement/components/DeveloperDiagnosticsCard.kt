@@ -103,12 +103,6 @@ fun DeveloperDiagnosticsCard(
                         text = it,
                         style = MaterialTheme.typography.bodySmall
                     )
-
-             Spacer(modifier = Modifier.height(8.dp))
-                Text("Tokenizer Output")
-
-diagnostics.tokenizerOutput.forEach {
-    Text(it)
 }
 
                 }
