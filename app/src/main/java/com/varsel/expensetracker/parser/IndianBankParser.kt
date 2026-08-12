@@ -93,6 +93,12 @@ class IndianBankParser @Inject constructor(
             val tokens =
                 slashTokenizer.tokenize(rawDescription)
 
+            ParserDiagnosticsManager.update {
+    copy(
+        tokenizerOutput = tokens
+    )
+}
+
             val fields =
                 fieldInterpreter.interpret(tokens)
 
