@@ -1,8 +1,11 @@
 package com.varsel.expensetracker.category
 
 import javax.inject.Inject
+import com.varsel.expensetracker.category.CustomRuleEngine
 
 class CategoryRuleEngine @Inject constructor() {
+
+    private val customRuleEngine: CustomRuleEngine
 
     private val rules = listOf(
 
@@ -95,6 +98,24 @@ class CategoryRuleEngine @Inject constructor() {
     fun categorize(
         description: String
     ): CategoryResult {
+
+    //--------------------------------------------------
+// User learned rule has highest priority
+//--------------------------------------------------
+
+customRuleEngine
+    .findLearnedCategory(description)
+    ?.let {
+
+        return CategoryResult(
+
+            category = it,
+
+            confidence = 100
+
+        )
+
+    }
 
 val words =
     description
