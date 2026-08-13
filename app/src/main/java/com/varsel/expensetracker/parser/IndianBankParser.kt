@@ -5,6 +5,9 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
 import com.varsel.expensetracker.category.CategoryRuleEngine
+import com.varsel.expensetracker.category.CustomRuleEngine
+import com.varsel.expensetracker.category.Category
+import com.varsel.expensetracker.category.CategoryResult
 
 class IndianBankParser @Inject constructor(
     private val blockBuilder: TransactionBlockBuilder,
@@ -16,7 +19,8 @@ class IndianBankParser @Inject constructor(
     private val amountInterpreter: AmountInterpreter,
     private val parserConfidenceEngine: ParserConfidenceEngine,
     private val displayDescriptionBuilder: DisplayDescriptionBuilder,
-    private val categoryRuleEngine: CategoryRuleEngine
+    private val categoryRuleEngine: CategoryRuleEngine,
+    private val customRuleEngine: CustomRuleEngine
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
@@ -111,8 +115,24 @@ class IndianBankParser @Inject constructor(
             descriptionCleaner.clean(rawDescription)
     )
 
-    val category =
-    categoryRuleEngine.categorize(description)
+val learnedCategory =
+
+    customRuleEngine.findLearnedCategory(description)
+
+val category =
+
+    if (learnedCategory != null) {
+
+        CategoryResult(
+            category = Category.valueOf(learnedCategory),
+            confidence = 100
+        )
+
+    } else {
+
+        categoryRuleEngine.categorize(description)
+
+    }
 
             //--------------------------------------------------
             // Transaction
