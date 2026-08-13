@@ -112,7 +112,7 @@ class IndianBankParser @Inject constructor(
     )
 
     val category =
-    categoryRuleEngine.categorize(fields)
+    categoryRuleEngine.categorize(description)
 
             //--------------------------------------------------
             // Transaction
