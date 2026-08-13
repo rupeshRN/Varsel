@@ -10,14 +10,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.varsel.expensetracker.category.Category
+import com.varsel.expensetracker.category.CategoryMetadata
 
 @Composable
 fun CategorySection(
 
-    selectedCategory: Category,
+    selectedCategory: String,
 
-    onCategorySelected: (Category) -> Unit
+    onCategorySelected: (String) -> Unit
 
 ) {
 
@@ -31,27 +31,7 @@ fun CategorySection(
 
     )
 
-    val rows = listOf(
-
-        listOf(
-            Category.FOOD,
-            Category.TRAVEL,
-            Category.FUEL
-        ),
-
-        listOf(
-            Category.GROCERIES,
-            Category.BILLS,
-            Category.HEALTHCARE
-        ),
-
-        listOf(
-            Category.ENTERTAINMENT,
-            Category.MOBILE,
-            null        // Placeholder for + New Category
-        )
-
-    )
+    val categories = CategoryMetadata.all
 
     Column(
 
@@ -59,47 +39,49 @@ fun CategorySection(
 
     ) {
 
-        rows.forEach { row ->
+        categories.chunked(3).forEach { row ->
 
             Row(
 
                 modifier = Modifier.fillMaxWidth(),
 
-                horizontalArrangement =
-                    Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
 
             ) {
 
                 row.forEach { category ->
 
-                    if (category != null) {
+                    CategoryCard(
 
-                        CategoryCard(
+                        modifier = Modifier.weight(1f),
 
-                            modifier = Modifier.weight(1f),
+                        category = category,
 
-                            category = category,
+                        selected =
 
-                            selected =
-                                category == selectedCategory,
+                            category.id == selectedCategory,
 
-                            onClick = {
+                        onClick = {
 
-                                onCategorySelected(category)
+                            onCategorySelected(
 
-                            }
+                                category.id
 
-                        )
+                            )
 
-                    } else {
+                        }
 
-                        NewCategoryCard(
+                    )
 
-                            modifier = Modifier.weight(1f)
+                }
 
-                        )
+                repeat(3 - row.size) {
 
-                    }
+                    NewCategoryCard(
+
+                        modifier = Modifier.weight(1f)
+
+                    )
 
                 }
 
