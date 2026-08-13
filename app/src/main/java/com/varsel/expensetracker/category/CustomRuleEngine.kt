@@ -5,31 +5,38 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class CustomRuleEngine @Inject constructor(
+class CustomRuleEngine @Inject constructor() {
 
-    private val repository: CustomRuleRepository
-
-) {
+    private var cache: Map<String, String> = emptyMap()
 
     //--------------------------------------------------
-    // Returns learned category if available
+    // Called once before parsing starts
     //--------------------------------------------------
 
-    suspend fun findLearnedCategory(
+    fun loadCache(
+
+        rules: Map<String, String>
+
+    ) {
+
+        cache = rules
+
+    }
+
+    //--------------------------------------------------
+    // Lookup
+    //--------------------------------------------------
+
+    fun findLearnedCategory(
 
         description: String
 
     ): String? {
 
-        val normalized = normalize(description)
+        return cache[normalize(description)]
 
-        val rule = repository.findRule(normalized)
-
-        return rule?.categoryName
     }
 
-    //--------------------------------------------------
-    // Same normalization used for both lookup and save
     //--------------------------------------------------
 
     private fun normalize(
@@ -44,4 +51,5 @@ class CustomRuleEngine @Inject constructor(
             .replace(Regex("\\s+"), " ")
 
     }
+
 }
