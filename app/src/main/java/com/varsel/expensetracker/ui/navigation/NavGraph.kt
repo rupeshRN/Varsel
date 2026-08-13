@@ -63,11 +63,29 @@ TransactionScreen(
 )
         }
 
-        composable(
+composable(
     route = AppDestination.TransactionDetail.route
-) {
+) { backStackEntry ->
 
-    Text("Transaction Detail")
+    val transactionId =
+
+        backStackEntry
+            .arguments
+            ?.getString("transactionId")
+            ?.toLongOrNull()
+            ?: return@composable
+
+    TransactionDetailScreen(
+
+        transactionId = transactionId,
+
+        onBackClick = {
+
+            navController.popBackStack()
+
+        }
+
+    )
 
 }
 
