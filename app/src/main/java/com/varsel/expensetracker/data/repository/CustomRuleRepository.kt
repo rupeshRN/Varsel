@@ -14,6 +14,22 @@ class CustomRuleRepository @Inject constructor(
 ) {
 
     //--------------------------------------------------
+// Load all rules into memory
+//--------------------------------------------------
+
+suspend fun loadRuleCache(): Map<String, String> {
+
+    return getAllRules()
+        .first()
+        .associate {
+
+            it.pattern.lowercase() to it.categoryName
+
+        }
+
+}
+
+    //--------------------------------------------------
     // Observe all rules
     //--------------------------------------------------
 
@@ -36,6 +52,8 @@ class CustomRuleRepository @Inject constructor(
         return customRuleDao.findRuleByPattern(pattern)
 
     }
+
+    
 
     //--------------------------------------------------
     // Save / Replace
