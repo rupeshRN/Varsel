@@ -124,8 +124,11 @@ val category =
     if (learnedCategory != null) {
 
         CategoryResult(
-            category = Category.valueOf(learnedCategory),
+
+            category = learnedCategory,
+
             confidence = 100
+
         )
 
     } else {
