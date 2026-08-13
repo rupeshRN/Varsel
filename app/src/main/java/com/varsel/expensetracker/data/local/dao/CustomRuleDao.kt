@@ -14,6 +14,16 @@ interface CustomRuleDao {
     @Query("SELECT * FROM custom_rules")
     fun getAllRules(): Flow<List<CustomRuleEntity>>
 
+    @Query("""
+SELECT *
+FROM custom_rules
+WHERE pattern = :pattern
+LIMIT 1
+""")
+suspend fun findRuleByPattern(
+    pattern: String
+): CustomRuleEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomRule(rule: CustomRuleEntity)
 
