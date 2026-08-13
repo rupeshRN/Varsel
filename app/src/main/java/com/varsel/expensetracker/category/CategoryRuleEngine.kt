@@ -1,6 +1,5 @@
 package com.varsel.expensetracker.category
 
-import com.varsel.expensetracker.parser.TransactionFields
 import javax.inject.Inject
 
 class CategoryRuleEngine @Inject constructor() {
@@ -47,26 +46,18 @@ class CategoryRuleEngine @Inject constructor() {
     )
 
     fun categorize(
-        fields: TransactionFields
+        description: String
     ): CategoryResult {
 
-        val searchable = buildString {
+        val searchable =
+            description
+                .lowercase()
+                .trim()
 
-            fields.purpose?.let {
-                append(it)
-                append(' ')
-            }
-
-            fields.merchant?.let {
-                append(it)
-            }
-
-        }.lowercase()
-
-        val match = rules.firstOrNull {
-
-            searchable.contains(it.keyword)
-        }
+        val match =
+            rules
+                .filter { searchable.contains(it.keyword) }
+                .maxByOrNull { it.confidence }
 
         return if (match != null) {
 
