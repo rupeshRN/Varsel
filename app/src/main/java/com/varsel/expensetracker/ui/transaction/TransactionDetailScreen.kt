@@ -21,6 +21,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun TransactionDetailScreen(
 
     transactionId: Long,
@@ -29,20 +31,18 @@ fun TransactionDetailScreen(
 
     onBackClick: () -> Unit
 
-) 
+) {
 
-LaunchedEffect(transactionId) {
+    LaunchedEffect(transactionId) {
 
-    viewModel.loadTransaction(
-        transactionId
-    )
+        viewModel.loadTransaction(
+            transactionId
+        )
 
-}
+    }
 
-val uiState by
-    viewModel.uiState.collectAsStateWithLifecycle()
-
-{
+    val uiState by
+        viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
 
