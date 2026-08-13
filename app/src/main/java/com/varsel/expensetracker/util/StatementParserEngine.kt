@@ -7,20 +7,33 @@ import com.varsel.expensetracker.parser.StatementSummaryExtractor
 import com.varsel.expensetracker.parser.TextNormalizer
 import javax.inject.Inject
 import com.varsel.expensetracker.developer.ParserDiagnosticsManager
+import com.varsel.expensetracker.data.repository.CustomRuleRepository
+import com.varsel.expensetracker.category.CustomRuleEngine
 
 class StatementParserEngine @Inject constructor(
     private val bankDetector: BankDetector,
     private val textNormalizer: TextNormalizer,
     private val statementSummaryExtractor: StatementSummaryExtractor,
-    private val reconciliationEngine: ReconciliationEngine
+    private val reconciliationEngine: ReconciliationEngine,
+    private val customRuleRepository: CustomRuleRepository,
+    private val customRuleEngine: CustomRuleEngine
 ) {
 
-    fun parseStatement(
+    suspend fun parseStatement(
         rawText: String
     ): StatementImportResult {
 
         ParserDiagnosticsManager.reset() // To Populate Diagnostics
 
+        //--------------------------------------------------
+// Load learned category cache once
+//--------------------------------------------------
+
+customRuleEngine.loadCache(
+
+    customRuleRepository.loadRuleCache()
+
+)
         val normalizedText =
             textNormalizer.normalize(rawText)
 
