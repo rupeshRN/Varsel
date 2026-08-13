@@ -4,7 +4,7 @@ import javax.inject.Inject
 
 class CategoryRuleEngine @Inject constructor() {
 
-    private val rules = listOf
+    private val rules = listOf(
 
         // Food
         KeywordRule("tea", Category.FOOD, 95),
