@@ -76,17 +76,19 @@ composable(
             ?.toLongOrNull()
             ?: return@composable
 
-    TransactionDetailScreen(
+TransactionDetailScreen(
 
-        transactionId = transactionId,
+    transactionId = transactionId,
 
-        onBackClick = {
+    viewModel = hiltViewModel(),
 
-            navController.popBackStack()
+    onBackClick = {
 
-        }
+        navController.popBackStack()
 
-    )
+    }
+
+)
 
 }
 
