@@ -9,7 +9,7 @@ data class CategoryLearningEntity(
     @PrimaryKey
     val normalizedDescription: String,
 
-    val category: String,
+    val categoryName: String,
 
     val hitCount: Int = 1,
 
