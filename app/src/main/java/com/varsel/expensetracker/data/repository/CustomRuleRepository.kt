@@ -5,6 +5,7 @@ import com.varsel.expensetracker.data.local.entity.CustomRuleEntity
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.first
 
 @Singleton
 class CustomRuleRepository @Inject constructor(
