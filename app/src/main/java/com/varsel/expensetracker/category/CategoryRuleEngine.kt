@@ -4,7 +4,7 @@ import javax.inject.Inject
 
 class CategoryRuleEngine @Inject constructor() {
 
-    private val rules = listOf(
+    private val rules = listOf
 
         // Food
         KeywordRule("tea", Category.FOOD, 95),
@@ -49,15 +49,23 @@ class CategoryRuleEngine @Inject constructor() {
         description: String
     ): CategoryResult {
 
-        val searchable =
-            description
-                .lowercase()
-                .trim()
+val words =
+    description
+        .lowercase()
+        .replace(Regex("[^a-z0-9 ]"), " ")
+        .split(Regex("\\s+"))
+        .filter { it.isNotBlank() }
 
-        val match =
-            rules
-                .filter { searchable.contains(it.keyword) }
-                .maxByOrNull { it.confidence }
+val match =
+    rules
+        .filter { rule ->
+
+            words.any { word ->
+                word == rule.keyword
+            }
+
+        }
+        .maxByOrNull { it.confidence }
 
         return if (match != null) {
 
