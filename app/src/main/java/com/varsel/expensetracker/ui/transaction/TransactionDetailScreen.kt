@@ -15,6 +15,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,9 +25,24 @@ fun TransactionDetailScreen(
 
     transactionId: Long,
 
+    viewModel: TransactionDetailViewModel,
+
     onBackClick: () -> Unit
 
-) {
+) 
+
+LaunchedEffect(transactionId) {
+
+    viewModel.loadTransaction(
+        transactionId
+    )
+
+}
+
+val uiState by
+    viewModel.uiState.collectAsStateWithLifecycle()
+
+{
 
     Scaffold(
 
@@ -75,13 +93,29 @@ fun TransactionDetailScreen(
 
         ) {
 
-            Text(
-                text = "Transaction ID"
-            )
+when (val state = uiState) {
 
-            Text(
-                text = transactionId.toString()
-            )
+    TransactionDetailUiState.Loading -> {
+
+        Text("Loading...")
+
+    }
+
+    is TransactionDetailUiState.Error -> {
+
+        Text(state.message)
+
+    }
+
+    is TransactionDetailUiState.Loaded -> {
+
+        Text("Transaction Loaded")
+
+        Text(state.transaction.description)
+
+    }
+
+}
 
         }
 
