@@ -20,7 +20,6 @@ class IndianBankParser @Inject constructor(
     private val parserConfidenceEngine: ParserConfidenceEngine,
     private val displayDescriptionBuilder: DisplayDescriptionBuilder,
     private val categoryRuleEngine: CategoryRuleEngine,
-    private val customRuleEngine: CustomRuleEngine
 ) : StatementParser {
 
     override fun canParse(rawText: String): Boolean {
@@ -115,27 +114,8 @@ class IndianBankParser @Inject constructor(
             descriptionCleaner.clean(rawDescription)
     )
 
-val learnedCategory =
-
-    customRuleEngine.findLearnedCategory(description)
-
 val category =
-
-    if (learnedCategory != null) {
-
-        CategoryResult(
-
-            category = learnedCategory,
-
-            confidence = 100
-
-        )
-
-    } else {
-
-        categoryRuleEngine.categorize(description)
-
-    }
+    categoryRuleEngine.categorize(description)
 
             //--------------------------------------------------
             // Transaction
