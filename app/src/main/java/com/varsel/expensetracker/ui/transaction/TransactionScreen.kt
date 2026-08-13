@@ -167,12 +167,20 @@ fun TransactionScreen(
 
             }
 
-            transactionList(
+transactionList(
 
-                transactions =
-                    uiState.transactions
+    transactions =
+        uiState.transactions,
 
-            )
+    onTransactionClick = { transaction ->
+
+        // E1.2
+        // Navigation to Transaction Detail Screen
+        // will be added here.
+
+    }
+
+)
 
         }
 
