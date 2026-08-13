@@ -17,14 +17,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.varsel.expensetracker.category.Category
+import com.varsel.expensetracker.category.CategoryUi
 
 @Composable
 fun CategoryCard(
 
     modifier: Modifier = Modifier,
 
-    category: Category,
+    category: CategoryUi,
 
     selected: Boolean,
 
@@ -81,7 +81,7 @@ fun CategoryCard(
 
             Text(
 
-                text = category.emoji,
+                text = category.icon,
 
                 style = MaterialTheme.typography.headlineSmall
 
@@ -89,7 +89,7 @@ fun CategoryCard(
 
             Text(
 
-                text = category.displayName,
+                text = category.id,
 
                 style = MaterialTheme.typography.bodySmall,
 
