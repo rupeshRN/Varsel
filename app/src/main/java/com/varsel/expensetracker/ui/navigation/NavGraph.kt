@@ -54,6 +54,14 @@ fun NavGraph(
             )
         }
 
+        composable(
+    route = AppDestination.TransactionDetail.route
+) {
+
+    Text("Transaction Detail")
+
+}
+
         composable(AppDestination.Reports.route) {
 
             Text("Reports - Coming Soon")
