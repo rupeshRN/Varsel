@@ -3,9 +3,8 @@ package com.varsel.expensetracker.category
 import javax.inject.Inject
 import com.varsel.expensetracker.category.CustomRuleEngine
 
-class CategoryRuleEngine @Inject constructor() {
-
-    private val customRuleEngine: CustomRuleEngine,
+class CategoryRuleEngine @Inject constructor(private val customRuleEngine: CustomRuleEngine) 
+{ 
     private val rules = listOf(
 
         // Food
