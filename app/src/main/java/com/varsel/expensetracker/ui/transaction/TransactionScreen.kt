@@ -27,7 +27,8 @@ import com.varsel.expensetracker.ui.transaction.components.transactionList
 @Composable
 fun TransactionScreen(
     viewModel: TransactionViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onTransactionClick: (Long) -> Unit
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -174,9 +175,9 @@ transactionList(
 
     onTransactionClick = { transaction ->
 
-        // E1.2
-        // Navigation to Transaction Detail Screen
-        // will be added here.
+        onTransactionClick(
+            transaction.id
+        )
 
     }
 
