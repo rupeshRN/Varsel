@@ -13,14 +13,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionDetailScreen(
@@ -35,9 +33,7 @@ fun TransactionDetailScreen(
 
     LaunchedEffect(transactionId) {
 
-        viewModel.loadTransaction(
-            transactionId
-        )
+        viewModel.loadTransaction(transactionId)
 
     }
 
@@ -93,29 +89,29 @@ fun TransactionDetailScreen(
 
         ) {
 
-when (val state = uiState) {
+            when (val state = uiState) {
 
-    TransactionDetailUiState.Loading -> {
+                TransactionDetailUiState.Loading -> {
 
-        Text("Loading...")
+                    Text("Loading...")
 
-    }
+                }
 
-    is TransactionDetailUiState.Error -> {
+                is TransactionDetailUiState.Error -> {
 
-        Text(state.message)
+                    Text(state.message)
 
-    }
+                }
 
-    is TransactionDetailUiState.Loaded -> {
+                is TransactionDetailUiState.Loaded -> {
 
-        Text("Transaction Loaded")
+                    Text("Transaction Loaded")
 
-        Text(state.transaction.description)
+                    Text(state.transaction.description)
 
-    }
+                }
 
-}
+            }
 
         }
 
