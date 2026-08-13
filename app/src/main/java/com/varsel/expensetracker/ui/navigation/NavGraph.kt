@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import com.varsel.expensetracker.ui.more.SettingsDetailScreen
 import com.varsel.expensetracker.ui.developer.DeveloperSettingsScreen
+import com.varsel.expensetracker.ui.transaction.TransactionDetailScreen
 
 @Composable
 fun NavGraph(
