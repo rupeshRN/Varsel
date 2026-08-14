@@ -72,15 +72,33 @@ class CategoryViewModel @Inject constructor(
         }
     }
 
-    fun addCustomRule(merchantPattern: String, categoryName: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val rule = CustomRuleEntity(
-                pattern = merchantPattern.trim().uppercase(),
-                categoryName = categoryName
-            )
-            customRuleDao.insertCustomRule(rule)
-        }
+fun addCustomRule(
+
+    merchantPattern: String,
+
+    displayDescription: String,
+
+    categoryName: String
+
+) {
+
+    viewModelScope.launch(Dispatchers.IO) {
+
+        val rule = CustomRuleEntity(
+
+            pattern = merchantPattern.trim().uppercase(),
+
+            displayDescription = displayDescription.trim(),
+
+            categoryName = categoryName
+
+        )
+
+        customRuleDao.insertCustomRule(rule)
+
     }
+
+}
 
     fun deleteCustomRule(rule: CustomRuleEntity) {
         viewModelScope.launch(Dispatchers.IO) {
