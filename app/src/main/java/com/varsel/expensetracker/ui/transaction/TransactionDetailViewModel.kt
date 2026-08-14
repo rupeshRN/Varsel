@@ -25,6 +25,11 @@ class TransactionDetailViewModel @Inject constructor(
     val uiState: StateFlow<TransactionDetailUiState> =
         _uiState.asStateFlow()
 
+    private val _saveCompleted = MutableStateFlow(false)
+
+    val saveCompleted: StateFlow<Boolean> =
+    _saveCompleted.asStateFlow()
+
     fun loadTransaction(
 
         transactionId: Long
@@ -123,6 +128,64 @@ class TransactionDetailViewModel @Inject constructor(
                     current.transaction.description
 
         )
+
+}
+
+fun saveChanges() {
+
+    val current =
+
+        _uiState.value as?
+            TransactionDetailUiState.Loaded
+            ?: return
+
+    viewModelScope.launch {
+
+        _uiState.value =
+
+            current.copy(
+
+                isSaving = true
+
+            )
+
+        val updatedTransaction =
+
+            current.transaction.copy(
+
+                description =
+                    current.editableDescription,
+
+                category =
+                    current.selectedCategory
+
+            )
+
+        transactionRepository.updateTransaction(
+            updatedTransaction
+        )
+
+        _saveCompleted.value = true
+
+        _uiState.value =
+
+            current.copy(
+
+                transaction = updatedTransaction,
+
+                hasChanges = false,
+
+                isSaving = false
+
+            )
+
+    }
+
+}
+
+fun consumeSaveCompleted() {
+
+    _saveCompleted.value = false
 
 }
 
