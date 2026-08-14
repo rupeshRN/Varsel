@@ -31,15 +31,49 @@ class CustomRuleEngine @Inject constructor() {
     // Lookup learned knowledge
     //--------------------------------------------------
 
-    fun findKnowledge(
+fun findKnowledge(
 
-        description: String
+    description: String
 
-    ): KnowledgeRecord? {
+): KnowledgeRecord? {
 
-        return cache[normalize(description)]
+    val normalized =
+
+        normalize(description)
+
+    //--------------------------------------------------
+    // Exact match
+    //--------------------------------------------------
+
+    cache[normalized]?.let {
+
+        return it
 
     }
+
+    //--------------------------------------------------
+    // Longest contains match
+    //--------------------------------------------------
+
+    return cache
+
+        .entries
+
+        .filter {
+
+            normalized.contains(it.key)
+
+        }
+
+        .maxByOrNull {
+
+            it.key.length
+
+        }
+
+        ?.value
+
+}
 
     //--------------------------------------------------
 
