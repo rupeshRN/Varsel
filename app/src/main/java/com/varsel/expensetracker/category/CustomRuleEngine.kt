@@ -47,9 +47,16 @@ import javax.inject.Singleton
  * • performs UI updates
  */
 @Singleton
-class CustomRuleEngine @Inject constructor() {
+class CustomRuleEngine @Inject constructor(
 
-    private val descriptionNormalizer: DescriptionNormalizer,
+        /**
+     * Canonical merchant description normalizer.
+     * Ensures every lookup uses the exact same
+     * normalization pipeline across the application.
+     */
+    private val descriptionNormalizer: DescriptionNormalizer
+
+) {
 
     //--------------------------------------------------
     // In-memory learned knowledge
