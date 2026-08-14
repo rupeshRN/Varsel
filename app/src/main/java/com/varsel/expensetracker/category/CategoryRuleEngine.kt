@@ -1,10 +1,50 @@
 package com.varsel.expensetracker.category
 
 import javax.inject.Inject
-import com.varsel.expensetracker.category.CustomRuleEngine
 
-class CategoryRuleEngine @Inject constructor(private val customRuleEngine: CustomRuleEngine) 
-{ 
+/**
+ * Primary category decision engine.
+ *
+ * Responsibilities
+ * ----------------------------------------------------
+ * Determines the category for a transaction description
+ * using a layered decision strategy.
+ *
+ * Decision Order
+ * ----------------------------------------------------
+ *
+ * 1. User-learned knowledge (highest priority)
+ *      • Applied through CustomRuleEngine.
+ *      • Represents explicit user corrections.
+ *
+ * 2. Built-in keyword rules
+ *      • Used only when no learned rule exists.
+ *      • Confidence-based matching.
+ *
+ * 3. Uncategorized
+ *      • Returned when no rule matches.
+ *
+ * This class never:
+ * • reads Room directly
+ * • writes learned rules
+ * • performs statement parsing
+ * • updates UI
+ *
+ * It is intentionally a pure decision engine.
+ */
+class CategoryRuleEngine @Inject constructor(
+
+    private val customRuleEngine: CustomRuleEngine
+
+) {
+
+    //--------------------------------------------------
+    // Built-in keyword rules.
+    //
+    // These act as fallback heuristics whenever the
+    // learning engine has no knowledge for a merchant.
+    //--------------------------------------------------
+
     private val rules = listOf(
 
         // Food
@@ -93,45 +133,67 @@ class CategoryRuleEngine @Inject constructor(private val customRuleEngine: Custo
         KeywordRule("tablets", Category.HEALTHCARE, 95)
     )
 
+    /**
+     * Determines the most appropriate category for the
+     * supplied transaction description.
+     */
     fun categorize(
+
         description: String
+
     ): CategoryResult {
 
-    //--------------------------------------------------
-// User learned rule has highest priority
-//--------------------------------------------------
+        //--------------------------------------------------
+        // Stage 1
+        //
+        // User-learned knowledge always has priority over
+        // built-in keyword rules.
+        //--------------------------------------------------
 
-customRuleEngine
-    .findKnowledge(description)
-    ?.let { knowledge ->
+        customRuleEngine
+            .findKnowledge(description)
+            ?.let { knowledge ->
 
-        return CategoryResult(
+                return CategoryResult(
 
-            category = knowledge.categoryName,
+                    category = knowledge.categoryName,
 
-            confidence = 100
+                    confidence = 100
 
-        )
+                )
 
-    }
-
-val words =
-    description
-        .lowercase()
-        .replace(Regex("[^a-z0-9 ]"), " ")
-        .split(Regex("\\s+"))
-        .filter { it.isNotBlank() }
-
-val match =
-    rules
-        .filter { rule ->
-
-            words.any { word ->
-                word == rule.keyword
             }
 
-        }
-        .maxByOrNull { it.confidence }
+        //--------------------------------------------------
+        // Stage 2
+        //
+        // Tokenize description and evaluate keyword rules.
+        //--------------------------------------------------
+
+        val words =
+            description
+                .lowercase()
+                .replace(Regex("[^a-z0-9 ]"), " ")
+                .split(Regex("\\s+"))
+                .filter { it.isNotBlank() }
+
+        val match =
+            rules
+                .filter { rule ->
+
+                    words.any { word ->
+                        word == rule.keyword
+                    }
+
+                }
+                .maxByOrNull { it.confidence }
+
+        //--------------------------------------------------
+        // Stage 3
+        //
+        // Return best keyword match or fall back to
+        // Uncategorized.
+        //--------------------------------------------------
 
         return if (match != null) {
 
