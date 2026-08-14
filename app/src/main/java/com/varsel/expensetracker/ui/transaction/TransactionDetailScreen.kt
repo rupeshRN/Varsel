@@ -44,8 +44,23 @@ fun TransactionDetailScreen(
 
     }
 
+    LaunchedEffect(saveCompleted) {
+
+    if (saveCompleted) {
+
+        viewModel.consumeSaveCompleted()
+
+        onBackClick()
+
+    }
+
+}
+
     val uiState by
         viewModel.uiState.collectAsStateWithLifecycle()
+
+    val saveCompleted by
+    viewModel.saveCompleted.collectAsStateWithLifecycle()
 
     Scaffold(
 
@@ -158,17 +173,18 @@ BottomActionBar(
 
     onDeleteClick = {
 
-        // Next milestone
+        // E2.4
 
     },
 
-    onSaveClick = {
+    onSaveClick =
 
-        // Next milestone
+        viewModel::saveChanges,
 
-    },
+    saveEnabled =
 
-    saveEnabled = state.hasChanges && !state.isSaving
+        state.hasChanges &&
+        !state.isSaving
 
 )
 
