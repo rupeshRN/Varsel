@@ -11,22 +11,101 @@ import com.varsel.expensetracker.parser.StatementSummaryExtractor
 import com.varsel.expensetracker.parser.TextNormalizer
 import javax.inject.Inject
 
+/**
+ * Central orchestration engine for importing bank statements.
+ *
+ * This class coordinates the complete import pipeline but intentionally
+ * contains very little business logic itself.
+ *
+ * Pipeline
+ * ----------------------------------------------------
+ *
+ * Raw PDF / OCR Text
+ *          │
+ *          ▼
+ * TextNormalizer
+ *          │
+ *          ▼
+ * Load Learning Cache
+ *          │
+ *          ▼
+ * BankDetector
+ *          │
+ *          ▼
+ * Bank-specific Parser
+ *          │
+ *          ▼
+ * Apply Learning Engine
+ *          │
+ *          ▼
+ * Statement Summary
+ *          │
+ *          ▼
+ * Reconciliation
+ *          │
+ *          ▼
+ * Import Preview
+ *
+ * Responsibilities
+ * ----------------------------------------------------
+ * ✓ Load user-learned knowledge once.
+ * ✓ Normalize statement text.
+ * ✓ Detect the correct bank parser.
+ * ✓ Parse transactions.
+ * ✓ Apply learned descriptions/categories.
+ * ✓ Build statement summary.
+ * ✓ Perform reconciliation.
+ * ✓ Produce a single StatementImportResult.
+ *
+ * This class intentionally does NOT:
+ * • parse bank formats itself
+ * • categorize transactions
+ * • maintain learning rules
+ * • access Room directly
+ * • update UI
+ *
+ * Every stage is delegated to a dedicated component.
+ */
 class StatementParserEngine @Inject constructor(
 
+    /**
+     * Selects the correct parser implementation
+     * based on statement content.
+     */
     private val bankDetector: BankDetector,
 
+    /**
+     * Cleans raw OCR/PDF text before parsing.
+     */
     private val textNormalizer: TextNormalizer,
 
+    /**
+     * Extracts opening/closing balances,
+     * statement dates and totals.
+     */
     private val statementSummaryExtractor: StatementSummaryExtractor,
 
+    /**
+     * Verifies parser output against
+     * statement summary values.
+     */
     private val reconciliationEngine: ReconciliationEngine,
 
+    /**
+     * Loads persisted learning rules.
+     */
     private val customRuleRepository: CustomRuleRepository,
 
+    /**
+     * Performs fast in-memory learned lookups.
+     */
     private val customRuleEngine: CustomRuleEngine
 
 ) {
 
+    /**
+     * Executes the complete import pipeline.
+     */
     suspend fun parseStatement(
 
         rawText: String
@@ -36,7 +115,12 @@ class StatementParserEngine @Inject constructor(
         ParserDiagnosticsManager.reset()
 
         //--------------------------------------------------
-        // Load learned rules once
+        // Stage 1
+        //
+        // Load learned knowledge once.
+        //
+        // Every transaction lookup afterwards happens
+        // entirely from memory.
         //--------------------------------------------------
 
         customRuleEngine.loadCache(
@@ -44,6 +128,12 @@ class StatementParserEngine @Inject constructor(
             customRuleRepository.loadRuleCache()
 
         )
+
+        //--------------------------------------------------
+        // Stage 2
+        //
+        // Normalize statement text before parsing.
+        //--------------------------------------------------
 
         val normalizedText =
 
@@ -94,7 +184,9 @@ class StatementParserEngine @Inject constructor(
             )
 
         //--------------------------------------------------
-        // Summary
+        // Stage 3
+        //
+        // Extract statement-level metadata.
         //--------------------------------------------------
 
         val summary =
@@ -106,7 +198,9 @@ class StatementParserEngine @Inject constructor(
             )
 
         //--------------------------------------------------
-        // Bank parser
+        // Stage 4
+        //
+        // Detect bank and execute the correct parser.
         //--------------------------------------------------
 
         val parser =
@@ -118,7 +212,9 @@ class StatementParserEngine @Inject constructor(
             parser.parse(normalizedText)
 
         //--------------------------------------------------
-        // Apply learned knowledge
+        // Stage 5
+        //
+        // Apply user-learned description/category.
         //--------------------------------------------------
 
         val transactions =
@@ -172,7 +268,9 @@ class StatementParserEngine @Inject constructor(
             )
 
         //--------------------------------------------------
-        // Reconciliation
+        // Stage 6
+        //
+        // Verify parsed data against statement totals.
         //--------------------------------------------------
 
         val reconciliation =
@@ -185,6 +283,8 @@ class StatementParserEngine @Inject constructor(
 
             )
 
+        //--------------------------------------------------
+        // Final result returned to ImportViewModel.
         //--------------------------------------------------
 
         return StatementImportResult(
@@ -200,7 +300,13 @@ class StatementParserEngine @Inject constructor(
     }
 
     //--------------------------------------------------
-    // Apply learned knowledge
+    // Applies learned merchant knowledge.
+    //
+    // A learned rule can replace:
+    // • Display Description
+    // • Category
+    //
+    // Amount, date and reference remain unchanged.
     //--------------------------------------------------
 
     private fun applyLearning(
