@@ -119,7 +119,6 @@ fun CategoryScreen(
                     if (newMerchantPattern.isNotBlank() && selectedCategoryForRule.isNotBlank()) {
                         viewModel.addCustomRule(
                             merchantPattern = newMerchantPattern,
-                             displayDescription = merchantPattern
                             categoryName = selectedCategoryForRule
                         )
                         newMerchantPattern = ""
