@@ -42,7 +42,7 @@ fun TransactionDetailScreen(
         viewModel.uiState.collectAsStateWithLifecycle()
 
     val saveCompleted by
-    viewModel.saveCompleted.collectAsStateWithLifecycle()
+        viewModel.saveCompleted.collectAsStateWithLifecycle()
 
     LaunchedEffect(transactionId) {
 
@@ -52,15 +52,15 @@ fun TransactionDetailScreen(
 
     LaunchedEffect(saveCompleted) {
 
-    if (saveCompleted) {
+        if (saveCompleted) {
 
-        viewModel.consumeSaveCompleted()
+            viewModel.consumeSaveCompleted()
 
-        onBackClick()
+            onBackClick()
+
+        }
 
     }
-
-}
 
     Scaffold(
 
@@ -96,6 +96,34 @@ fun TransactionDetailScreen(
 
             )
 
+        },
+
+        bottomBar = {
+
+            val state =
+                uiState as? TransactionDetailUiState.Loaded
+
+            if (state != null) {
+
+                BottomActionBar(
+
+                    onDeleteClick = {
+
+                        // E2.4
+
+                    },
+
+                    onSaveClick =
+                        viewModel::saveChanges,
+
+                    saveEnabled =
+                        state.hasChanges &&
+                        !state.isSaving
+
+                )
+
+            }
+
         }
 
     ) { padding ->
@@ -125,70 +153,49 @@ fun TransactionDetailScreen(
 
                 }
 
-is TransactionDetailUiState.Loaded -> {
+                is TransactionDetailUiState.Loaded -> {
 
-    val transaction = state.transaction
+                    val transaction = state.transaction
 
-DescriptionSection(
+                    DescriptionSection(
 
-    description = state.editableDescription,
+                        description = state.editableDescription,
 
-    onDescriptionChanged =
+                        onDescriptionChanged =
+                            viewModel::updateDescription
 
-        viewModel::updateDescription
+                    )
 
-)
+                    CategorySection(
 
-CategorySection(
+                        selectedCategory = state.selectedCategory,
 
-    selectedCategory = state.selectedCategory,
+                        onCategorySelected =
+                            viewModel::updateCategory
 
-    onCategorySelected =
+                    )
 
-        viewModel::updateCategory
+                    TransactionInfoSection(
 
-)
+                        amount = "₹%.2f".format(transaction.amount),
 
-    TransactionInfoSection(
+                        date = SimpleDateFormat(
 
-        amount = "₹%.2f".format(transaction.amount),
+                            "dd MMM yyyy",
 
-        date = SimpleDateFormat(
+                            Locale.ENGLISH
 
-            "dd MMM yyyy",
+                        ).format(
 
-            Locale.ENGLISH
+                            Date(transaction.dateTimestamp)
 
-        ).format(
+                        ),
 
-            Date(transaction.dateTimestamp)
+                        type = transaction.type.name
 
-        ),
+                    )
 
-        type = transaction.type.name
-
-    )
-
-BottomActionBar(
-
-    onDeleteClick = {
-
-        // E2.4
-
-    },
-
-    onSaveClick =
-
-        viewModel::saveChanges,
-
-    saveEnabled =
-
-        state.hasChanges &&
-        !state.isSaving
-
-)
-
-}
+                }
 
             }
 
