@@ -1,13 +1,17 @@
 package com.varsel.expensetracker.category
 
-import com.varsel.expensetracker.data.repository.CustomRuleRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class CustomRuleEngine @Inject constructor() {
 
-    private var cache: Map<String, String> = emptyMap()
+    //--------------------------------------------------
+    // In-memory learned knowledge
+    //--------------------------------------------------
+
+    private var cache:
+        Map<String, KnowledgeRecord> = emptyMap()
 
     //--------------------------------------------------
     // Called once before parsing starts
@@ -15,7 +19,7 @@ class CustomRuleEngine @Inject constructor() {
 
     fun loadCache(
 
-        rules: Map<String, String>
+        rules: Map<String, KnowledgeRecord>
 
     ) {
 
@@ -24,14 +28,14 @@ class CustomRuleEngine @Inject constructor() {
     }
 
     //--------------------------------------------------
-    // Lookup
+    // Lookup learned knowledge
     //--------------------------------------------------
 
-    fun findLearnedCategory(
+    fun findKnowledge(
 
         description: String
 
-    ): String? {
+    ): KnowledgeRecord? {
 
         return cache[normalize(description)]
 
