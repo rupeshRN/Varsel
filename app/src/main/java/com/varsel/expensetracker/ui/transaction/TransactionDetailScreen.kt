@@ -38,6 +38,12 @@ fun TransactionDetailScreen(
 
 ) {
 
+    val uiState by
+        viewModel.uiState.collectAsStateWithLifecycle()
+
+    val saveCompleted by
+    viewModel.saveCompleted.collectAsStateWithLifecycle()
+
     LaunchedEffect(transactionId) {
 
         viewModel.loadTransaction(transactionId)
@@ -55,12 +61,6 @@ fun TransactionDetailScreen(
     }
 
 }
-
-    val uiState by
-        viewModel.uiState.collectAsStateWithLifecycle()
-
-    val saveCompleted by
-    viewModel.saveCompleted.collectAsStateWithLifecycle()
 
     Scaffold(
 
