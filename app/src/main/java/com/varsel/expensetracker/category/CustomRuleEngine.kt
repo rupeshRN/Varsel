@@ -49,7 +49,7 @@ import javax.inject.Singleton
 @Singleton
 class CustomRuleEngine @Inject constructor() {
 
-    private val descriptionNormalizer: DescriptionNormalizer
+    private val descriptionNormalizer: DescriptionNormalizer,
 
     //--------------------------------------------------
     // In-memory learned knowledge
