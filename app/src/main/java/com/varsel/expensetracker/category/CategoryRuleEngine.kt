@@ -102,12 +102,12 @@ class CategoryRuleEngine @Inject constructor(private val customRuleEngine: Custo
 //--------------------------------------------------
 
 customRuleEngine
-    .findLearnedCategory(description)
-    ?.let {
+    .findKnowledge(description)
+    ?.let { knowledge ->
 
         return CategoryResult(
 
-            category = it,
+            category = knowledge.categoryName,
 
             confidence = 100
 
