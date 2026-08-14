@@ -8,13 +8,15 @@ sealed interface TransactionDetailUiState {
 
     data class Loaded(
 
-        val transaction: Transaction
+        val transaction: Transaction,
 
-        editableDescription: String
+        val editableDescription: String,
 
-        selectedCategory: String
-        
-        hasChanges: Boolean
+        val selectedCategory: String,
+
+        val hasChanges: Boolean,
+
+        val isSaving: Boolean = false
 
     ) : TransactionDetailUiState
 
