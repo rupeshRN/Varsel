@@ -60,27 +60,31 @@ suspend fun loadRuleCache(): Map<String, String> {
     // Save / Replace
     //--------------------------------------------------
 
-    suspend fun saveRule(
+suspend fun saveRule(
 
-        pattern: String,
+    pattern: String,
 
-        categoryName: String
+    displayDescription: String,
 
-    ) {
+    categoryName: String
 
-        customRuleDao.insertCustomRule(
+) {
 
-            CustomRuleEntity(
+    customRuleDao.insertCustomRule(
 
-                pattern = pattern,
+        CustomRuleEntity(
 
-                categoryName = categoryName
+            pattern = pattern,
 
-            )
+            displayDescription = displayDescription,
+
+            categoryName = categoryName
 
         )
 
-    }
+    )
+
+}
 
     //--------------------------------------------------
     // Delete
