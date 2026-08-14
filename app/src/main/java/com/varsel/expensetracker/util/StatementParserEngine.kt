@@ -155,41 +155,19 @@ class StatementParserEngine @Inject constructor(
         // Diagnostics
         //--------------------------------------------------
 
-        val rawLines =
-
-            rawText
-                .lines()
-                .count { it.isNotBlank() }
-
-        val normalizedLines =
-
-            normalizedText
-                .lines()
-                .count { it.isNotBlank() }
-
-                diagnosticsCollector.recordNormalization(
+            diagnosticsCollector.recordNormalization(
                 
-                    rawLines,
+                    rawText,
                 
-                    normalizedLines
+                    normalizedText
                 
                 )
 
-        val dateRegex =
+diagnosticsCollector.recordDetectedDates(
 
-            Regex("\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
+    normalizedText
 
-        val detectedDates =
-
-            dateRegex
-                .findAll(normalizedText)
-                .count()
-
-            diagnosticsCollector.recordDates(
-            
-                detectedDates
-            
-            )
+)
 
         //--------------------------------------------------
         // Stage 3
