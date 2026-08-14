@@ -2,7 +2,7 @@ package com.varsel.expensetracker.util
 
 import com.varsel.expensetracker.category.CustomRuleEngine
 import com.varsel.expensetracker.data.repository.CustomRuleRepository
-import com.varsel.expensetracker.developer.ParserDiagnosticsManager
+import com.varsel.expensetracker.developer.ParserDiagnosticsCollector
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.parser.BankDetector
 import com.varsel.expensetracker.parser.ReconciliationEngine
@@ -99,7 +99,19 @@ class StatementParserEngine @Inject constructor(
     /**
      * Performs fast in-memory learned lookups.
      */
-    private val customRuleEngine: CustomRuleEngine
+    private val customRuleEngine: CustomRuleEngine,
+
+/**
+ * Collects parser diagnostics during the import pipeline.
+ *
+ * This component isolates all developer-only diagnostic updates
+ * from the production parsing logic.
+ *
+ * StatementParserEngine reports parsing events through this
+ * collector instead of writing directly to ParserDiagnosticsManager,
+ * keeping the parser focused solely on business logic.
+ */
+    private val diagnosticsCollector: ParserDiagnosticsCollector
 
 ) {
 
@@ -112,7 +124,7 @@ class StatementParserEngine @Inject constructor(
 
     ): StatementImportResult {
 
-        ParserDiagnosticsManager.reset()
+        diagnosticsCollector.reset()
 
         //--------------------------------------------------
         // Stage 1
@@ -155,15 +167,13 @@ class StatementParserEngine @Inject constructor(
                 .lines()
                 .count { it.isNotBlank() }
 
-        ParserDiagnosticsManager.latest =
-
-            ParserDiagnosticsManager.latest.copy(
-
-                rawLines = rawLines,
-
-                normalizedLines = normalizedLines
-
-            )
+                diagnosticsCollector.recordNormalization(
+                
+                    rawLines,
+                
+                    normalizedLines
+                
+                )
 
         val dateRegex =
 
@@ -175,11 +185,11 @@ class StatementParserEngine @Inject constructor(
                 .findAll(normalizedText)
                 .count()
 
-        ParserDiagnosticsManager.latest =
-
-            ParserDiagnosticsManager.latest.copy(
-
-                datesDetected = detectedDates
+            diagnosticsCollector.recordDates(
+            
+                detectedDates
+            
+            )
 
             )
 
@@ -225,47 +235,23 @@ class StatementParserEngine @Inject constructor(
         // Diagnostics
         //--------------------------------------------------
 
-        ParserDiagnosticsManager.latest =
+diagnosticsCollector.recordTransactions(
 
-            ParserDiagnosticsManager.latest.copy(
+    transactionCount = transactions.size,
 
-                transactionsParsed =
+    lastTimestamp =
 
-                    transactions.size,
+        transactions
 
-                lastParsedDate =
+            .maxByOrNull {
 
-                    transactions
+                it.dateTimestamp
 
-                        .maxByOrNull {
+            }
 
-                            it.dateTimestamp
+            ?.dateTimestamp
 
-                        }
-
-                        ?.let {
-
-                            java.text.SimpleDateFormat(
-
-                                "dd MMM yyyy",
-
-                                java.util.Locale.ENGLISH
-
-                            ).format(
-
-                                java.util.Date(
-
-                                    it.dateTimestamp
-
-                                )
-
-                            )
-
-                        }
-
-                        ?: "—"
-
-            )
+)
 
         //--------------------------------------------------
         // Stage 6
