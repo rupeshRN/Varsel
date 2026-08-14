@@ -50,11 +50,7 @@ fun BottomActionBar(
 
             )
 
-            Text(
-
-                text = " Delete"
-
-            )
+Text("Delete")
 
         }
 
@@ -76,11 +72,7 @@ fun BottomActionBar(
 
             )
 
-            Text(
-
-                text = " Save"
-
-            )
+Text("Save Changes")
 
         }
 
