@@ -9,11 +9,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.varsel.expensetracker.data.repository.CustomRuleRepository
 
 @HiltViewModel
 class TransactionDetailViewModel @Inject constructor(
 
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val customRuleRepository: CustomRuleRepository
 
 ) : ViewModel() {
 
@@ -160,6 +162,35 @@ fun saveChanges() {
                     current.selectedCategory
 
             )
+
+            //--------------------------------------------------
+// Learn user correction
+//--------------------------------------------------
+
+if (
+
+    current.transaction.description !=
+        current.editableDescription ||
+
+    current.transaction.category !=
+        current.selectedCategory
+
+) {
+
+    customRuleRepository.saveRule(
+
+        pattern =
+            current.transaction.description,
+
+        displayDescription =
+            current.editableDescription,
+
+        categoryName =
+            current.selectedCategory
+
+    )
+
+}
 
         transactionRepository.updateTransaction(
             updatedTransaction
