@@ -18,6 +18,7 @@ import com.varsel.expensetracker.ui.import_statement.components.DeveloperDiagnos
 import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.clickable
+import com.varsel.expensetracker.ui.import_statement.components.StatementSummaryCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,15 +30,29 @@ fun ImportScreen(
 
     val diagnostics by viewModel.diagnostics.collectAsState()
 
+    //--------------------------------------------------
+// Local UI navigation
+//--------------------------------------------------
+
+var showTransactionReview by remember {
+
+    mutableStateOf(false)
+
+}
+
     val parserDiagnosticsEnabled by
     viewModel.parserDiagnosticsEnabled.collectAsState()
     
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        uri?.let {
-            viewModel.processSelectedFile(it, null)
-        }
+uri?.let {
+
+    showTransactionReview = false
+
+    viewModel.processSelectedFile(it, null)
+
+}
     }
 
     Scaffold(
@@ -84,6 +99,24 @@ fun ImportScreen(
                     CircularProgressIndicator()
                 }
                 is ImportUiState.ParsedTransactions -> {
+
+                    if (!showTransactionReview) {
+
+    StatementSummaryCard(
+
+        summary = state.summary,
+
+        onContinue = {
+
+            showTransactionReview = true
+
+        }
+
+    )
+
+    return@Box
+
+}
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.SpaceBetween
@@ -178,7 +211,17 @@ Spacer(modifier = Modifier.height(12.dp))
                             style = MaterialTheme.typography.titleMedium
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.resetState() }) {
+                        Button(
+
+    onClick = {
+
+        showTransactionReview = false
+
+        viewModel.resetState()
+
+    }
+
+) {
                             Text("Import Another Statement")
                         }
                     }
