@@ -44,7 +44,15 @@ class TransactionDetailViewModel @Inject constructor(
                 if (transaction != null) {
 
                     TransactionDetailUiState.Loaded(
-                        transaction
+                            transaction = transaction,
+
+                            editableDescription = transaction.description,
+                        
+                            selectedCategory = transaction.category,
+                        
+                            hasChanges = false,
+
+                            isSaving = false
                     )
 
                 } else {
@@ -58,5 +66,64 @@ class TransactionDetailViewModel @Inject constructor(
         }
 
     }
+
+    fun updateDescription(
+
+    description: String
+
+) {
+
+    val current =
+
+        _uiState.value as?
+            TransactionDetailUiState.Loaded
+            ?: return
+
+    _uiState.value =
+
+        current.copy(
+
+            editableDescription = description,
+
+            hasChanges =
+
+                description !=
+                    current.transaction.description ||
+
+                current.selectedCategory !=
+                    current.transaction.category
+
+        )
+
+}
+    fun updateCategory(
+
+    category: String
+
+) {
+
+    val current =
+
+        _uiState.value as?
+            TransactionDetailUiState.Loaded
+            ?: return
+
+    _uiState.value =
+
+        current.copy(
+
+            selectedCategory = category,
+
+            hasChanges =
+
+                category !=
+                    current.transaction.category ||
+
+                current.editableDescription !=
+                    current.transaction.description
+
+        )
+
+}
 
 }
