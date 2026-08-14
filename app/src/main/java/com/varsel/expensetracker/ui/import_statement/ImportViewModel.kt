@@ -28,7 +28,11 @@ sealed interface ImportUiState {
     object Processing : ImportUiState
 
 data class ParsedTransactions(
+
+    val summary: ImportSummary,
+
     val parsedTransactions: List<SelectableTransaction>
+
 ) : ImportUiState
 
     data class PasswordRequired(
