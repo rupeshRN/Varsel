@@ -121,11 +121,74 @@ if (result.transactions.isEmpty()) {
     return@launch
 }
 
+//--------------------------------------------------
+// Build UI summary
+//--------------------------------------------------
+
+val credits =
+
+    result.transactions.count {
+
+        it.type == com.varsel.expensetracker.domain.model.TransactionType.INCOME
+
+    }
+
+val debits =
+
+    result.transactions.count {
+
+        it.type == com.varsel.expensetracker.domain.model.TransactionType.EXPENSE
+
+    }
+
+val summary =
+
+    ImportSummary(
+
+        //--------------------------------------------------
+        // Temporary values
+        // (will become dynamic later)
+        //--------------------------------------------------
+
+        bankName = "Indian Bank",
+
+        statementPeriod = "Current Statement",
+
+        transactionsDetected =
+            ParserDiagnosticsManager.latest.blocksBuilt,
+
+        transactionsParsed =
+            result.transactions.size,
+
+        credits = credits,
+
+        debits = debits,
+
+        duplicates = 0,
+
+        learnedMatches = 0,
+
+        needsReview = 0,
+
+        reconciliationPassed =
+            result.reconciliation.isBalanced
+
+    )
+
 _uiState.value =
+
     ImportUiState.ParsedTransactions(
-        result.transactions.map {
-            SelectableTransaction(it)
-        }
+
+        summary = summary,
+
+        parsedTransactions =
+
+            result.transactions.map {
+
+                SelectableTransaction(it)
+
+            }
+
     )
 
             } catch (e: Exception) {
