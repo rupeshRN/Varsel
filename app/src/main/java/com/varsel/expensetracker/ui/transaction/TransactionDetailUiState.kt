@@ -10,6 +10,12 @@ sealed interface TransactionDetailUiState {
 
         val transaction: Transaction
 
+        editableDescription: String
+
+        selectedCategory: String
+        
+        hasChanges: Boolean
+
     ) : TransactionDetailUiState
 
     data class Error(
