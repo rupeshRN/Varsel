@@ -163,11 +163,11 @@ class StatementParserEngine @Inject constructor(
                 
                 )
 
-diagnosticsCollector.recordDetectedDates(
-
-    normalizedText
-
-)
+            diagnosticsCollector.recordDetectedDates(
+            
+                normalizedText
+            
+            )
 
         //--------------------------------------------------
         // Stage 3
