@@ -27,49 +27,68 @@ class ParserDiagnosticsCollector @Inject constructor() {
 
     }
 
-    //--------------------------------------------------
-    // Text normalization
-    //--------------------------------------------------
+/**
+ * Records normalization statistics directly from raw
+ * and normalized statement text.
+ */
+fun recordNormalization(
 
-    fun recordNormalization(
+    rawText: String,
 
-        rawLines: Int,
+    normalizedText: String
 
-        normalizedLines: Int
+) {
 
-    ) {
+    val rawLines =
 
-        ParserDiagnosticsManager.latest =
+        rawText
+            .lines()
+            .count { it.isNotBlank() }
 
-            ParserDiagnosticsManager.latest.copy(
+    val normalizedLines =
 
-                rawLines = rawLines,
+        normalizedText
+            .lines()
+            .count { it.isNotBlank() }
 
-                normalizedLines = normalizedLines
+    ParserDiagnosticsManager.latest =
 
-            )
+        ParserDiagnosticsManager.latest.copy(
 
-    }
+            rawLines = rawLines,
 
-    //--------------------------------------------------
-    // Date detection
-    //--------------------------------------------------
+            normalizedLines = normalizedLines
 
-    fun recordDates(
+        )
 
-        datesDetected: Int
+}
 
-    ) {
+/**
+ * Records the number of detected transaction dates.
+ */
+fun recordDetectedDates(
 
-        ParserDiagnosticsManager.latest =
+    normalizedText: String
 
-            ParserDiagnosticsManager.latest.copy(
+) {
 
-                datesDetected = datesDetected
+    val detectedDates =
 
-            )
+        Regex("\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
 
-    }
+            .findAll(normalizedText)
+
+            .count()
+
+    ParserDiagnosticsManager.latest =
+
+        ParserDiagnosticsManager.latest.copy(
+
+            datesDetected = detectedDates
+
+        )
+
+}
 
     //--------------------------------------------------
     // Parser output
