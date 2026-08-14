@@ -114,25 +114,25 @@ is TransactionDetailUiState.Loaded -> {
 
     val transaction = state.transaction
 
-    DescriptionSection(
+DescriptionSection(
 
-        description = transaction.description,
+    description = state.editableDescription,
 
-        onDescriptionChanged = {
-            // Editable in next step
-        }
+    onDescriptionChanged =
 
-    )
+        viewModel::updateDescription
 
-    CategorySection(
+)
 
-        selectedCategory = transaction.category,
+CategorySection(
 
-        onCategorySelected = {
-            // Editable in next step
-        }
+    selectedCategory = state.selectedCategory,
 
-    )
+    onCategorySelected =
+
+        viewModel::updateCategory
+
+)
 
     TransactionInfoSection(
 
@@ -154,17 +154,23 @@ is TransactionDetailUiState.Loaded -> {
 
     )
 
-    BottomActionBar(
+BottomActionBar(
 
-        onDeleteClick = {
+    onDeleteClick = {
 
-        },
+        // Next milestone
 
-        onSaveClick = {
+    },
 
-        }
+    onSaveClick = {
 
-    )
+        // Next milestone
+
+    },
+
+    saveEnabled = state.hasChanges && !state.isSaving
+
+)
 
 }
 
