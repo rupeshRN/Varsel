@@ -49,6 +49,8 @@ import javax.inject.Singleton
 @Singleton
 class CustomRuleEngine @Inject constructor() {
 
+    private val descriptionNormalizer: DescriptionNormalizer
+
     //--------------------------------------------------
     // In-memory learned knowledge
     //
@@ -97,8 +99,8 @@ class CustomRuleEngine @Inject constructor() {
     ): KnowledgeRecord? {
 
         val normalized =
-
-            normalize(description)
+        
+            descriptionNormalizer.normalize(description)
 
         //--------------------------------------------------
         // Exact match
@@ -131,69 +133,6 @@ class CustomRuleEngine @Inject constructor() {
             }
 
             ?.value
-
-    }
-
-    //--------------------------------------------------
-    // Converts parser output into a stable lookup key.
-    //
-    // Parser normalization and Learning normalization
-    // intentionally serve different purposes:
-    //
-    // Parser:
-    //     Improve extraction quality.
-    //
-    // Learning:
-    //     Remove noisy tokens so similar descriptions
-    //     can match the same learned rule.
-    //--------------------------------------------------
-
-    private fun normalize(
-
-        description: String
-
-    ): String {
-
-        return description
-
-            //--------------------------------------------------
-            // Ignore case
-            //--------------------------------------------------
-            .lowercase()
-
-            //--------------------------------------------------
-            // Replace punctuation with spaces
-            //--------------------------------------------------
-            .replace(
-                Regex("[^a-z0-9 ]"),
-                " "
-            )
-
-            //--------------------------------------------------
-            // Remove long numeric tokens
-            //
-            // Examples:
-            // • UTR numbers
-            // • Reference IDs
-            // • Transaction IDs
-            //--------------------------------------------------
-            .replace(
-                Regex("\\b\\d{5,}\\b"),
-                ""
-            )
-
-            //--------------------------------------------------
-            // Collapse repeated spaces
-            //--------------------------------------------------
-            .replace(
-                Regex("\\s+"),
-                " "
-            )
-
-            //--------------------------------------------------
-            // Final cleanup
-            //--------------------------------------------------
-            .trim()
 
     }
 
