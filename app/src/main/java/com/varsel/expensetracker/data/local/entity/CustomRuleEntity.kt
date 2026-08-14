@@ -6,11 +6,11 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * Stores user-learned knowledge.
+ * Stores a learned knowledge record.
  *
- * pattern               -> Raw bank statement text
- * preferredDescription  -> User's preferred display description
- * categoryName          -> User's preferred category
+ * pattern             -> Raw description extracted from the bank statement
+ * displayDescription  -> User's preferred display description
+ * categoryName        -> User's preferred category
  */
 @Entity(
     tableName = "custom_rules",
@@ -29,8 +29,8 @@ data class CustomRuleEntity(
     @ColumnInfo(name = "pattern")
     val pattern: String,
 
-    @ColumnInfo(name = "preferredDescription")
-    val preferredDescription: String,
+    @ColumnInfo(name = "displayDescription")
+    val displayDescription: String,
 
     @ColumnInfo(name = "categoryName")
     val categoryName: String
