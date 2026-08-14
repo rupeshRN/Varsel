@@ -77,17 +77,49 @@ fun findKnowledge(
 
     //--------------------------------------------------
 
-    private fun normalize(
+private fun normalize(
 
-        description: String
+    description: String
 
-    ): String {
+): String {
 
-        return description
-            .lowercase()
-            .trim()
-            .replace(Regex("\\s+"), " ")
+    return description
 
-    }
+        //--------------------------------------------------
+        // Ignore case
+        //--------------------------------------------------
+        .lowercase()
+
+        //--------------------------------------------------
+        // Replace punctuation with spaces
+        //--------------------------------------------------
+        .replace(
+            Regex("[^a-z0-9 ]"),
+            " "
+        )
+
+        //--------------------------------------------------
+        // Remove long numeric tokens
+        // (Reference numbers, UTRs, IDs, etc.)
+        //--------------------------------------------------
+        .replace(
+            Regex("\\b\\d{5,}\\b"),
+            ""
+        )
+
+        //--------------------------------------------------
+        // Collapse multiple spaces
+        //--------------------------------------------------
+        .replace(
+            Regex("\\s+"),
+            " "
+        )
+
+        //--------------------------------------------------
+        // Final cleanup
+        //--------------------------------------------------
+        .trim()
+
+}
 
 }
