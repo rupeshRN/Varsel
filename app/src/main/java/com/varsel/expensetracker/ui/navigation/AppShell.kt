@@ -5,9 +5,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 
 @Composable
+@Composable
 fun AppShell(
 
     currentDestination: AppDestination,
+
+    showBottomBar: Boolean,
 
     onDestinationSelected: (AppDestination) -> Unit,
 
@@ -16,19 +19,24 @@ fun AppShell(
     ) -> Unit
 ) {
 
-    Scaffold(
+Scaffold(
 
-        bottomBar = {
+    bottomBar = {
+
+        if (showBottomBar) {
 
             BottomNavigationBar(
 
                 currentDestination = currentDestination,
 
-                onDestinationSelected = onDestinationSelected
+                onDestinationSelected =
+                    onDestinationSelected
+
             )
         }
+    }
 
-    ) { padding ->
+) { padding ->
 
         content(padding)
     }
