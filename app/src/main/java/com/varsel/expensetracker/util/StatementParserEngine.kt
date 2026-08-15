@@ -90,6 +90,12 @@ class StatementParserEngine @Inject constructor(
      * statement summary values.
      */
     private val reconciliationEngine: ReconciliationEngine,
+    
+    /**
+     * Create SHA code for duplicate identification.
+     */
+    private val transactionFingerprintGenerator:
+    TransactionFingerprintGenerator,
 
     /**
      * Loads persisted learning rules.
