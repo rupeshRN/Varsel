@@ -1,11 +1,11 @@
 package com.varsel.expensetracker.developer
 
+import com.varsel.expensetracker.parser.ReconciliationResult
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.varsel.expensetracker.parser.ReconciliationResult
 
 /**
  * Collects parser diagnostics.
@@ -28,122 +28,92 @@ class ParserDiagnosticsCollector @Inject constructor() {
 
     }
 
-/**
- * Records normalization statistics directly from raw
- * and normalized statement text.
- */
-fun recordNormalization(
+    //--------------------------------------------------
+    // Normalization
+    //--------------------------------------------------
 
-    rawText: String,
+    /**
+     * Records normalization statistics directly from raw
+     * and normalized statement text.
+     */
+    fun recordNormalization(
 
-    normalizedText: String
+        rawText: String,
 
-) {
+        normalizedText: String
 
-    val rawLines =
+    ) {
 
-        rawText
-            .lines()
-            .count { it.isNotBlank() }
+        val rawLines =
 
-    val normalizedLines =
+            rawText
+                .lines()
+                .count { it.isNotBlank() }
 
-        normalizedText
-            .lines()
-            .count { it.isNotBlank() }
+        val normalizedLines =
 
-    ParserDiagnosticsManager.latest =
+            normalizedText
+                .lines()
+                .count { it.isNotBlank() }
 
-        ParserDiagnosticsManager.latest.copy(
+        ParserDiagnosticsManager.latest =
 
-            rawLines = rawLines,
+            ParserDiagnosticsManager.latest.copy(
 
-            normalizedLines = normalizedLines
+                rawLines = rawLines,
 
-        )
+                normalizedLines = normalizedLines
 
-}
+            )
 
-/**
- * Records the number of detected transaction dates.
- */
-fun recordDetectedDates(
+    }
 
-    normalizedText: String
+    //--------------------------------------------------
+    // Date detection
+    //--------------------------------------------------
 
-) {
+    /**
+     * Records the number of detected transaction dates.
+     */
+    fun recordDetectedDates(
 
-    val detectedDates =
+        normalizedText: String
 
-        Regex("\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}")
+    ) {
 
-            .findAll(normalizedText)
+        val detectedDates =
 
-            .count()
+            Regex(
+                "\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}"
+            )
+                .findAll(normalizedText)
+                .count()
 
-    ParserDiagnosticsManager.latest =
+        ParserDiagnosticsManager.latest =
 
-        ParserDiagnosticsManager.latest.copy(
+            ParserDiagnosticsManager.latest.copy(
 
-            datesDetected = detectedDates
+                datesDetected = detectedDates
 
-        )
+            )
 
-}
+    }
 
     //--------------------------------------------------
     // Parser output
     //--------------------------------------------------
 
+    /**
+     * Records the number of successfully parsed transactions
+     * and the most recent transaction date.
+     */
     fun recordTransactions(
 
         transactionCount: Int,
 
         lastTimestamp: Long?
 
-    ) 
-
-    //--------------------------------------------------
-// Reconciliation diagnostics
-//--------------------------------------------------
-
-fun recordReconciliation(
-
-    reconciliation: ReconciliationResult,
-
-    statementCredits: Double?,
-
-    statementDebits: Double?
-
-) {
-
-    ParserDiagnosticsManager.latest =
-
-        ParserDiagnosticsManager.latest.copy(
-
-            calculatedCredits =
-                reconciliation.calculatedCredits,
-
-            statementCredits =
-                statementCredits,
-
-            calculatedDebits =
-                reconciliation.calculatedDebits,
-
-            statementDebits =
-                statementDebits,
-
-            creditDifference =
-                reconciliation.creditDifference,
-
-            debitDifference =
-                reconciliation.debitDifference
-
-        )
-
-}
-    
-    {
+    ) {
 
         ParserDiagnosticsManager.latest =
 
@@ -164,6 +134,54 @@ fun recordReconciliation(
                         ).format(Date(it))
 
                     } ?: "—"
+
+            )
+
+    }
+
+    //--------------------------------------------------
+    // Reconciliation diagnostics
+    //--------------------------------------------------
+
+    /**
+     * Records reconciliation values for developer diagnostics.
+     *
+     * This keeps reconciliation diagnostics inside the
+     * ParserDiagnosticsCollector architecture rather than
+     * allowing StatementParserEngine to update
+     * ParserDiagnosticsManager directly.
+     */
+    fun recordReconciliation(
+
+        reconciliation: ReconciliationResult,
+
+        statementCredits: Double?,
+
+        statementDebits: Double?
+
+    ) {
+
+        ParserDiagnosticsManager.latest =
+
+            ParserDiagnosticsManager.latest.copy(
+
+                calculatedCredits =
+                    reconciliation.calculatedCredits,
+
+                statementCredits =
+                    statementCredits,
+
+                calculatedDebits =
+                    reconciliation.calculatedDebits,
+
+                statementDebits =
+                    statementDebits,
+
+                creditDifference =
+                    reconciliation.creditDifference,
+
+                debitDifference =
+                    reconciliation.debitDifference
 
             )
 
