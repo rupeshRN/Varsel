@@ -212,14 +212,17 @@ Scaffold(
 
                     if (!showTransactionReview) {
 
-                        Column(
-
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp)
-
-                        ) {
+                 Column(
+                    
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(
+                                    horizontal = 12.dp,
+                                    vertical = 8.dp
+                                )
+                    
+                    ) {
 
                             StatementSummaryCard(
 
