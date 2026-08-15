@@ -242,6 +242,29 @@ diagnosticsCollector.recordTransactions(
 
             )
 
+        ParserDiagnosticsManager.latest =
+    ParserDiagnosticsManager.latest.copy(
+
+        calculatedCredits =
+            reconciliation.calculatedCredits,
+
+        statementCredits =
+            summary.totalCredits,
+
+        calculatedDebits =
+            reconciliation.calculatedDebits,
+
+        statementDebits =
+            summary.totalDebits,
+
+        creditDifference =
+            reconciliation.creditDifference,
+
+        debitDifference =
+            reconciliation.debitDifference
+
+    )
+
         //--------------------------------------------------
         // Final result returned to ImportViewModel.
         //--------------------------------------------------
