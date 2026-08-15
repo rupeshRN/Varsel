@@ -10,4 +10,5 @@ interface TransactionRepository {
     suspend fun updateTransaction(transaction: Transaction)
     suspend fun deleteTransaction(transaction: Transaction)
     suspend fun getTransactionById(id: Long): Transaction?
+    suspend fun findExistingFingerprints(fingerprints: List<String>): Set<String>
 }
