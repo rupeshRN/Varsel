@@ -243,6 +243,20 @@ diagnosticsCollector.recordTransactions(
             )
 
         //--------------------------------------------------
+// Reconciliation diagnostics
+//--------------------------------------------------
+
+diagnosticsCollector.recordReconciliation(
+
+    reconciliation = reconciliation,
+
+    statementCredits = summary.totalCredits,
+
+    statementDebits = summary.totalDebits
+
+)
+
+        //--------------------------------------------------
         // Final result returned to ImportViewModel.
         //--------------------------------------------------
 
