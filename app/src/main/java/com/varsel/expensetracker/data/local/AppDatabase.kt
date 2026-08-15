@@ -25,7 +25,7 @@ import javax.inject.Provider
         CategoryEntity::class,
         CustomRuleEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,6 +38,24 @@ abstract class AppDatabase : RoomDatabase() {
 
     /** Abstracts Data Access Object for Custom User Rules */
     abstract fun customRuleDao(): CustomRuleDao
+
+    companion object {
+
+    val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+
+        override fun migrate(
+            database: SupportSQLiteDatabase
+        ) {
+
+            database.execSQL(
+                """
+                ALTER TABLE transactions
+                ADD COLUMN transactionFingerprint TEXT
+                """.trimIndent()
+            )
+        }
+    }
+}
 
     /**
      * Room Database Callback invoked when the database is created for the first time.
