@@ -9,7 +9,9 @@ class SelectableTransaction(
 
     val transaction: Transaction,
 
-    selected: Boolean = true
+    selected: Boolean = true,
+
+    val isDuplicate: Boolean = false
 
 ) {
 
