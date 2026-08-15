@@ -49,15 +49,20 @@ object DatabaseModule {
     ): AppDatabase {
         val factory = SupportOpenHelperFactory(passphrase)
 
-        return Room.databaseBuilder(
-            context,
-            AppDatabase::class.java,
-            "encrypted_expense_tracker.db"
-        )
-        .openHelperFactory(factory)
-        .addCallback(AppDatabase.SeedCallback(categoryDaoProvider))
-        .fallbackToDestructiveMigration()
-        .build()
+return Room.databaseBuilder(
+    context,
+    AppDatabase::class.java,
+    "encrypted_expense_tracker.db"
+)
+    .openHelperFactory(factory)
+    .addMigrations(
+        AppDatabase.MIGRATION_2_3
+    )
+    .addCallback(
+        AppDatabase.SeedCallback(categoryDaoProvider)
+    )
+    .fallbackToDestructiveMigration()
+    .build()
     }
 
     @Provides
