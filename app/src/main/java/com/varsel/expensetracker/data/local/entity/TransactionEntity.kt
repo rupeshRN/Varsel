@@ -12,5 +12,6 @@ data class TransactionEntity(
     val description: String,
     val category: String,
     val dateTimestamp: Long,
-    val referenceNumber: String? = null
+    val referenceNumber: String? = null,
+    val transactionFingerprint: String? = null
 )
