@@ -437,23 +437,16 @@ private fun TransactionReviewContent(
         ) {
 
             Checkbox(
+    checked = allSelected,
+    onCheckedChange = { checked ->
 
-                checked = allSelected,
+        state.parsedTransactions.forEach { selectable ->
 
-                onCheckedChange = {
+            selectable.selected = checked
 
-                    val newValue =
-                        !allSelected
-
-                    state.parsedTransactions
-                        .forEach { selectable ->
-
-                            selectable.selected =
-                                newValue
-
-                        }
-                }
-            )
+        }
+    }
+)
 
             Spacer(
                 Modifier.width(8.dp)
