@@ -41,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.varsel.expensetracker.ui.import_statement.components.DeveloperDiagnosticsCard
 import com.varsel.expensetracker.ui.import_statement.components.StatementSummaryCard
 import com.varsel.expensetracker.ui.import_statement.components.TransactionReviewRow
+import com.varsel.expensetracker.developer.ParserDiagnostics
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -382,6 +383,207 @@ fun ImportScreen(
 
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TransactionReviewContent(
+
+    state: ImportUiState.ParsedTransactions,
+
+    parserDiagnosticsEnabled: Boolean,
+
+    diagnostics: ParserDiagnostics,
+
+    viewModel: ImportViewModel
+
+) {
+
+    val totalCount =
+        state.parsedTransactions.size
+
+    val selectedCount =
+        state.parsedTransactions.count {
+            it.selected
+        }
+
+    val allSelected =
+        totalCount > 0 &&
+        selectedCount == totalCount
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        //--------------------------------------------------
+        // Select / Deselect All
+        //--------------------------------------------------
+
+        Row(
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 12.dp,
+                        vertical = 4.dp
+                    ),
+
+            verticalAlignment =
+                Alignment.CenterVertically
+
+        ) {
+
+            Checkbox(
+
+                checked = allSelected,
+
+                onCheckedChange = {
+
+                    val newValue =
+                        !allSelected
+
+                    state.parsedTransactions
+                        .forEach { selectable ->
+
+                            selectable.selected =
+                                newValue
+
+                        }
+                }
+            )
+
+            Spacer(
+                Modifier.width(8.dp)
+            )
+
+            Text(
+
+                text =
+                    if (allSelected)
+                        "Deselect All"
+                    else
+                        "Select All",
+
+                style =
+                    MaterialTheme.typography.labelLarge
+            )
+
+        }
+
+        HorizontalDivider()
+
+        //--------------------------------------------------
+        // Transaction list
+        //--------------------------------------------------
+
+        LazyColumn(
+
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+
+        ) {
+
+            items(
+
+                items =
+                    state.parsedTransactions
+
+            ) { selectable ->
+
+                TransactionReviewRow(
+
+                    selectable =
+                        selectable,
+
+                    onCheckedChange = {
+                        selectable.selected = it
+                    }
+
+                )
+
+                HorizontalDivider(
+                    thickness = 0.5.dp
+                )
+            }
+        }
+
+        //--------------------------------------------------
+        // Developer diagnostics
+        //--------------------------------------------------
+
+        if (parserDiagnosticsEnabled) {
+
+            DeveloperDiagnosticsCard(
+
+                enabled =
+                    parserDiagnosticsEnabled,
+
+                diagnostics =
+                    diagnostics
+
+            )
+        }
+
+        //--------------------------------------------------
+        // Bottom action area
+        //--------------------------------------------------
+
+        Column(
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(12.dp)
+
+        ) {
+
+            Text(
+
+                text =
+                    "Selected $selectedCount / $totalCount",
+
+                style =
+                    MaterialTheme.typography.labelLarge,
+
+                color =
+                    MaterialTheme.colorScheme.onSurfaceVariant
+
+            )
+
+            Spacer(
+                Modifier.height(8.dp)
+            )
+
+            Button(
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                enabled =
+                    selectedCount > 0,
+
+                onClick = {
+
+                    viewModel.confirmAndSaveTransactions(
+
+                        state.parsedTransactions
+
+                    )
+                }
+
+            ) {
+
+                Text(
+
+                    "Import $selectedCount Transactions"
+
+                )
             }
         }
     }
