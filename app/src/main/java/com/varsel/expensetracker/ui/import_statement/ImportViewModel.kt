@@ -141,6 +141,27 @@ val debits =
 
     }
 
+val fingerprints =
+    result.transactions
+        .mapNotNull {
+            it.transactionFingerprint
+        }
+        .distinct()
+
+val existingFingerprints =
+    transactionRepository
+        .findExistingFingerprints(fingerprints)
+
+val duplicateCount =
+    result.transactions.count {
+
+        val fingerprint =
+            it.transactionFingerprint
+
+        fingerprint != null &&
+                fingerprint in existingFingerprints
+    }
+    
 val summary =
 
     ImportSummary(
@@ -168,7 +189,7 @@ val summary =
 
         debits = debits,
 
-        duplicates = 0,
+        duplicates = duplicateCount,
 
         learnedMatches = 0,
 
