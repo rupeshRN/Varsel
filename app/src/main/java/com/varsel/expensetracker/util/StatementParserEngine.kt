@@ -175,13 +175,10 @@ class StatementParserEngine @Inject constructor(
         // Extract statement-level metadata.
         //--------------------------------------------------
 
-        val summary =
-
-            statementSummaryExtractor.extract(
-
-                normalizedText
-
-            )
+            val summary =
+                statementSummaryExtractor.extract(
+                    rawText
+                )
 
         //--------------------------------------------------
         // Stage 4
