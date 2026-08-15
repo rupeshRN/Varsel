@@ -10,6 +10,7 @@ import com.varsel.expensetracker.parser.StatementImportResult
 import com.varsel.expensetracker.parser.StatementSummaryExtractor
 import com.varsel.expensetracker.parser.TextNormalizer
 import javax.inject.Inject
+import com.varsel.expensetracker.parser.TransactionFingerprintGenerator
 
 /**
  * Central orchestration engine for importing bank statements.
