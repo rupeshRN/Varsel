@@ -38,6 +38,19 @@ class TransactionRepositoryImpl @Inject constructor(
     override suspend fun getTransactionById(id: Long): Transaction? {
         return transactionDao.getTransactionById(id)?.toDomain()
     }
+
+    override suspend fun findExistingFingerprints(
+    fingerprints: List<String>
+): Set<String> {
+
+    if (fingerprints.isEmpty()) {
+        return emptySet()
+    }
+
+    return transactionDao
+        .findExistingFingerprints(fingerprints)
+        .toSet()
+}
 }
 
 fun TransactionEntity.toDomain() = Transaction(
