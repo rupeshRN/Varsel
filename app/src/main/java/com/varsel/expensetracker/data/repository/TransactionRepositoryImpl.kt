@@ -43,19 +43,29 @@ class TransactionRepositoryImpl @Inject constructor(
 fun TransactionEntity.toDomain() = Transaction(
     id = id,
     amount = amount,
-    type = if (type == "INCOME") TransactionType.INCOME else TransactionType.EXPENSE,
+    type = if (type == "INCOME") {
+        TransactionType.INCOME
+    } else {
+        TransactionType.EXPENSE
+    },
     description = description,
     category = category,
     dateTimestamp = dateTimestamp,
-    referenceNumber = referenceNumber
+    referenceNumber = referenceNumber,
+    transactionFingerprint = transactionFingerprint
 )
 
 fun Transaction.toEntity() = TransactionEntity(
     id = id,
     amount = amount,
-    type = if (type == TransactionType.INCOME) "INCOME" else "EXPENSE",
+    type = if (type == TransactionType.INCOME) {
+        "INCOME"
+    } else {
+        "EXPENSE"
+    },
     description = description,
     category = category,
     dateTimestamp = dateTimestamp,
-    referenceNumber = referenceNumber
+    referenceNumber = referenceNumber,
+    transactionFingerprint = transactionFingerprint
 )
