@@ -116,16 +116,6 @@ fun StatementSummaryCard(
             // Statement Period
             //--------------------------------------------------
 
-            Text(
-
-                "Statement Period",
-
-                style = MaterialTheme.typography.labelLarge,
-
-                color = MaterialTheme.colorScheme.primary
-
-            )
-
 Row(
     modifier = Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically
