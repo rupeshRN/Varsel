@@ -25,6 +25,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.varsel.expensetracker.ui.import_statement.ImportSummary
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
 
 /**
  * Premium summary displayed immediately after parsing.
@@ -74,7 +79,7 @@ fun StatementSummaryCard(
 
                     contentDescription = null,
 
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = Color(0xFF2E7D32)
 
                 )
 
@@ -122,13 +127,29 @@ fun StatementSummaryCard(
 
             )
 
-            Text(
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically
+) {
 
-                summary.statementPeriod,
+    Text(
+        text = "Statement Period",
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary
+    )
 
-                style = MaterialTheme.typography.bodyLarge
+    Spacer(
+        modifier = Modifier.width(12.dp)
+    )
 
-            )
+    Text(
+        text = summary.statementPeriod,
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.weight(1f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
+}
 
             Spacer(Modifier.height(24.dp))
 
@@ -158,9 +179,9 @@ fun StatementSummaryCard(
 
                 StatisticCard(
 
-                    title = "Credits",
+                    title = "Review",
 
-                    value = summary.credits.toString(),
+                    value = summary.needsReview.toString(),
 
                     modifier = Modifier.weight(1f)
 
@@ -188,15 +209,16 @@ fun StatementSummaryCard(
 
                 )
 
-                StatisticCard(
+         StatisticCard(
 
-                    title = "Duplicates",
+                    title = "Credits",
 
-                    value = summary.duplicates.toString(),
+                    value = summary.credits.toString(),
 
                     modifier = Modifier.weight(1f)
 
                 )
+                
 
             }
 
@@ -220,11 +242,11 @@ fun StatementSummaryCard(
 
                 )
 
-                StatisticCard(
+            StatisticCard(
 
-                    title = "Review",
+                    title = "Duplicates",
 
-                    value = summary.needsReview.toString(),
+                    value = summary.duplicates.toString(),
 
                     modifier = Modifier.weight(1f)
 
@@ -320,18 +342,22 @@ fun StatementSummaryCard(
             // Continue
             //--------------------------------------------------
 
-            Button(
-
-                modifier = Modifier.fillMaxWidth(),
-
-                onClick = onContinue
-
-            ) {
-
-                Text("Continue to Transaction Review")
-
-            }
-
+                Button(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 52.dp),
+                    onClick = onContinue,
+                    contentPadding = PaddingValues(
+                        horizontal = 20.dp,
+                        vertical = 14.dp
+                    )
+                ) {
+                    Text(
+                        text = "Continue to Transaction Review",
+                        maxLines = 1,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
         }
 
     }
