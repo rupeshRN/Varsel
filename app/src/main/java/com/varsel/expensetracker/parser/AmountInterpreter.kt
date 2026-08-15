@@ -12,8 +12,9 @@ class AmountInterpreter @Inject constructor() {
 
         val matches = amountRegex.findAll(firstLine).toList()
 
-        if (matches.size < 2)
+        if (matches.size < 2) {
             return null
+        }
 
         val firstAmount =
             matches[0]
@@ -45,16 +46,33 @@ class AmountInterpreter @Inject constructor() {
                 matches[1].range.first
             ).trim()
 
+        //----------------------------------------------------
+        // Credit marker
+        //
+        // IMPORTANT:
+        // The dash must be a standalone token.
+        //
+        // This prevents descriptions such as:
+        //
+        // SMS_CHGS_MARCH-
+        //
+        // from being mistaken for a credit marker.
+        //----------------------------------------------------
+
+        val hasStandaloneCreditDash =
+            Regex("(^|\\s)-\\s*$")
+                .containsMatchIn(beforeFirstAmount)
+
         return when {
 
             //------------------------------------------------
             // Credit
             //
             // Example:
-            // SBIN0014160/SURESH - INR 1774.00 INR 3298.59
+            // DESCRIPTION - INR 1774.00 INR 3298.59
             //------------------------------------------------
 
-            beforeFirstAmount.endsWith("-") -> {
+            hasStandaloneCreditDash -> {
 
                 ParsedAmount(
                     amount = firstAmount,
@@ -67,7 +85,7 @@ class AmountInterpreter @Inject constructor() {
             // Debit
             //
             // Example:
-            // YESBOPTMUPI INR 70.00 - INR 4070.10
+            // DESCRIPTION INR 70.00 - INR 4070.10
             //------------------------------------------------
 
             betweenAmounts == "-" -> {
