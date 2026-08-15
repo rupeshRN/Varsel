@@ -32,6 +32,13 @@ class MainActivity : ComponentActivity() {
                 val currentRoute =
                     backStackEntry?.destination?.route
 
+                val showBottomBar =
+                        AppDestination.bottomBarItems.any {
+                    
+                            it.route == currentRoute
+                    
+                        }
+
                 val currentDestination =
                     AppDestination.bottomBarItems.firstOrNull {
                         it.route == currentRoute
@@ -40,6 +47,8 @@ class MainActivity : ComponentActivity() {
                 AppShell(
 
                     currentDestination = currentDestination,
+
+                    showBottomBar = showBottomBar,
 
                     onDestinationSelected = { destination ->
 
