@@ -200,6 +200,17 @@ class StatementParserEngine @Inject constructor(
 
             parser.parse(normalizedText)
 
+        val fingerprintedTransactions =
+    parsedTransactions.map { transaction ->
+
+        transaction.copy(
+            transactionFingerprint =
+                transactionFingerprintGenerator.generate(
+                    transaction
+                )
+        )
+    }
+
         //--------------------------------------------------
         // Stage 5
         //
