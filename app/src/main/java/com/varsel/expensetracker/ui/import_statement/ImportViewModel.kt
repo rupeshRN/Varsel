@@ -206,13 +206,22 @@ _uiState.value =
 
         summary = summary,
 
-        parsedTransactions =
+parsedTransactions =
+    result.transactions.map { transaction ->
 
-            result.transactions.map {
+        val isDuplicate =
+            transaction.transactionFingerprint
+                ?.let {
+                    it in existingFingerprints
+                }
+                ?: false
 
-                SelectableTransaction(it)
-
-            }
+        SelectableTransaction(
+            transaction = transaction,
+            selected = !isDuplicate,
+            isDuplicate = isDuplicate
+        )
+    }
 
     )
 
