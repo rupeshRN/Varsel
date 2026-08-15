@@ -5,6 +5,7 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.varsel.expensetracker.parser.ReconciliationResult
 
 /**
  * Collects parser diagnostics.
@@ -100,7 +101,49 @@ fun recordDetectedDates(
 
         lastTimestamp: Long?
 
-    ) {
+    ) 
+
+    //--------------------------------------------------
+// Reconciliation diagnostics
+//--------------------------------------------------
+
+fun recordReconciliation(
+
+    reconciliation: ReconciliationResult,
+
+    statementCredits: Double?,
+
+    statementDebits: Double?
+
+) {
+
+    ParserDiagnosticsManager.latest =
+
+        ParserDiagnosticsManager.latest.copy(
+
+            calculatedCredits =
+                reconciliation.calculatedCredits,
+
+            statementCredits =
+                statementCredits,
+
+            calculatedDebits =
+                reconciliation.calculatedDebits,
+
+            statementDebits =
+                statementDebits,
+
+            creditDifference =
+                reconciliation.creditDifference,
+
+            debitDifference =
+                reconciliation.debitDifference
+
+        )
+
+}
+    
+    {
 
         ParserDiagnosticsManager.latest =
 
