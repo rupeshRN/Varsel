@@ -31,4 +31,16 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getTransactionById(id: Long): TransactionEntity?
+
+    @Query(
+    """
+    SELECT transactionFingerprint
+    FROM transactions
+    WHERE transactionFingerprint IN (:fingerprints)
+    AND transactionFingerprint IS NOT NULL
+    """
+)
+suspend fun findExistingFingerprints(
+    fingerprints: List<String>
+): List<String>
 }
