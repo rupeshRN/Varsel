@@ -152,7 +152,11 @@ val summary =
 
         bankName = "Indian Bank",
 
-        statementPeriod = "Current Statement",
+        statementPeriod =
+    formatStatementPeriod(
+        result.summary.statementStartDate,
+        result.summary.statementEndDate
+    ),
 
         transactionsDetected =
             ParserDiagnosticsManager.latest.blocksBuilt,
@@ -239,6 +243,24 @@ selectedTransactions.forEach {
             }
         }
     }
+
+    private fun formatStatementPeriod(
+    startDate: Long?,
+    endDate: Long?
+): String {
+
+    if (startDate == null || endDate == null) {
+        return "Statement Period Unavailable"
+    }
+
+    val formatter =
+        java.text.SimpleDateFormat(
+            "dd MMM ''yy",
+            java.util.Locale.ENGLISH
+        )
+
+    return "${formatter.format(startDate)} – ${formatter.format(endDate)}"
+}
 
     fun resetState() {
         _uiState.value = ImportUiState.Idle
