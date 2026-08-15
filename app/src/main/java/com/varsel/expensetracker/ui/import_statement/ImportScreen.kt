@@ -42,6 +42,7 @@ import com.varsel.expensetracker.ui.import_statement.components.DeveloperDiagnos
 import com.varsel.expensetracker.ui.import_statement.components.StatementSummaryCard
 import com.varsel.expensetracker.ui.import_statement.components.TransactionReviewRow
 import com.varsel.expensetracker.developer.ParserDiagnostics
+import androidx.compose.foundation.layout.statusBarsPadding
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -82,30 +83,35 @@ fun ImportScreen(
             }
         }
 
-    Scaffold(
+Scaffold(
+    topBar = {
 
-        topBar = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .height(48.dp)
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
 
-            TopAppBar(
+            TextButton(
+                onClick = onBackClick
+            ) {
+                Text("Back")
+            }
 
-                title = {
-                    Text("Import Statement")
-                },
+            Spacer(
+                modifier = Modifier.width(4.dp)
+            )
 
-                navigationIcon = {
-
-                    TextButton(
-                        onClick = onBackClick
-                    ) {
-                        Text("Back")
-                    }
-
-                }
-
+            Text(
+                text = "Import Statement",
+                style = MaterialTheme.typography.titleLarge
             )
         }
-
-    ) { paddingValues ->
+    }
+) { paddingValues ->
 
         Box(
 
