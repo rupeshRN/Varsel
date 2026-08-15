@@ -12,6 +12,7 @@ import com.varsel.expensetracker.parser.TextNormalizer
 import javax.inject.Inject
 import com.varsel.expensetracker.parser.TransactionFingerprintGenerator
 
+
 /**
  * Central orchestration engine for importing bank statements.
  *
@@ -222,26 +223,27 @@ class StatementParserEngine @Inject constructor(
 
             applyLearning(parsedTransactions)
 
+    val fingerprintedTransactions =
+    transactions.map { transaction ->
+
+        transaction.copy(
+            transactionFingerprint =
+                transactionFingerprintGenerator.generate(transaction)
+        )
+    }
+
         //--------------------------------------------------
         // Diagnostics
         //--------------------------------------------------
 
 diagnosticsCollector.recordTransactions(
-
-    transactionCount = transactions.size,
-
+    transactionCount = fingerprintedTransactions.size,
     lastTimestamp =
-
-        transactions
-
+        fingerprintedTransactions
             .maxByOrNull {
-
                 it.dateTimestamp
-
             }
-
             ?.dateTimestamp
-
 )
 
         //--------------------------------------------------
@@ -250,15 +252,11 @@ diagnosticsCollector.recordTransactions(
         // Verify parsed data against statement totals.
         //--------------------------------------------------
 
-        val reconciliation =
-
-            reconciliationEngine.reconcile(
-
-                summary,
-
-                transactions
-
-            )
+val reconciliation =
+    reconciliationEngine.reconcile(
+        summary,
+        fingerprintedTransactions
+    )
 
         //--------------------------------------------------
 // Reconciliation diagnostics
@@ -278,15 +276,11 @@ diagnosticsCollector.recordReconciliation(
         // Final result returned to ImportViewModel.
         //--------------------------------------------------
 
-        return StatementImportResult(
-
-            summary = summary,
-
-            reconciliation = reconciliation,
-
-            transactions = transactions
-
-        )
+return StatementImportResult(
+    summary = summary,
+    reconciliation = reconciliation,
+    transactions = fingerprintedTransactions
+)
 
     }
 
