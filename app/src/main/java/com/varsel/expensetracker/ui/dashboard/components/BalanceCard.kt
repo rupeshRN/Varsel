@@ -7,14 +7,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import com.varsel.expensetracker.ui.design.AppDimensions
 import com.varsel.expensetracker.ui.design.AppShapes
 import com.varsel.expensetracker.ui.model.BalanceSummaryUiModel
@@ -30,18 +33,23 @@ fun BalanceCard(
 
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimensions.ScreenPadding),
+            .padding(
+                horizontal = AppDimensions.ScreenPadding
+            ),
 
         shape = AppShapes.HeroCard,
 
         elevation = CardDefaults.cardElevation(
-            defaultElevation = AppDimensions.CardElevation
+            defaultElevation =
+                AppDimensions.CardElevation
         )
 
     ) {
 
         Column(
-            modifier = Modifier.padding(AppDimensions.CardPadding)
+            modifier = Modifier.padding(
+                AppDimensions.CardPadding
+            )
         ) {
 
             //--------------------------------------------------
@@ -50,8 +58,10 @@ fun BalanceCard(
 
             Text(
                 text = "Total Balance",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style =
+                    MaterialTheme.typography.titleMedium,
+                color =
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(
@@ -64,9 +74,11 @@ fun BalanceCard(
                 text = "₹%,.2f".format(
                     summary.totalBalance
                 ),
-                style = MaterialTheme.typography.headlineLarge,
+                style =
+                    MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color =
+                    MaterialTheme.colorScheme.onSurface
             )
 
             //--------------------------------------------------
@@ -91,8 +103,10 @@ fun BalanceCard(
 
                 Text(
                     text = "Account Wise Balance",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    style =
+                        MaterialTheme.typography.titleSmall,
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
 
                 Spacer(
@@ -104,7 +118,9 @@ fun BalanceCard(
                 summary.accounts.forEach { account ->
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier =
+                            Modifier.fillMaxWidth(),
+
                         horizontalArrangement =
                             Arrangement.SpaceBetween
                     ) {
@@ -141,7 +157,7 @@ fun BalanceCard(
             }
 
             //--------------------------------------------------
-            // Current month income / expense comparison
+            // Monthly income / expense comparison
             //--------------------------------------------------
 
             Spacer(
@@ -159,29 +175,49 @@ fun BalanceCard(
             )
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier.fillMaxWidth(),
+
                 horizontalArrangement =
-                    Arrangement.SpaceBetween
+                    Arrangement.spacedBy(
+                        AppDimensions.MediumSpacing
+                    )
             ) {
 
                 MonthlyMetricItem(
+                    modifier =
+                        Modifier.weight(1f),
+
                     title = "Income",
-                    amount = summary.totalIncome,
+
+                    amount =
+                        summary.totalIncome,
+
                     previousAmount =
                         summary.previousMonthIncome,
+
                     changePercent =
                         summary.incomeChangePercent,
+
                     positiveColor =
                         MaterialTheme.colorScheme.primary
                 )
 
                 MonthlyMetricItem(
+                    modifier =
+                        Modifier.weight(1f),
+
                     title = "Expense",
-                    amount = summary.totalExpense,
+
+                    amount =
+                        summary.totalExpense,
+
                     previousAmount =
                         summary.previousMonthExpense,
+
                     changePercent =
                         summary.expenseChangePercent,
+
                     positiveColor =
                         MaterialTheme.colorScheme.error
                 )
@@ -192,25 +228,30 @@ fun BalanceCard(
 
 @Composable
 private fun MonthlyMetricItem(
+    modifier: Modifier = Modifier,
     title: String,
     amount: Double,
     previousAmount: Double,
     changePercent: Double?,
-    positiveColor: androidx.compose.ui.graphics.Color
+    positiveColor: Color
 ) {
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = AppDimensions.SmallSpacing
-            )
+        modifier = modifier
     ) {
+
+        //--------------------------------------------------
+        // Title
+        //--------------------------------------------------
 
         Text(
             text = title,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+
+            style =
+                MaterialTheme.typography.labelMedium,
+
+            color =
+                MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(
@@ -219,32 +260,47 @@ private fun MonthlyMetricItem(
             )
         )
 
+        //--------------------------------------------------
+        // Amount + change
+        //--------------------------------------------------
+
         Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+
             verticalAlignment =
-                androidx.compose.ui.Alignment.CenterVertically
+                Alignment.CenterVertically
         ) {
 
             Text(
-                text = "₹%,.2f".format(amount),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                text =
+                    "₹%,.2f".format(amount),
+
+                style =
+                    MaterialTheme.typography.titleMedium,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(
-                modifier = Modifier.padding(
-                    horizontal =
-                        AppDimensions.ExtraSmallSpacing
-                )
+                modifier = Modifier.weight(1f)
             )
 
             if (changePercent == null) {
 
                 Text(
                     text = "New",
+
                     style =
                         MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
+
+                    fontWeight =
+                        FontWeight.Medium,
+
                     color =
                         MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -267,18 +323,22 @@ private fun MonthlyMetricItem(
                 val changeColor =
                     when {
 
+                        // Income increasing = good
                         title == "Income" &&
                             isIncrease ->
                             positiveColor
 
+                        // Income decreasing = bad
                         title == "Income" &&
                             isDecrease ->
                             MaterialTheme.colorScheme.error
 
+                        // Expense increasing = bad
                         title == "Expense" &&
                             isIncrease ->
                             MaterialTheme.colorScheme.error
 
+                        // Expense decreasing = good
                         title == "Expense" &&
                             isDecrease ->
                             positiveColor
@@ -297,7 +357,8 @@ private fun MonthlyMetricItem(
                     fontWeight =
                         FontWeight.Medium,
 
-                    color = changeColor
+                    color =
+                        changeColor
                 )
             }
         }
@@ -307,6 +368,10 @@ private fun MonthlyMetricItem(
                 AppDimensions.ExtraSmallSpacing
             )
         )
+
+        //--------------------------------------------------
+        // Previous month
+        //--------------------------------------------------
 
         Text(
             text =
