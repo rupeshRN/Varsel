@@ -18,13 +18,16 @@ interface StatementSnapshotDao {
         """
         SELECT *
         FROM statement_snapshots
+        WHERE accountId = :accountId
         ORDER BY
             statementEndDate DESC,
             importedAt DESC
         LIMIT 1
         """
     )
-    suspend fun getLatestSnapshot(): StatementSnapshotEntity?
+    suspend fun getLatestSnapshot(
+        accountId: String
+    ): StatementSnapshotEntity?
 
     @Query(
         """
