@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.varsel.expensetracker.ui.design.AppDimensions
 import com.varsel.expensetracker.ui.design.AppShapes
 import com.varsel.expensetracker.ui.model.BalanceSummaryUiModel
+import kotlin.math.abs
 
 @Composable
 fun BalanceCard(
@@ -43,6 +44,10 @@ fun BalanceCard(
             modifier = Modifier.padding(AppDimensions.CardPadding)
         ) {
 
+            //--------------------------------------------------
+            // Total Balance
+            //--------------------------------------------------
+
             Text(
                 text = "Total Balance",
                 style = MaterialTheme.typography.titleMedium,
@@ -50,33 +55,38 @@ fun BalanceCard(
             )
 
             Spacer(
-                modifier = Modifier.height(AppDimensions.SmallSpacing)
+                modifier = Modifier.height(
+                    AppDimensions.SmallSpacing
+                )
             )
 
             Text(
-                text = "₹%,.2f".format(summary.totalBalance),
+                text = "₹%,.2f".format(
+                    summary.totalBalance
+                ),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            /*
-             * Future Enhancement
-             *
-             * If multiple bank accounts exist,
-             * show an "Account wise balance" section here.
-             */
+            //--------------------------------------------------
+            // Account-wise balance
+            //--------------------------------------------------
 
             if (summary.accounts.isNotEmpty()) {
 
                 Spacer(
-                    modifier = Modifier.height(AppDimensions.LargeSpacing)
+                    modifier = Modifier.height(
+                        AppDimensions.LargeSpacing
+                    )
                 )
 
                 HorizontalDivider()
 
                 Spacer(
-                    modifier = Modifier.height(AppDimensions.MediumSpacing)
+                    modifier = Modifier.height(
+                        AppDimensions.MediumSpacing
+                    )
                 )
 
                 Text(
@@ -86,62 +96,94 @@ fun BalanceCard(
                 )
 
                 Spacer(
-                    modifier = Modifier.height(AppDimensions.SmallSpacing)
+                    modifier = Modifier.height(
+                        AppDimensions.SmallSpacing
+                    )
                 )
 
                 summary.accounts.forEach { account ->
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement =
+                            Arrangement.SpaceBetween
                     ) {
 
                         Text(
-                            text = "${account.bankName} ${account.accountDisplayName}",
-                            style = MaterialTheme.typography.bodyMedium
+                            text =
+                                "${account.bankName} " +
+                                account.accountDisplayName,
+
+                            style =
+                                MaterialTheme.typography.bodyMedium
                         )
 
                         Text(
-                            text = "₹%,.2f".format(account.balance),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
+                            text =
+                                "₹%,.2f".format(
+                                    account.balance
+                                ),
+
+                            style =
+                                MaterialTheme.typography.bodyMedium,
+
+                            fontWeight =
+                                FontWeight.SemiBold
                         )
                     }
 
                     Spacer(
-                        modifier = Modifier.height(AppDimensions.SmallSpacing)
+                        modifier = Modifier.height(
+                            AppDimensions.SmallSpacing
+                        )
                     )
                 }
             }
 
+            //--------------------------------------------------
+            // Current month income / expense comparison
+            //--------------------------------------------------
+
             Spacer(
-                modifier = Modifier.height(AppDimensions.LargeSpacing)
+                modifier = Modifier.height(
+                    AppDimensions.LargeSpacing
+                )
             )
 
             HorizontalDivider()
 
             Spacer(
-                modifier = Modifier.height(AppDimensions.LargeSpacing)
+                modifier = Modifier.height(
+                    AppDimensions.LargeSpacing
+                )
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement =
+                    Arrangement.SpaceBetween
             ) {
 
-                MetricItem(
+                MonthlyMetricItem(
                     title = "Income",
-                    amount = summary.totalIncome
+                    amount = summary.totalIncome,
+                    previousAmount =
+                        summary.previousMonthIncome,
+                    changePercent =
+                        summary.incomeChangePercent,
+                    positiveColor =
+                        MaterialTheme.colorScheme.primary
                 )
 
-                MetricItem(
+                MonthlyMetricItem(
                     title = "Expense",
-                    amount = summary.totalExpense
-                )
-
-                MetricItem(
-                    title = "Savings",
-                    amount = summary.savings
+                    amount = summary.totalExpense,
+                    previousAmount =
+                        summary.previousMonthExpense,
+                    changePercent =
+                        summary.expenseChangePercent,
+                    positiveColor =
+                        MaterialTheme.colorScheme.error
                 )
             }
         }
@@ -149,28 +191,131 @@ fun BalanceCard(
 }
 
 @Composable
-private fun MetricItem(
+private fun MonthlyMetricItem(
     title: String,
-    amount: Double
+    amount: Double,
+    previousAmount: Double,
+    changePercent: Double?,
+    positiveColor: androidx.compose.ui.graphics.Color
 ) {
 
-    Column {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimensions.SmallSpacing)
+    ) {
 
         Text(
             text = title,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style =
+                MaterialTheme.typography.labelMedium,
+
+            color =
+                MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(
-            modifier = Modifier.height(AppDimensions.ExtraSmallSpacing)
+            modifier = Modifier.height(
+                AppDimensions.ExtraSmallSpacing
+            )
         )
 
+        //--------------------------------------------------
+        // Current month amount + percentage change
+        //--------------------------------------------------
+
+        Row(
+            verticalAlignment =
+                androidx.compose.ui.Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = "₹%,.2f".format(amount),
+                style =
+                    MaterialTheme.typography.titleMedium,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(
+                modifier = Modifier.padding(
+                    horizontal = AppDimensions.ExtraSmallSpacing
+                )
+            )
+
+            val percent =
+                changePercent ?: 0.0
+
+            val isIncrease =
+                percent > 0.0
+
+            val isDecrease =
+                percent < 0.0
+
+            val arrow =
+                when {
+                    isIncrease -> "↑"
+                    isDecrease -> "↓"
+                    else -> "→"
+                }
+
+            val changeColor =
+                when {
+                    title == "Income" && isIncrease ->
+                        positiveColor
+
+                    title == "Income" && isDecrease ->
+                        MaterialTheme.colorScheme.error
+
+                    title == "Expense" && isIncrease ->
+                        MaterialTheme.colorScheme.error
+
+                    title == "Expense" && isDecrease ->
+                        positiveColor
+
+                    else ->
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                }
+
+            Text(
+                text =
+                    "$arrow${abs(percent).toInt()}%",
+
+                style =
+                    MaterialTheme.typography.titleMedium,
+
+                fontWeight =
+                    FontWeight.Medium,
+
+                color =
+                    changeColor
+            )
+        }
+
+        Spacer(
+            modifier = Modifier.height(
+                AppDimensions.ExtraSmallSpacing
+            )
+        )
+
+        //--------------------------------------------------
+        // Previous month comparison
+        //--------------------------------------------------
+
         Text(
-            text = "₹%,.0f".format(amount),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
+            text =
+                "Compared to ₹%,.2f last\nmonth"
+                    .format(previousAmount),
+
+            style =
+                MaterialTheme.typography.bodyMedium,
+
+            color =
+                MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
