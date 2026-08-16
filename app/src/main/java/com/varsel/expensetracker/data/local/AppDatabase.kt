@@ -24,7 +24,7 @@ import javax.inject.Provider
         CustomRuleEntity::class,
         StatementSnapshotEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,27 +39,41 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
 
-        val MIGRATION_2_3 = object : Migration(2, 3) {
+val MIGRATION_3_4 = object : Migration(3, 4) {
 
-            override fun migrate(
-                database: SupportSQLiteDatabase
-            ) {
-                database.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS statement_snapshots (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        statementStartDate INTEGER,
-                        statementEndDate INTEGER,
-                        openingBalance REAL,
-                        totalCredits REAL,
-                        totalDebits REAL,
-                        endingBalance REAL,
-                        importedAt INTEGER NOT NULL
-                    )
-                    """.trimIndent()
-                )
-            }
-        }
+    override fun migrate(
+        database: SupportSQLiteDatabase
+    ) {
+
+        database.execSQL(
+            """
+            ALTER TABLE transactions
+            ADD COLUMN accountId TEXT
+            """.trimIndent()
+        )
+
+        database.execSQL(
+            """
+            ALTER TABLE transactions
+            ADD COLUMN accountLast4 TEXT
+            """.trimIndent()
+        )
+
+        database.execSQL(
+            """
+            ALTER TABLE statement_snapshots
+            ADD COLUMN accountId TEXT
+            """.trimIndent()
+        )
+
+        database.execSQL(
+            """
+            ALTER TABLE statement_snapshots
+            ADD COLUMN accountLast4 TEXT
+            """.trimIndent()
+        )
+    }
+}
     }
 
     class SeedCallback(
