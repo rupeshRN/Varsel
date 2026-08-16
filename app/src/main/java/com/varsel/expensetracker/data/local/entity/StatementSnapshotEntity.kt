@@ -9,6 +9,16 @@ data class StatementSnapshotEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
 
+    /**
+     * Stable internal identifier for the bank account.
+     */
+    val accountId: String? = null,
+
+    /**
+     * Last four digits for safe UI display.
+     */
+    val accountLast4: String? = null,
+
     val statementStartDate: Long? = null,
 
     val statementEndDate: Long? = null,
@@ -24,9 +34,6 @@ data class StatementSnapshotEntity(
     /**
      * Time when Varsel successfully processed
      * this statement.
-     *
-     * Used to resolve multiple statements having
-     * the same statement end date.
      */
     val importedAt: Long
 )
