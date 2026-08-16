@@ -2,6 +2,7 @@ package com.varsel.expensetracker.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.varsel.expensetracker.domain.model.TransactionRole
 
 @Entity(tableName = "transactions")
 data class TransactionEntity(
@@ -33,5 +34,7 @@ data class TransactionEntity(
     /**
      * Last four digits of the account number.
      */
-    val accountLast4: String? = null
+    val accountLast4: String? = null,
+
+    val role: String = TransactionRole.NORMAL.name
 )
