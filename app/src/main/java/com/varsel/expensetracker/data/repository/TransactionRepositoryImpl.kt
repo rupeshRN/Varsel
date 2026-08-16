@@ -19,38 +19,58 @@ class TransactionRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun insertTransactions(transactions: List<Transaction>) {
-        transactionDao.insertTransactions(transactions.map { it.toEntity() })
+    override suspend fun insertTransactions(
+        transactions: List<Transaction>
+    ) {
+        transactionDao.insertTransactions(
+            transactions.map { it.toEntity() }
+        )
     }
 
-    override suspend fun insertTransaction(transaction: Transaction) {
-        transactionDao.insertTransaction(transaction.toEntity())
+    override suspend fun insertTransaction(
+        transaction: Transaction
+    ) {
+        transactionDao.insertTransaction(
+            transaction.toEntity()
+        )
     }
 
-    override suspend fun updateTransaction(transaction: Transaction) {
-        transactionDao.updateTransaction(transaction.toEntity())
+    override suspend fun updateTransaction(
+        transaction: Transaction
+    ) {
+        transactionDao.updateTransaction(
+            transaction.toEntity()
+        )
     }
 
-    override suspend fun deleteTransaction(transaction: Transaction) {
-        transactionDao.deleteTransaction(transaction.toEntity())
+    override suspend fun deleteTransaction(
+        transaction: Transaction
+    ) {
+        transactionDao.deleteTransaction(
+            transaction.toEntity()
+        )
     }
 
-    override suspend fun getTransactionById(id: Long): Transaction? {
-        return transactionDao.getTransactionById(id)?.toDomain()
+    override suspend fun getTransactionById(
+        id: Long
+    ): Transaction? {
+        return transactionDao
+            .getTransactionById(id)
+            ?.toDomain()
     }
 
     override suspend fun findExistingFingerprints(
-    fingerprints: List<String>
-): Set<String> {
+        fingerprints: List<String>
+    ): Set<String> {
 
-    if (fingerprints.isEmpty()) {
-        return emptySet()
+        if (fingerprints.isEmpty()) {
+            return emptySet()
+        }
+
+        return transactionDao
+            .findExistingFingerprints(fingerprints)
+            .toSet()
     }
-
-    return transactionDao
-        .findExistingFingerprints(fingerprints)
-        .toSet()
-}
 }
 
 fun TransactionEntity.toDomain() = Transaction(
@@ -65,7 +85,9 @@ fun TransactionEntity.toDomain() = Transaction(
     category = category,
     dateTimestamp = dateTimestamp,
     referenceNumber = referenceNumber,
-    transactionFingerprint = transactionFingerprint
+    transactionFingerprint = transactionFingerprint,
+    accountId = accountId,
+    accountLast4 = accountLast4
 )
 
 fun Transaction.toEntity() = TransactionEntity(
@@ -80,5 +102,7 @@ fun Transaction.toEntity() = TransactionEntity(
     category = category,
     dateTimestamp = dateTimestamp,
     referenceNumber = referenceNumber,
-    transactionFingerprint = transactionFingerprint
+    transactionFingerprint = transactionFingerprint,
+    accountId = accountId,
+    accountLast4 = accountLast4
 )
