@@ -11,6 +11,8 @@ import com.varsel.expensetracker.parser.StatementSummaryExtractor
 import com.varsel.expensetracker.parser.TextNormalizer
 import javax.inject.Inject
 import com.varsel.expensetracker.parser.TransactionFingerprintGenerator
+import com.varsel.expensetracker.parser.AccountDetailsExtractor
+import com.varsel.expensetracker.parser.AccountIdentityGenerator
 
 
 /**
