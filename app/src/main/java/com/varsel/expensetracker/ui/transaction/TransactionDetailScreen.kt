@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.varsel.expensetracker.domain.model.TransactionRole
 import com.varsel.expensetracker.ui.transaction.components.BottomActionBar
 import com.varsel.expensetracker.ui.transaction.components.CategorySection
 import com.varsel.expensetracker.ui.transaction.components.DescriptionSection
@@ -47,7 +48,6 @@ fun TransactionDetailScreen(
     LaunchedEffect(transactionId) {
 
         viewModel.loadTransaction(transactionId)
-
     }
 
     LaunchedEffect(saveCompleted) {
@@ -57,9 +57,7 @@ fun TransactionDetailScreen(
             viewModel.consumeSaveCompleted()
 
             onBackClick()
-
         }
-
     }
 
     Scaffold(
@@ -69,39 +67,32 @@ fun TransactionDetailScreen(
             CenterAlignedTopAppBar(
 
                 title = {
-
                     Text("Transaction Details")
-
                 },
 
                 navigationIcon = {
 
                     IconButton(
-
                         onClick = onBackClick
-
                     ) {
 
                         Icon(
+                            imageVector =
+                                Icons.Default.ArrowBack,
 
-                            imageVector = Icons.Default.ArrowBack,
-
-                            contentDescription = "Back"
-
+                            contentDescription =
+                                "Back"
                         )
-
                     }
-
                 }
-
             )
-
         },
 
         bottomBar = {
 
             val state =
-                uiState as? TransactionDetailUiState.Loaded
+                uiState as?
+                    TransactionDetailUiState.Loaded
 
             if (state != null) {
 
@@ -110,7 +101,6 @@ fun TransactionDetailScreen(
                     onDeleteClick = {
 
                         // E2.4
-
                     },
 
                     onSaveClick =
@@ -119,24 +109,22 @@ fun TransactionDetailScreen(
                     saveEnabled =
                         state.hasChanges &&
                         !state.isSaving
-
                 )
-
             }
-
         }
 
     ) { padding ->
 
         Column(
 
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(24.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
 
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-
+            verticalArrangement =
+                Arrangement.spacedBy(16.dp)
         ) {
 
             when (val state = uiState) {
@@ -144,63 +132,70 @@ fun TransactionDetailScreen(
                 TransactionDetailUiState.Loading -> {
 
                     Text("Loading...")
-
                 }
 
                 is TransactionDetailUiState.Error -> {
 
                     Text(state.message)
-
                 }
 
                 is TransactionDetailUiState.Loaded -> {
 
-                    val transaction = state.transaction
+                    val transaction =
+                        state.transaction
 
                     DescriptionSection(
 
-                        description = state.editableDescription,
+                        description =
+                            state.editableDescription,
 
                         onDescriptionChanged =
                             viewModel::updateDescription
-
                     )
 
                     CategorySection(
 
-                        selectedCategory = state.selectedCategory,
+                        selectedCategory =
+                            state.selectedCategory,
 
                         onCategorySelected =
                             viewModel::updateCategory
+                    )
 
+                    TransactionRoleSection(
+
+                        transactionType =
+                            transaction.type,
+
+                        selectedRole =
+                            state.selectedRole,
+
+                        onRoleSelected =
+                            viewModel::updateRole
                     )
 
                     TransactionInfoSection(
 
-                        amount = "₹%.2f".format(transaction.amount),
+                        amount =
+                            "₹%.2f".format(
+                                transaction.amount
+                            ),
 
-                        date = SimpleDateFormat(
+                        date =
+                            SimpleDateFormat(
+                                "dd MMM yyyy",
+                                Locale.ENGLISH
+                            ).format(
+                                Date(
+                                    transaction.dateTimestamp
+                                )
+                            ),
 
-                            "dd MMM yyyy",
-
-                            Locale.ENGLISH
-
-                        ).format(
-
-                            Date(transaction.dateTimestamp)
-
-                        ),
-
-                        type = transaction.type.name
-
+                        type =
+                            transaction.type.name
                     )
-
                 }
-
             }
-
         }
-
     }
-
 }
