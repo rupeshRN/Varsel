@@ -2,6 +2,7 @@ package com.varsel.expensetracker.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.varsel.expensetracker.data.local.dao.CategoryDao
 import com.varsel.expensetracker.data.local.dao.CustomRuleDao
@@ -36,11 +37,38 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun statementSnapshotDao(): StatementSnapshotDao
 
+    companion object {
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+
+            override fun migrate(
+                database: SupportSQLiteDatabase
+            ) {
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS statement_snapshots (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        statementStartDate INTEGER,
+                        statementEndDate INTEGER,
+                        openingBalance REAL,
+                        totalCredits REAL,
+                        totalDebits REAL,
+                        endingBalance REAL,
+                        importedAt INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+    }
+
     class SeedCallback(
         private val categoryDaoProvider: Provider<CategoryDao>
     ) : RoomDatabase.Callback() {
 
-        override fun onCreate(db: SupportSQLiteDatabase) {
+        override fun onCreate(
+            db: SupportSQLiteDatabase
+        ) {
             super.onCreate(db)
 
             CoroutineScope(Dispatchers.IO).launch {
