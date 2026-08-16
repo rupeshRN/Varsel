@@ -57,7 +57,7 @@ return Room.databaseBuilder(
 )
     .openHelperFactory(factory)
     .addMigrations(
-        AppDatabase.MIGRATION_2_3
+        AppDatabase.MIGRATION_3_4
     )
     .addCallback(
         AppDatabase.SeedCallback(categoryDaoProvider)
