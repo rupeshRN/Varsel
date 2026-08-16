@@ -8,6 +8,7 @@ import com.varsel.expensetracker.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import com.varsel.expensetracker.domain.model.TransactionRole
 
 class TransactionRepositoryImpl @Inject constructor(
     private val transactionDao: TransactionDao
@@ -87,7 +88,12 @@ fun TransactionEntity.toDomain() = Transaction(
     referenceNumber = referenceNumber,
     transactionFingerprint = transactionFingerprint,
     accountId = accountId,
-    accountLast4 = accountLast4
+    accountLast4 = accountLast4,
+    role = try {
+        TransactionRole.valueOf(role)
+    } catch (e: IllegalArgumentException) {
+        TransactionRole.NORMAL
+    }
 )
 
 fun Transaction.toEntity() = TransactionEntity(
@@ -104,5 +110,6 @@ fun Transaction.toEntity() = TransactionEntity(
     referenceNumber = referenceNumber,
     transactionFingerprint = transactionFingerprint,
     accountId = accountId,
-    accountLast4 = accountLast4
+    accountLast4 = accountLast4,
+    role = role.name
 )
