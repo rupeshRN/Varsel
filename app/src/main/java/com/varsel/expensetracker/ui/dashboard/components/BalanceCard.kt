@@ -202,16 +202,15 @@ private fun MonthlyMetricItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimensions.SmallSpacing)
+            .padding(
+                horizontal = AppDimensions.SmallSpacing
+            )
     ) {
 
         Text(
             text = title,
-            style =
-                MaterialTheme.typography.labelMedium,
-
-            color =
-                MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(
@@ -219,10 +218,6 @@ private fun MonthlyMetricItem(
                 AppDimensions.ExtraSmallSpacing
             )
         )
-
-        //--------------------------------------------------
-        // Current month amount + percentage change
-        //--------------------------------------------------
 
         Row(
             verticalAlignment =
@@ -231,69 +226,80 @@ private fun MonthlyMetricItem(
 
             Text(
                 text = "₹%,.2f".format(amount),
-                style =
-                    MaterialTheme.typography.titleMedium,
-
-                fontWeight =
-                    FontWeight.Bold,
-
-                color =
-                    MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(
                 modifier = Modifier.padding(
-                    horizontal = AppDimensions.ExtraSmallSpacing
+                    horizontal =
+                        AppDimensions.ExtraSmallSpacing
                 )
             )
 
-            val percent =
-                changePercent ?: 0.0
+            if (changePercent == null) {
 
-            val isIncrease =
-                percent > 0.0
-
-            val isDecrease =
-                percent < 0.0
-
-            val arrow =
-                when {
-                    isIncrease -> "↑"
-                    isDecrease -> "↓"
-                    else -> "→"
-                }
-
-            val changeColor =
-                when {
-                    title == "Income" && isIncrease ->
-                        positiveColor
-
-                    title == "Income" && isDecrease ->
-                        MaterialTheme.colorScheme.error
-
-                    title == "Expense" && isIncrease ->
-                        MaterialTheme.colorScheme.error
-
-                    title == "Expense" && isDecrease ->
-                        positiveColor
-
-                    else ->
+                Text(
+                    text = "New",
+                    style =
+                        MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color =
                         MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                )
 
-            Text(
-                text =
-                    "$arrow${abs(percent).toInt()}%",
+            } else {
 
-                style =
-                    MaterialTheme.typography.titleMedium,
+                val isIncrease =
+                    changePercent > 0.0
 
-                fontWeight =
-                    FontWeight.Medium,
+                val isDecrease =
+                    changePercent < 0.0
 
-                color =
-                    changeColor
-            )
+                val arrow =
+                    when {
+                        isIncrease -> "↑"
+                        isDecrease -> "↓"
+                        else -> "→"
+                    }
+
+                val changeColor =
+                    when {
+
+                        title == "Income" &&
+                            isIncrease ->
+                            positiveColor
+
+                        title == "Income" &&
+                            isDecrease ->
+                            MaterialTheme.colorScheme.error
+
+                        title == "Expense" &&
+                            isIncrease ->
+                            MaterialTheme.colorScheme.error
+
+                        title == "Expense" &&
+                            isDecrease ->
+                            positiveColor
+
+                        else ->
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                Text(
+                    text =
+                        "$arrow${abs(changePercent).toInt()}%",
+
+                    style =
+                        MaterialTheme.typography.titleMedium,
+
+                    fontWeight =
+                        FontWeight.Medium,
+
+                    color = changeColor
+                )
+            }
         }
 
         Spacer(
@@ -301,10 +307,6 @@ private fun MonthlyMetricItem(
                 AppDimensions.ExtraSmallSpacing
             )
         )
-
-        //--------------------------------------------------
-        // Previous month comparison
-        //--------------------------------------------------
 
         Text(
             text =
