@@ -1,5 +1,7 @@
 package com.varsel.expensetracker.domain.model
 
+import com.varsel.expensetracker.domain.model.TransactionRole
+
 data class Transaction(
     val id: Long = 0L,
     val amount: Double,
@@ -23,4 +25,6 @@ data class Transaction(
      * Used only for safe user-facing display.
      */
     val accountLast4: String? = null
+
+    val role: TransactionRole = TransactionRole.NORMAL
 )
