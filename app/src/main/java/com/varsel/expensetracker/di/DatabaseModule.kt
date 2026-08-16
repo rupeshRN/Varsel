@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import javax.inject.Provider
 import javax.inject.Singleton
+import com.varsel.expensetracker.data.local.dao.StatementSnapshotDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -73,4 +74,7 @@ return Room.databaseBuilder(
 
     @Provides
     fun provideCustomRuleDao(db: AppDatabase): CustomRuleDao = db.customRuleDao()
+
+    @Provides
+fun provideStatementSnapshotDao(db: AppDatabase): StatementSnapshotDao = db.statementSnapshotDao()
 }
