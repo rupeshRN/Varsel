@@ -7,7 +7,9 @@ import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.ui.dashboard.DashboardUiState
 import com.varsel.expensetracker.ui.model.AccountBalanceUiModel
 import com.varsel.expensetracker.ui.model.BalanceSummaryUiModel
+import java.util.Calendar
 import javax.inject.Inject
+import kotlin.math.abs
 
 class DashboardUiMapper @Inject constructor(
 
@@ -21,102 +23,122 @@ class DashboardUiMapper @Inject constructor(
     ): DashboardUiState {
 
         //--------------------------------------------------
-        // Financial income / expense
+        // Calendar boundaries
+        //--------------------------------------------------
+
+        val now = Calendar.getInstance()
+
+        val currentYear =
+            now.get(Calendar.YEAR)
+
+        val currentMonth =
+            now.get(Calendar.MONTH)
+
+        val currentMonthStart =
+            calendarAtStartOfMonth(
+                currentYear,
+                currentMonth
+            )
+
+        val previousMonthStart =
+            calendarAtStartOfMonth(
+                if (currentMonth == Calendar.JANUARY) {
+                    currentYear - 1
+                } else {
+                    currentYear
+                },
+                if (currentMonth == Calendar.JANUARY) {
+                    Calendar.DECEMBER
+                } else {
+                    currentMonth - 1
+                }
+            )
+
+        //--------------------------------------------------
+        // Current month
+        //--------------------------------------------------
+
+        val currentMonthTransactions =
+            transactions.filter {
+
+                it.dateTimestamp >=
+                    currentMonthStart
+
+            }
+
+        //--------------------------------------------------
+        // Previous month
+        //--------------------------------------------------
+
+        val previousMonthTransactions =
+            transactions.filter {
+
+                it.dateTimestamp >=
+                    previousMonthStart &&
+
+                it.dateTimestamp <
+                    currentMonthStart
+
+            }
+
+        //--------------------------------------------------
+        // Current month financial metrics
+        //--------------------------------------------------
+
+        val currentMonthIncome =
+            calculateActualIncome(
+                currentMonthTransactions
+            )
+
+        val currentMonthExpense =
+            calculateEffectiveExpense(
+                currentMonthTransactions
+            )
+
+        //--------------------------------------------------
+        // Previous month financial metrics
+        //--------------------------------------------------
+
+        val previousMonthIncome =
+            calculateActualIncome(
+                previousMonthTransactions
+            )
+
+        val previousMonthExpense =
+            calculateEffectiveExpense(
+                previousMonthTransactions
+            )
+
+        //--------------------------------------------------
+        // Month-over-month percentage
+        //--------------------------------------------------
+
+        val incomeChangePercent =
+            calculatePercentageChange(
+                previous = previousMonthIncome,
+                current = currentMonthIncome
+            )
+
+        val expenseChangePercent =
+            calculatePercentageChange(
+                previous = previousMonthExpense,
+                current = currentMonthExpense
+            )
+
+        //--------------------------------------------------
+        // Current month savings
+        //--------------------------------------------------
+
+        val savings =
+            currentMonthIncome -
+                currentMonthExpense
+
+        //--------------------------------------------------
+        // Account balances
         //
         // IMPORTANT:
-        //
-        // Bank balance is based on actual bank movements.
-        //
-        // Financial analysis is different:
-        //
-        // LENT ₹1,000
-        // REIMBURSEMENT ₹800
-        //
-        // = actual expense ₹200
-        // = actual income ₹0
-        //
-        // Therefore LENT and REIMBURSEMENT are netted
-        // against each other here.
-        //--------------------------------------------------
-
-        val normalIncome =
-            transactions
-                .filter {
-                    it.type == TransactionType.INCOME &&
-                    it.role == TransactionRole.NORMAL
-                }
-                .sumOf {
-                    it.amount
-                }
-
-        val normalExpense =
-            transactions
-                .filter {
-                    it.type == TransactionType.EXPENSE &&
-                    it.role == TransactionRole.NORMAL
-                }
-                .sumOf {
-                    it.amount
-                }
-
-        val lentAmount =
-            transactions
-                .filter {
-                    it.type == TransactionType.EXPENSE &&
-                    it.role == TransactionRole.LENT
-                }
-                .sumOf {
-                    it.amount
-                }
-
-        val reimbursementAmount =
-            transactions
-                .filter {
-                    it.type == TransactionType.INCOME &&
-                    it.role == TransactionRole.REIMBURSEMENT
-                }
-                .sumOf {
-                    it.amount
-                }
-
-        //--------------------------------------------------
-        // Net LENT against REIMBURSEMENT.
-        //
-        // Example:
-        //
-        // Lent          = 1000
-        // Reimbursement = 800
-        //
-        // Remaining expense = 200
-        // Remaining income  = 0
-        //--------------------------------------------------
-
-        val netLentExpense =
-            (lentAmount - reimbursementAmount)
-                .coerceAtLeast(0.0)
-
-        val excessReimbursement =
-            (reimbursementAmount - lentAmount)
-                .coerceAtLeast(0.0)
-
-        //--------------------------------------------------
-        // Final financial totals.
-        //--------------------------------------------------
-
-        val income =
-            normalIncome +
-                excessReimbursement
-
-        val expense =
-            normalExpense +
-                netLentExpense
-
-        //--------------------------------------------------
-        // Calculate account-wise current balances.
-        //
-        // NOTE:
-        // This uses actual bank movements and therefore
-        // DOES NOT apply the LENT/REIMBURSEMENT adjustment.
+        // This remains independent from monthly
+        // income/expense reporting.
         //--------------------------------------------------
 
         val accountBalances =
@@ -125,27 +147,13 @@ class DashboardUiMapper @Inject constructor(
                 snapshots = snapshots
             )
 
-        //--------------------------------------------------
-        // Total bank balance across all accounts.
-        //--------------------------------------------------
-
         val totalBalance =
             accountBalances.sumOf {
                 it.balance
             }
 
         //--------------------------------------------------
-        // Financial savings.
-        //
-        // This represents financial net position from
-        // classified transactions, not raw bank balance.
-        //--------------------------------------------------
-
-        val savings =
-            income - expense
-
-        //--------------------------------------------------
-        // Dashboard
+        // Dashboard state
         //--------------------------------------------------
 
         return DashboardUiState(
@@ -153,16 +161,32 @@ class DashboardUiMapper @Inject constructor(
             balanceSummary =
                 BalanceSummaryUiModel(
 
-                    totalBalance = totalBalance,
+                    totalBalance =
+                        totalBalance,
 
-                    totalIncome = income,
+                    totalIncome =
+                        currentMonthIncome,
 
-                    totalExpense = expense,
+                    totalExpense =
+                        currentMonthExpense,
 
-                    savings = savings,
+                    savings =
+                        savings,
 
-                    accounts = accountBalances
+                    previousMonthIncome =
+                        previousMonthIncome,
 
+                    previousMonthExpense =
+                        previousMonthExpense,
+
+                    incomeChangePercent =
+                        incomeChangePercent,
+
+                    expenseChangePercent =
+                        expenseChangePercent,
+
+                    accounts =
+                        accountBalances
                 ),
 
             recentTransactions =
@@ -180,6 +204,153 @@ class DashboardUiMapper @Inject constructor(
     }
 
     //--------------------------------------------------
+    // Actual income
+    //--------------------------------------------------
+
+    private fun calculateActualIncome(
+        transactions: List<Transaction>
+    ): Double {
+
+        return transactions
+            .filter {
+
+                it.type ==
+                    TransactionType.INCOME &&
+
+                it.role !=
+                    TransactionRole.REIMBURSEMENT
+
+            }
+            .sumOf {
+                it.amount
+            }
+    }
+
+    //--------------------------------------------------
+    // Effective expense
+    //
+    // NORMAL expense:
+    //     counts fully.
+    //
+    // LENT expense:
+    //     counts as expense.
+    //
+    // REIMBURSEMENT:
+    //     does NOT become income.
+    //     Instead it offsets the expense.
+    //
+    // Example:
+    //
+    // LENT          ₹1000
+    // REIMBURSEMENT ₹800
+    //
+    // Effective expense = ₹200
+    //--------------------------------------------------
+
+    private fun calculateEffectiveExpense(
+        transactions: List<Transaction>
+    ): Double {
+
+        val expenses =
+            transactions
+                .filter {
+                    it.type ==
+                        TransactionType.EXPENSE
+                }
+                .sumOf {
+                    it.amount
+                }
+
+        val reimbursements =
+            transactions
+                .filter {
+                    it.type ==
+                        TransactionType.INCOME &&
+
+                    it.role ==
+                        TransactionRole.REIMBURSEMENT
+                }
+                .sumOf {
+                    it.amount
+                }
+
+        return maxOf(
+            expenses - reimbursements,
+            0.0
+        )
+    }
+
+    //--------------------------------------------------
+    // Percentage change
+    //--------------------------------------------------
+
+    private fun calculatePercentageChange(
+        previous: Double,
+        current: Double
+    ): Double? {
+
+        if (previous == 0.0) {
+            return null
+        }
+
+        return (
+            (current - previous) /
+                abs(previous)
+            ) * 100.0
+    }
+
+    //--------------------------------------------------
+    // Calendar helper
+    //--------------------------------------------------
+
+    private fun calendarAtStartOfMonth(
+        year: Int,
+        month: Int
+    ): Long {
+
+        return Calendar.getInstance().apply {
+
+            clear()
+
+            set(
+                Calendar.YEAR,
+                year
+            )
+
+            set(
+                Calendar.MONTH,
+                month
+            )
+
+            set(
+                Calendar.DAY_OF_MONTH,
+                1
+            )
+
+            set(
+                Calendar.HOUR_OF_DAY,
+                0
+            )
+
+            set(
+                Calendar.MINUTE,
+                0
+            )
+
+            set(
+                Calendar.SECOND,
+                0
+            )
+
+            set(
+                Calendar.MILLISECOND,
+                0
+            )
+
+        }.timeInMillis
+    }
+
+    //--------------------------------------------------
     // Account balance calculation
     //--------------------------------------------------
 
@@ -188,38 +359,23 @@ class DashboardUiMapper @Inject constructor(
         snapshots: List<StatementSnapshotEntity>
     ): List<AccountBalanceUiModel> {
 
-        //--------------------------------------------------
-        // Group transactions by account.
-        //
-        // Transactions without an accountId are handled
-        // separately so older data is not lost.
-        //--------------------------------------------------
-
         val transactionsByAccount =
             transactions.groupBy {
                 it.accountId
             }
-
-        //--------------------------------------------------
-        // Known accounts from transactions + snapshots.
-        //--------------------------------------------------
 
         val accountIds =
             (
                 transactions.mapNotNull {
                     it.accountId
                 } +
-                    snapshots.mapNotNull {
-                        it.accountId
-                    }
-                ).distinct()
+                snapshots.mapNotNull {
+                    it.accountId
+                }
+            ).distinct()
 
         val result =
             mutableListOf<AccountBalanceUiModel>()
-
-        //--------------------------------------------------
-        // Calculate each known account.
-        //--------------------------------------------------
 
         accountIds.forEach { accountId ->
 
@@ -234,7 +390,8 @@ class DashboardUiMapper @Inject constructor(
                     }
                     .maxWithOrNull(
                         compareBy<StatementSnapshotEntity> {
-                            it.statementEndDate ?: Long.MIN_VALUE
+                            it.statementEndDate
+                                ?: Long.MIN_VALUE
                         }.thenBy {
                             it.importedAt
                         }
@@ -242,8 +399,10 @@ class DashboardUiMapper @Inject constructor(
 
             val balance =
                 calculateCurrentBalance(
-                    transactions = accountTransactions,
-                    snapshot = latestSnapshot
+                    transactions =
+                        accountTransactions,
+                    snapshot =
+                        latestSnapshot
                 )
 
             val accountLast4 =
@@ -254,21 +413,25 @@ class DashboardUiMapper @Inject constructor(
 
             result.add(
                 AccountBalanceUiModel(
-                    bankName = "Bank Account",
+
+                    bankName =
+                        "Bank Account",
+
                     accountDisplayName =
                         accountLast4
                             ?.let {
                                 "•••• $it"
                             }
                             ?: "Account",
-                    balance = balance
+
+                    balance =
+                        balance
                 )
             )
         }
 
         //--------------------------------------------------
-        // Legacy transactions that don't yet have
-        // account identity.
+        // Legacy transactions
         //--------------------------------------------------
 
         val legacyTransactions =
@@ -292,9 +455,15 @@ class DashboardUiMapper @Inject constructor(
 
             result.add(
                 AccountBalanceUiModel(
-                    bankName = "Other",
-                    accountDisplayName = "Unlinked",
-                    balance = legacyBalance
+
+                    bankName =
+                        "Other",
+
+                    accountDisplayName =
+                        "Unlinked",
+
+                    balance =
+                        legacyBalance
                 )
             )
         }
@@ -303,32 +472,13 @@ class DashboardUiMapper @Inject constructor(
     }
 
     //--------------------------------------------------
-    // Current bank balance for one account.
-    //
-    // IMPORTANT:
-    // This intentionally uses actual bank movements.
-    //
-    // LENT and REIMBURSEMENT are NOT netted here.
-    //
-    // Example:
-    //
-    // Opening/current snapshot = ₹5,000
-    // LENT expense             = -₹1,000
-    // Reimbursement            = +₹800
-    //
-    // Bank balance             = ₹4,800
-    //
-    // That is the actual money in the account.
+    // Current balance for one account
     //--------------------------------------------------
 
     private fun calculateCurrentBalance(
         transactions: List<Transaction>,
         snapshot: StatementSnapshotEntity?
     ): Double {
-
-        //--------------------------------------------------
-        // No statement snapshot available.
-        //--------------------------------------------------
 
         if (snapshot == null) {
 
@@ -345,18 +495,8 @@ class DashboardUiMapper @Inject constructor(
             }
         }
 
-        //--------------------------------------------------
-        // Start from the latest known bank statement
-        // ending balance.
-        //--------------------------------------------------
-
         var balance =
             snapshot.endingBalance ?: 0.0
-
-        //--------------------------------------------------
-        // Only apply transactions after the statement
-        // end date.
-        //--------------------------------------------------
 
         val statementEnd =
             snapshot.statementEndDate
@@ -364,7 +504,8 @@ class DashboardUiMapper @Inject constructor(
 
         transactions
             .filter {
-                it.dateTimestamp > statementEnd
+                it.dateTimestamp >
+                    statementEnd
             }
             .forEach { transaction ->
 
