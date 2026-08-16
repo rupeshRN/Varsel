@@ -39,78 +39,64 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
 
-val MIGRATION_3_4 = object : Migration(3, 4) {
+    val MIGRATION_3_4 = object : Migration(3, 4) {
 
-    override fun migrate(
-        database: SupportSQLiteDatabase
-    ) {
+        override fun migrate(
+            database: SupportSQLiteDatabase
+        ) {
+            database.execSQL(
+                """
+                ALTER TABLE transactions
+                ADD COLUMN accountId TEXT
+                """.trimIndent()
+            )
 
-        database.execSQL(
-            """
-            ALTER TABLE transactions
-            ADD COLUMN accountId TEXT
-            """.trimIndent()
-        )
+            database.execSQL(
+                """
+                ALTER TABLE transactions
+                ADD COLUMN accountLast4 TEXT
+                """.trimIndent()
+            )
 
-        database.execSQL(
-            """
-            ALTER TABLE transactions
-            ADD COLUMN accountLast4 TEXT
-            """.trimIndent()
-        )
+            database.execSQL(
+                """
+                ALTER TABLE statement_snapshots
+                ADD COLUMN accountId TEXT
+                """.trimIndent()
+            )
 
-        database.execSQL(
-            """
-            ALTER TABLE statement_snapshots
-            ADD COLUMN accountId TEXT
-            """.trimIndent()
-        )
+            database.execSQL(
+                """
+                ALTER TABLE statement_snapshots
+                ADD COLUMN accountLast4 TEXT
+                """.trimIndent()
+            )
+        }
+    }
 
-        database.execSQL(
-            """
-            ALTER TABLE statement_snapshots
-            ADD COLUMN accountLast4 TEXT
-            """.trimIndent()
-        )
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+
+        override fun migrate(
+            database: SupportSQLiteDatabase
+        ) {
+            // No schema changes were introduced in this development version.
+        }
+    }
+
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+
+        override fun migrate(
+            database: SupportSQLiteDatabase
+        ) {
+            database.execSQL(
+                """
+                ALTER TABLE transactions
+                ADD COLUMN role TEXT NOT NULL DEFAULT 'NORMAL'
+                """.trimIndent()
+            )
+        }
     }
 }
-
-val MIGRATION_4_5 = object : Migration(4, 5) {
-
-    override fun migrate(
-        database: SupportSQLiteDatabase
-    ) {
-        database.execSQL(
-            """
-            ALTER TABLE statement_snapshots
-            ADD COLUMN accountId TEXT
-            """.trimIndent()
-        )
-
-        database.execSQL(
-            """
-            ALTER TABLE statement_snapshots
-            ADD COLUMN accountLast4 TEXT
-            """.trimIndent()
-        )
-    }
-}
-
-val MIGRATION_5_6 = object : Migration(5, 6) {
-
-    override fun migrate(
-        database: SupportSQLiteDatabase
-    ) {
-        database.execSQL(
-            """
-            ALTER TABLE transactions
-            ADD COLUMN role TEXT NOT NULL DEFAULT 'NORMAL'
-            """.trimIndent()
-        )
-    }
-}
-    }
-
     class SeedCallback(
         private val categoryDaoProvider: Provider<CategoryDao>
     ) : RoomDatabase.Callback() {
