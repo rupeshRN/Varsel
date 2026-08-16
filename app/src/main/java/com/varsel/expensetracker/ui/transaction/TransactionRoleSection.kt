@@ -1,30 +1,26 @@
 package com.varsel.expensetracker.ui.transaction
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.varsel.expensetracker.domain.model.TransactionRole
 import com.varsel.expensetracker.domain.model.TransactionType
 
 @Composable
 fun TransactionRoleSection(
-
     transactionType: TransactionType,
-
     selectedRole: TransactionRole,
-
     onRoleSelected: (TransactionRole) -> Unit
-
 ) {
-
     val availableRoles =
         when (transactionType) {
-
             TransactionType.EXPENSE ->
                 listOf(
                     TransactionRole.NORMAL,
@@ -39,14 +35,8 @@ fun TransactionRoleSection(
         }
 
     Column(
-
-        modifier =
-            androidx.compose.ui.Modifier.fillMaxWidth(),
-
-        verticalArrangement =
-            Arrangement.spacedBy(
-                androidx.compose.ui.unit.dp(8.dp)
-            )
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
 
         Text(
@@ -55,22 +45,14 @@ fun TransactionRoleSection(
         )
 
         Row(
-
-            modifier =
-                androidx.compose.ui.Modifier.fillMaxWidth(),
-
-            horizontalArrangement =
-                Arrangement.spacedBy(
-                    androidx.compose.ui.unit.dp(8.dp)
-                )
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
             availableRoles.forEach { role ->
 
                 FilterChip(
-
-                    selected =
-                        selectedRole == role,
+                    selected = selectedRole == role,
 
                     onClick = {
                         onRoleSelected(role)
@@ -79,7 +61,6 @@ fun TransactionRoleSection(
                     label = {
                         Text(
                             when (role) {
-
                                 TransactionRole.NORMAL ->
                                     "Normal"
 
