@@ -331,6 +331,8 @@ class ImportViewModel @Inject constructor(
 
         val snapshot =
             StatementSnapshotEntity(
+                accountId = accountIdentity?.accountId,
+                accountLast4 = accountIdentity?.accountLast4,
 
                 statementStartDate =
                     summary.statementStartDate,
