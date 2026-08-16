@@ -1,8 +1,8 @@
 package com.varsel.expensetracker.ui.transaction
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -19,19 +19,27 @@ fun TransactionRoleSection(
     selectedRole: TransactionRole,
     onRoleSelected: (TransactionRole) -> Unit
 ) {
+
     val availableRoles =
         when (transactionType) {
-            TransactionType.EXPENSE ->
+
+            TransactionType.EXPENSE,
+            TransactionType.DEBIT -> {
+
                 listOf(
                     TransactionRole.NORMAL,
                     TransactionRole.LENT
                 )
+            }
 
-            TransactionType.INCOME ->
+            TransactionType.INCOME,
+            TransactionType.CREDIT -> {
+
                 listOf(
                     TransactionRole.NORMAL,
                     TransactionRole.REIMBURSEMENT
                 )
+            }
         }
 
     Column(
@@ -59,8 +67,10 @@ fun TransactionRoleSection(
                     },
 
                     label = {
+
                         Text(
                             when (role) {
+
                                 TransactionRole.NORMAL ->
                                     "Normal"
 
