@@ -1,6 +1,7 @@
 package com.varsel.expensetracker.ui.transaction
 
 import com.varsel.expensetracker.domain.model.Transaction
+import com.varsel.expensetracker.domain.model.TransactionRole
 
 sealed interface TransactionDetailUiState {
 
@@ -14,6 +15,8 @@ sealed interface TransactionDetailUiState {
 
         val selectedCategory: String,
 
+        val selectedRole: TransactionRole,
+
         val hasChanges: Boolean,
 
         val isSaving: Boolean = false
@@ -25,5 +28,4 @@ sealed interface TransactionDetailUiState {
         val message: String
 
     ) : TransactionDetailUiState
-
 }

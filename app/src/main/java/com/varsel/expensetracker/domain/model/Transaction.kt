@@ -1,5 +1,7 @@
 package com.varsel.expensetracker.domain.model
 
+import com.varsel.expensetracker.domain.model.TransactionRole
+
 data class Transaction(
     val id: Long = 0L,
     val amount: Double,
@@ -22,5 +24,7 @@ data class Transaction(
      * Last four digits of the account number.
      * Used only for safe user-facing display.
      */
-    val accountLast4: String? = null
+    val accountLast4: String? = null,
+
+    val role: TransactionRole = TransactionRole.NORMAL
 )
