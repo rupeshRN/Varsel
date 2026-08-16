@@ -12,14 +12,13 @@ class StatementSnapshotRepositoryImpl @Inject constructor(
     override suspend fun saveSnapshot(
         snapshot: StatementSnapshotEntity
     ) {
-        statementSnapshotDao.insertSnapshot(
-            snapshot
-        )
+        statementSnapshotDao.insertSnapshot(snapshot)
     }
 
-    override suspend fun getLatestSnapshot():
-        StatementSnapshotEntity? {
-        return statementSnapshotDao.getLatestSnapshot()
+    override suspend fun getLatestSnapshot(
+        accountId: String
+    ): StatementSnapshotEntity? {
+        return statementSnapshotDao.getLatestSnapshot(accountId)
     }
 
     override suspend fun getAllSnapshots():
