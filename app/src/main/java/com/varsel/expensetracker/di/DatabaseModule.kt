@@ -57,11 +57,13 @@ return Room.databaseBuilder(
 )
     .openHelperFactory(factory)
     .addMigrations(
-        AppDatabase.MIGRATION_3_4
+        AppDatabase.MIGRATION_3_4,
+        AppDatabase.MIGRATION_4_5
     )
     .addCallback(
         AppDatabase.SeedCallback(categoryDaoProvider)
     )
+    .fallbackToDestructiveMigration()
     .build()
     }
 
