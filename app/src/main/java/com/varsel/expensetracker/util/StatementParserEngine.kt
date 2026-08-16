@@ -109,6 +109,10 @@ class StatementParserEngine @Inject constructor(
      */
     private val customRuleEngine: CustomRuleEngine,
 
+    private val accountDetailsExtractor: AccountDetailsExtractor,
+
+    private val accountIdentityGenerator: AccountIdentityGenerator,
+
 /**
  * Collects parser diagnostics during the import pipeline.
  *
@@ -202,6 +206,16 @@ class StatementParserEngine @Inject constructor(
 
             parser.parse(normalizedText)
 
+        val accountNumber =
+            accountDetailsExtractor.extractAccountNumber(
+                rawText
+            )
+        
+        val accountIdentity =
+            accountNumber?.let {
+                accountIdentityGenerator.generate(it)
+            }
+
         //--------------------------------------------------
 // Establish transaction identity BEFORE applying
 // learned descriptions/categories.
@@ -219,7 +233,13 @@ val fingerprintedTransactions =
             transactionFingerprint =
                 transactionFingerprintGenerator.generate(
                     transaction
-                )
+                ),
+
+            accountId =
+                accountIdentity?.accountId,
+
+            accountLast4 =
+                accountIdentity?.accountLast4
         )
     }
 
