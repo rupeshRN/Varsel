@@ -3,10 +3,10 @@ name: Compile code
 on:
   push:
     branches:
-      - Category-Role
+      - **
   pull_request:
     branches:
-      - Category-Role
+      - **
   workflow_dispatch:
 
 jobs:
