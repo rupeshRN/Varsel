@@ -8,9 +8,9 @@ interface StatementSnapshotRepository {
         snapshot: StatementSnapshotEntity
     )
 
-    suspend fun getLatestSnapshot():
-        StatementSnapshotEntity?
+    suspend fun getLatestSnapshot(
+        accountId: String
+    ): StatementSnapshotEntity?
 
-    suspend fun getAllSnapshots():
-        List<StatementSnapshotEntity>
+    suspend fun getAllSnapshots(): List<StatementSnapshotEntity>
 }
