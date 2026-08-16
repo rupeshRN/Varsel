@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Color
 import com.varsel.expensetracker.ui.design.AppDimensions
 import com.varsel.expensetracker.ui.design.AppShapes
@@ -30,7 +29,6 @@ fun BalanceCard(
 ) {
 
     Card(
-
         modifier = modifier
             .fillMaxWidth()
             .padding(
@@ -40,10 +38,8 @@ fun BalanceCard(
         shape = AppShapes.HeroCard,
 
         elevation = CardDefaults.cardElevation(
-            defaultElevation =
-                AppDimensions.CardElevation
+            defaultElevation = AppDimensions.CardElevation
         )
-
     ) {
 
         Column(
@@ -58,10 +54,8 @@ fun BalanceCard(
 
             Text(
                 text = "Total Balance",
-                style =
-                    MaterialTheme.typography.titleMedium,
-                color =
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(
@@ -74,11 +68,8 @@ fun BalanceCard(
                 text = "₹%,.2f".format(
                     summary.totalBalance
                 ),
-                style =
-                    MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color =
-                    MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             //--------------------------------------------------
@@ -103,10 +94,7 @@ fun BalanceCard(
 
                 Text(
                     text = "Account Wise Balance",
-                    style =
-                        MaterialTheme.typography.titleSmall,
-                    fontWeight =
-                        FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleSmall
                 )
 
                 Spacer(
@@ -118,11 +106,11 @@ fun BalanceCard(
                 summary.accounts.forEach { account ->
 
                     Row(
-                        modifier =
-                            Modifier.fillMaxWidth(),
-
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement =
-                            Arrangement.SpaceBetween
+                            Arrangement.SpaceBetween,
+                        verticalAlignment =
+                            Alignment.CenterVertically
                     ) {
 
                         Text(
@@ -144,7 +132,7 @@ fun BalanceCard(
                                 MaterialTheme.typography.bodyMedium,
 
                             fontWeight =
-                                FontWeight.SemiBold
+                                androidx.compose.ui.text.font.FontWeight.SemiBold
                         )
                     }
 
@@ -157,7 +145,7 @@ fun BalanceCard(
             }
 
             //--------------------------------------------------
-            // Monthly income / expense comparison
+            // Current month income / expense
             //--------------------------------------------------
 
             Spacer(
@@ -175,18 +163,16 @@ fun BalanceCard(
             )
 
             Row(
-                modifier =
-                    Modifier.fillMaxWidth(),
-
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement =
-                    Arrangement.spacedBy(
-                        AppDimensions.MediumSpacing
-                    )
+                    Arrangement.SpaceBetween,
+                verticalAlignment =
+                    Alignment.Top
             ) {
 
                 MonthlyMetricItem(
                     modifier =
-                        Modifier.weight(1f),
+                        Modifier.fillMaxWidth(0.5f),
 
                     title = "Income",
 
@@ -205,7 +191,12 @@ fun BalanceCard(
 
                 MonthlyMetricItem(
                     modifier =
-                        Modifier.weight(1f),
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start =
+                                    AppDimensions.SmallSpacing
+                            ),
 
                     title = "Expense",
 
@@ -219,7 +210,7 @@ fun BalanceCard(
                         summary.expenseChangePercent,
 
                     positiveColor =
-                        MaterialTheme.colorScheme.error
+                        MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -246,7 +237,6 @@ private fun MonthlyMetricItem(
 
         Text(
             text = title,
-
             style =
                 MaterialTheme.typography.labelMedium,
 
@@ -261,13 +251,10 @@ private fun MonthlyMetricItem(
         )
 
         //--------------------------------------------------
-        // Amount + change
+        // Amount + percentage
         //--------------------------------------------------
 
         Row(
-            modifier =
-                Modifier.fillMaxWidth(),
-
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
@@ -280,87 +267,83 @@ private fun MonthlyMetricItem(
                     MaterialTheme.typography.titleMedium,
 
                 fontWeight =
-                    FontWeight.Bold,
+                    androidx.compose.ui.text.font.FontWeight.Bold,
 
                 color =
                     MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.width(
+                    AppDimensions.ExtraSmallSpacing
+                )
             )
 
-            if (changePercent == null) {
+            val percent =
+                changePercent ?: 0.0
 
-                Text(
-                    text = "New",
+            val isIncrease =
+                percent > 0.0
 
-                    style =
-                        MaterialTheme.typography.titleMedium,
+            val isDecrease =
+                percent < 0.0
 
-                    fontWeight =
-                        FontWeight.Medium,
+            //--------------------------------------------------
+            // Keep the original visual language:
+            //
+            // ↑ increase
+            // ↓ decrease
+            // → no change
+            //--------------------------------------------------
 
-                    color =
+            val arrow =
+                when {
+                    isIncrease -> "↑"
+                    isDecrease -> "↓"
+                    else -> "↑"
+                }
+
+            val changeColor =
+                when {
+
+                    // Income:
+                    // Increase = good
+                    title == "Income" &&
+                        isIncrease ->
+                        positiveColor
+
+                    // Income:
+                    // Decrease = bad
+                    title == "Income" &&
+                        isDecrease ->
+                        MaterialTheme.colorScheme.error
+
+                    // Expense:
+                    // Increase = bad
+                    title == "Expense" &&
+                        isIncrease ->
+                        MaterialTheme.colorScheme.error
+
+                    // Expense:
+                    // Decrease = good
+                    title == "Expense" &&
+                        isDecrease ->
+                        positiveColor
+
+                    else ->
                         MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                }
 
-            } else {
+            Text(
+                text =
+                    "$arrow${abs(percent).toInt()}%",
 
-                val isIncrease =
-                    changePercent > 0.0
+                style =
+                    MaterialTheme.typography.titleMedium,
 
-                val isDecrease =
-                    changePercent < 0.0
-
-                val arrow =
-                    when {
-                        isIncrease -> "↑"
-                        isDecrease -> "↓"
-                        else -> "→"
-                    }
-
-                val changeColor =
-                    when {
-
-                        // Income increasing = good
-                        title == "Income" &&
-                            isIncrease ->
-                            positiveColor
-
-                        // Income decreasing = bad
-                        title == "Income" &&
-                            isDecrease ->
-                            MaterialTheme.colorScheme.error
-
-                        // Expense increasing = bad
-                        title == "Expense" &&
-                            isIncrease ->
-                            MaterialTheme.colorScheme.error
-
-                        // Expense decreasing = good
-                        title == "Expense" &&
-                            isDecrease ->
-                            positiveColor
-
-                        else ->
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-
-                Text(
-                    text =
-                        "$arrow${abs(changePercent).toInt()}%",
-
-                    style =
-                        MaterialTheme.typography.titleMedium,
-
-                    fontWeight =
-                        FontWeight.Medium,
-
-                    color =
-                        changeColor
-                )
-            }
+                color =
+                    changeColor
+            )
         }
 
         Spacer(
