@@ -7,6 +7,8 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import com.varsel.expensetracker.data.repository.StatementSnapshotRepositoryImpl
+import com.varsel.expensetracker.domain.repository.StatementSnapshotRepository
 
 /**
  * Hilt Dependency Injection module responsible for binding domain repository interfaces 
@@ -33,5 +35,12 @@ abstract class RepositoryModule {
     abstract fun bindTransactionRepository(
         impl: TransactionRepositoryImpl
     ): TransactionRepository
+
+    /** Binds [statementsnapshotrepoimplementation] to the [statementsnapshotrepo] interface contract */
+    @Binds
+    @Singleton
+    abstract fun bindStatementSnapshotRepository(
+        impl: StatementSnapshotRepositoryImpl
+    ): StatementSnapshotRepository
   
 }
