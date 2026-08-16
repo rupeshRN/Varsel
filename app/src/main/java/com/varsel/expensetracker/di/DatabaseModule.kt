@@ -62,7 +62,6 @@ return Room.databaseBuilder(
     .addCallback(
         AppDatabase.SeedCallback(categoryDaoProvider)
     )
-    .fallbackToDestructiveMigration()
     .build()
     }
 
