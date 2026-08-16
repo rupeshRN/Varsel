@@ -203,6 +203,27 @@ class StatementParserEngine @Inject constructor(
             parser.parse(normalizedText)
 
         //--------------------------------------------------
+// Establish transaction identity BEFORE applying
+// learned descriptions/categories.
+//
+// IMPORTANT:
+// The fingerprint represents the original statement
+// transaction and must not change when the user or
+// learning engine changes the description/category.
+//--------------------------------------------------
+
+val fingerprintedTransactions =
+    parsedTransactions.map { transaction ->
+
+        transaction.copy(
+            transactionFingerprint =
+                transactionFingerprintGenerator.generate(
+                    transaction
+                )
+        )
+    }
+
+        //--------------------------------------------------
         // Stage 5
         //
         // Apply user-learned description/category.
@@ -210,16 +231,7 @@ class StatementParserEngine @Inject constructor(
 
         val transactions =
 
-            applyLearning(parsedTransactions)
-
-    val fingerprintedTransactions =
-    transactions.map { transaction ->
-
-        transaction.copy(
-            transactionFingerprint =
-                transactionFingerprintGenerator.generate(transaction)
-        )
-    }
+            applyLearning(fingerprintedTransactions)
 
         //--------------------------------------------------
         // Diagnostics
