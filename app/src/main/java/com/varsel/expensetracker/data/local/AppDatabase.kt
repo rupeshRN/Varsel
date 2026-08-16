@@ -24,7 +24,7 @@ import javax.inject.Provider
         CustomRuleEntity::class,
         StatementSnapshotEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -91,6 +91,20 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
             """
             ALTER TABLE statement_snapshots
             ADD COLUMN accountLast4 TEXT
+            """.trimIndent()
+        )
+    }
+}
+
+val MIGRATION_5_6 = object : Migration(5, 6) {
+
+    override fun migrate(
+        database: SupportSQLiteDatabase
+    ) {
+        database.execSQL(
+            """
+            ALTER TABLE transactions
+            ADD COLUMN role TEXT NOT NULL DEFAULT 'NORMAL'
             """.trimIndent()
         )
     }
