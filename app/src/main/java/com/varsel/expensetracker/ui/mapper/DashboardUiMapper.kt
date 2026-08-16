@@ -2,6 +2,7 @@ package com.varsel.expensetracker.ui.mapper
 
 import com.varsel.expensetracker.data.local.entity.StatementSnapshotEntity
 import com.varsel.expensetracker.domain.model.Transaction
+import com.varsel.expensetracker.domain.model.TransactionRole
 import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.ui.dashboard.DashboardUiState
 import com.varsel.expensetracker.ui.model.AccountBalanceUiModel
@@ -20,29 +21,102 @@ class DashboardUiMapper @Inject constructor(
     ): DashboardUiState {
 
         //--------------------------------------------------
-        // Overall income / expense
+        // Financial income / expense
+        //
+        // IMPORTANT:
+        //
+        // Bank balance is based on actual bank movements.
+        //
+        // Financial analysis is different:
+        //
+        // LENT ₹1,000
+        // REIMBURSEMENT ₹800
+        //
+        // = actual expense ₹200
+        // = actual income ₹0
+        //
+        // Therefore LENT and REIMBURSEMENT are netted
+        // against each other here.
+        //--------------------------------------------------
+
+        val normalIncome =
+            transactions
+                .filter {
+                    it.type == TransactionType.INCOME &&
+                    it.role == TransactionRole.NORMAL
+                }
+                .sumOf {
+                    it.amount
+                }
+
+        val normalExpense =
+            transactions
+                .filter {
+                    it.type == TransactionType.EXPENSE &&
+                    it.role == TransactionRole.NORMAL
+                }
+                .sumOf {
+                    it.amount
+                }
+
+        val lentAmount =
+            transactions
+                .filter {
+                    it.type == TransactionType.EXPENSE &&
+                    it.role == TransactionRole.LENT
+                }
+                .sumOf {
+                    it.amount
+                }
+
+        val reimbursementAmount =
+            transactions
+                .filter {
+                    it.type == TransactionType.INCOME &&
+                    it.role == TransactionRole.REIMBURSEMENT
+                }
+                .sumOf {
+                    it.amount
+                }
+
+        //--------------------------------------------------
+        // Net LENT against REIMBURSEMENT.
+        //
+        // Example:
+        //
+        // Lent          = 1000
+        // Reimbursement = 800
+        //
+        // Remaining expense = 200
+        // Remaining income  = 0
+        //--------------------------------------------------
+
+        val netLentExpense =
+            (lentAmount - reimbursementAmount)
+                .coerceAtLeast(0.0)
+
+        val excessReimbursement =
+            (reimbursementAmount - lentAmount)
+                .coerceAtLeast(0.0)
+
+        //--------------------------------------------------
+        // Final financial totals.
         //--------------------------------------------------
 
         val income =
-            transactions
-                .filter {
-                    it.type == TransactionType.INCOME
-                }
-                .sumOf {
-                    it.amount
-                }
+            normalIncome +
+                excessReimbursement
 
         val expense =
-            transactions
-                .filter {
-                    it.type == TransactionType.EXPENSE
-                }
-                .sumOf {
-                    it.amount
-                }
+            normalExpense +
+                netLentExpense
 
         //--------------------------------------------------
-        // Calculate account-wise current balances
+        // Calculate account-wise current balances.
+        //
+        // NOTE:
+        // This uses actual bank movements and therefore
+        // DOES NOT apply the LENT/REIMBURSEMENT adjustment.
         //--------------------------------------------------
 
         val accountBalances =
@@ -52,13 +126,23 @@ class DashboardUiMapper @Inject constructor(
             )
 
         //--------------------------------------------------
-        // Total balance across all accounts
+        // Total bank balance across all accounts.
         //--------------------------------------------------
 
         val totalBalance =
             accountBalances.sumOf {
                 it.balance
             }
+
+        //--------------------------------------------------
+        // Financial savings.
+        //
+        // This represents financial net position from
+        // classified transactions, not raw bank balance.
+        //--------------------------------------------------
+
+        val savings =
+            income - expense
 
         //--------------------------------------------------
         // Dashboard
@@ -75,7 +159,7 @@ class DashboardUiMapper @Inject constructor(
 
                     totalExpense = expense,
 
-                    savings = totalBalance,
+                    savings = savings,
 
                     accounts = accountBalances
 
@@ -125,10 +209,10 @@ class DashboardUiMapper @Inject constructor(
                 transactions.mapNotNull {
                     it.accountId
                 } +
-                snapshots.mapNotNull {
-                    it.accountId
-                }
-            ).distinct()
+                    snapshots.mapNotNull {
+                        it.accountId
+                    }
+                ).distinct()
 
         val result =
             mutableListOf<AccountBalanceUiModel>()
@@ -173,7 +257,9 @@ class DashboardUiMapper @Inject constructor(
                     bankName = "Bank Account",
                     accountDisplayName =
                         accountLast4
-                            ?.let { "•••• $it" }
+                            ?.let {
+                                "•••• $it"
+                            }
                             ?: "Account",
                     balance = balance
                 )
@@ -183,19 +269,21 @@ class DashboardUiMapper @Inject constructor(
         //--------------------------------------------------
         // Legacy transactions that don't yet have
         // account identity.
-        //
-        // These cannot safely be attached to a specific
-        // bank account.
         //--------------------------------------------------
 
         val legacyTransactions =
-            transactionsByAccount[null].orEmpty()
+            transactionsByAccount[null]
+                .orEmpty()
 
         if (legacyTransactions.isNotEmpty()) {
 
             val legacyBalance =
                 legacyTransactions.sumOf {
-                    if (it.type == TransactionType.INCOME) {
+
+                    if (
+                        it.type ==
+                        TransactionType.INCOME
+                    ) {
                         it.amount
                     } else {
                         -it.amount
@@ -215,7 +303,22 @@ class DashboardUiMapper @Inject constructor(
     }
 
     //--------------------------------------------------
-    // Current balance for one account
+    // Current bank balance for one account.
+    //
+    // IMPORTANT:
+    // This intentionally uses actual bank movements.
+    //
+    // LENT and REIMBURSEMENT are NOT netted here.
+    //
+    // Example:
+    //
+    // Opening/current snapshot = ₹5,000
+    // LENT expense             = -₹1,000
+    // Reimbursement            = +₹800
+    //
+    // Bank balance             = ₹4,800
+    //
+    // That is the actual money in the account.
     //--------------------------------------------------
 
     private fun calculateCurrentBalance(
@@ -225,15 +328,16 @@ class DashboardUiMapper @Inject constructor(
 
         //--------------------------------------------------
         // No statement snapshot available.
-        //
-        // Fall back to transaction-based calculation.
         //--------------------------------------------------
 
         if (snapshot == null) {
 
             return transactions.sumOf {
 
-                if (it.type == TransactionType.INCOME) {
+                if (
+                    it.type ==
+                    TransactionType.INCOME
+                ) {
                     it.amount
                 } else {
                     -it.amount
@@ -250,11 +354,8 @@ class DashboardUiMapper @Inject constructor(
             snapshot.endingBalance ?: 0.0
 
         //--------------------------------------------------
-        // Only apply transactions AFTER the statement
+        // Only apply transactions after the statement
         // end date.
-        //
-        // This prevents transactions already included
-        // in the statement from being counted again.
         //--------------------------------------------------
 
         val statementEnd =
