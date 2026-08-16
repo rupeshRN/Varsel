@@ -8,5 +8,9 @@ data class StatementImportResult(
 
     val reconciliation: ReconciliationResult,
 
-    val transactions: List<Transaction>
+    val transactions: List<Transaction>,
+
+    val accountId: String? = null,
+
+    val accountLast4: String? = null
 )
