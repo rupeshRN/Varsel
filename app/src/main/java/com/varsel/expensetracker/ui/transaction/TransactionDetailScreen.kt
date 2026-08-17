@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -44,6 +46,13 @@ fun TransactionDetailScreen(
 
     val saveCompleted by
         viewModel.saveCompleted.collectAsStateWithLifecycle()
+
+    val selectedTransactionIds by
+        viewModel.selectedTransactionIds
+            .collectAsStateWithLifecycle()
+
+    val scrollState =
+        rememberScrollState()
 
     LaunchedEffect(transactionId) {
 
@@ -121,6 +130,7 @@ fun TransactionDetailScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .verticalScroll(scrollState)
                     .padding(24.dp),
 
             verticalArrangement =
@@ -199,10 +209,7 @@ fun TransactionDetailScreen(
                             state.reimbursementCandidates,
 
                         selectedTransactionIds =
-                            viewModel
-                                .selectedTransactionIds
-                                .collectAsStateWithLifecycle()
-                                .value,
+                            selectedTransactionIds,
 
                         isLinking =
                             state.isLinking,
@@ -240,6 +247,21 @@ fun TransactionDetailScreen(
 
                         type =
                             transaction.type.name
+                    )
+
+                    //--------------------------------------------------
+                    // Extra bottom space.
+                    //
+                    // Gives the user enough room to scroll the final
+                    // content above the fixed bottom action bar.
+                    //--------------------------------------------------
+
+                    androidx.compose.foundation.layout.Spacer(
+
+                        modifier =
+                            Modifier.padding(
+                                bottom = 24.dp
+                            )
                     )
                 }
             }
