@@ -43,4 +43,33 @@ interface TransactionDao {
 suspend fun findExistingFingerprints(
     fingerprints: List<String>
 ): List<String>
+
+/**
+     * Assign the same internal financial-event link
+     * to multiple transactions.
+     */
+    @Query(
+        """
+        UPDATE transactions
+        SET transactionLinkId = :transactionLinkId
+        WHERE id IN (:transactionIds)
+        """
+    )
+    suspend fun linkTransactions(
+        transactionIds: List<Long>,
+        transactionLinkId: String
+    )
+    /**
+     * Remove a transaction from its linked financial event.
+     */
+    @Query(
+        """
+        UPDATE transactions
+        SET transactionLinkId = NULL
+        WHERE id = :transactionId
+        """
+    )
+    suspend fun unlinkTransaction(
+        transactionId: Long
+    )
 }
