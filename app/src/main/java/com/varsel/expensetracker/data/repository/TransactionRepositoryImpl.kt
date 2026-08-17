@@ -89,6 +89,7 @@ fun TransactionEntity.toDomain() = Transaction(
     transactionFingerprint = transactionFingerprint,
     accountId = accountId,
     accountLast4 = accountLast4,
+    transactionLinkId = transactionLinkId,
     role = try {
         TransactionRole.valueOf(role)
     } catch (e: IllegalArgumentException) {
@@ -111,5 +112,6 @@ fun Transaction.toEntity() = TransactionEntity(
     transactionFingerprint = transactionFingerprint,
     accountId = accountId,
     accountLast4 = accountLast4,
+    transactionLinkId = transactionLinkId,
     role = role.name
 )
