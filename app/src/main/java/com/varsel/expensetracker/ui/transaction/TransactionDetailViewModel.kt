@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -38,15 +39,23 @@ class TransactionDetailViewModel @Inject constructor(
     val saveCompleted: StateFlow<Boolean> =
         _saveCompleted.asStateFlow()
 
-    /**
-     * IDs selected by the user for manual linking.
-     *
-     * These are UI selections only.
-     * Nothing is persisted until linkSelectedTransactions()
-     * is explicitly called.
-     */
-    private val selectedTransactionIds =
+    //--------------------------------------------------
+    // Current transaction ID
+    //--------------------------------------------------
+
+    private var currentTransactionId: Long? = null
+
+    //--------------------------------------------------
+    // Temporary reimbursement selections
+    //
+    // These are NOT persisted until the user confirms.
+    //--------------------------------------------------
+
+    private val _selectedTransactionIds =
         MutableStateFlow<Set<Long>>(emptySet())
+
+    val selectedTransactionIds: StateFlow<Set<Long>> =
+        _selectedTransactionIds.asStateFlow()
 
     //--------------------------------------------------
     // Load transaction
@@ -55,6 +64,8 @@ class TransactionDetailViewModel @Inject constructor(
     fun loadTransaction(
         transactionId: Long
     ) {
+
+        currentTransactionId = transactionId
 
         viewModelScope.launch {
 
@@ -101,21 +112,47 @@ class TransactionDetailViewModel @Inject constructor(
                 )
 
             //--------------------------------------------------
-            // Load relationship information
+            // Observe all transactions.
             //--------------------------------------------------
 
-            refreshLinkingData(
-                currentTransactionId = transactionId
+            observeTransactions(
+                transactionId
             )
         }
     }
 
     //--------------------------------------------------
-    // Refresh linking data
+    // Observe transactions
     //--------------------------------------------------
 
-    private suspend fun refreshLinkingData(
-        currentTransactionId: Long
+    private fun observeTransactions(
+        transactionId: Long
+    ) {
+
+        viewModelScope.launch {
+
+            transactionRepository
+                .getAllTransactions()
+                .collectLatest { allTransactions ->
+
+                    updateLinkingState(
+                        transactionId =
+                            transactionId,
+
+                        allTransactions =
+                            allTransactions
+                    )
+                }
+        }
+    }
+
+    //--------------------------------------------------
+    // Build linking-related UI state
+    //--------------------------------------------------
+
+    private fun updateLinkingState(
+        transactionId: Long,
+        allTransactions: List<Transaction>
     ) {
 
         val currentState =
@@ -123,19 +160,9 @@ class TransactionDetailViewModel @Inject constructor(
                 TransactionDetailUiState.Loaded
                 ?: return
 
-        val allTransactions =
-            transactionRepository
-                .getAllTransactions()
-                .let { flow ->
-
-                    kotlinx.coroutines.flow.first(
-                        flow
-                    )
-                }
-
         val currentTransaction =
             allTransactions.firstOrNull {
-                it.id == currentTransactionId
+                it.id == transactionId
             }
                 ?: currentState.transaction
 
@@ -150,32 +177,29 @@ class TransactionDetailViewModel @Inject constructor(
                     allTransactions.filter {
                         it.transactionLinkId == linkId
                     }
+
                 }
                 .orEmpty()
 
         //--------------------------------------------------
         // Reimbursement candidates
         //
-        // Only:
-        // - INCOME
-        // - REIMBURSEMENT
-        // - currently unlinked
-        // - not the current transaction
+        // Deliberately NO automatic matching.
         //--------------------------------------------------
 
         val reimbursementCandidates =
             allTransactions
-                .filter {
+                .filter { transaction ->
 
-                    it.id != currentTransactionId &&
+                    transaction.id != transactionId &&
 
-                    it.type ==
+                    transaction.type ==
                         TransactionType.INCOME &&
 
-                    it.role ==
+                    transaction.role ==
                         TransactionRole.REIMBURSEMENT &&
 
-                    it.transactionLinkId == null
+                    transaction.transactionLinkId == null
                 }
                 .sortedByDescending {
                     it.dateTimestamp
@@ -185,15 +209,23 @@ class TransactionDetailViewModel @Inject constructor(
         // Remove selections that are no longer available.
         //--------------------------------------------------
 
-        selectedTransactionIds.value =
-            selectedTransactionIds.value
+        val validSelectedIds =
+            _selectedTransactionIds.value
                 .filter { selectedId ->
 
-                    reimbursementCandidates.any {
-                        it.id == selectedId
+                    reimbursementCandidates.any { candidate ->
+
+                        candidate.id == selectedId
                     }
                 }
                 .toSet()
+
+        _selectedTransactionIds.value =
+            validSelectedIds
+
+        //--------------------------------------------------
+        // Preserve editable fields.
+        //--------------------------------------------------
 
         _uiState.value =
             currentState.copy(
@@ -317,29 +349,31 @@ class TransactionDetailViewModel @Inject constructor(
                 TransactionDetailUiState.Loaded
                 ?: return
 
-        if (
-            current.reimbursementCandidates.none {
+        val isCandidate =
+            current.reimbursementCandidates.any {
                 it.id == transactionId
             }
-        ) {
+
+        if (!isCandidate) {
             return
         }
 
         val currentSelection =
-            selectedTransactionIds.value
+            _selectedTransactionIds.value
 
-        selectedTransactionIds.value =
-            if (
-                transactionId in currentSelection
-            ) {
+        _selectedTransactionIds.value =
+            if (transactionId in currentSelection) {
+
                 currentSelection - transactionId
+
             } else {
+
                 currentSelection + transactionId
             }
     }
 
     //--------------------------------------------------
-    // Selection state
+    // Check selection
     //--------------------------------------------------
 
     fun isReimbursementSelected(
@@ -347,16 +381,20 @@ class TransactionDetailViewModel @Inject constructor(
     ): Boolean {
 
         return transactionId in
-            selectedTransactionIds.value
-    }
-
-    fun getSelectedReimbursementIds(): Set<Long> {
-
-        return selectedTransactionIds.value
+            _selectedTransactionIds.value
     }
 
     //--------------------------------------------------
-    // Manual link confirmation
+    // Selected transactions
+    //--------------------------------------------------
+
+    fun getSelectedReimbursementIds(): Set<Long> {
+
+        return _selectedTransactionIds.value
+    }
+
+    //--------------------------------------------------
+    // Link selected transactions
     //--------------------------------------------------
 
     fun linkSelectedTransactions() {
@@ -367,7 +405,7 @@ class TransactionDetailViewModel @Inject constructor(
                 ?: return
 
         val selectedIds =
-            selectedTransactionIds.value
+            _selectedTransactionIds.value
 
         if (selectedIds.isEmpty()) {
             return
@@ -381,11 +419,7 @@ class TransactionDetailViewModel @Inject constructor(
                 )
 
             //--------------------------------------------------
-            // Existing link?
-            //
-            // If the current transaction already belongs to
-            // a link group, reuse that group's ID.
-            //
+            // Reuse an existing link ID if available.
             // Otherwise create a new internal UUID.
             //--------------------------------------------------
 
@@ -398,17 +432,22 @@ class TransactionDetailViewModel @Inject constructor(
             //--------------------------------------------------
 
             val transactionIds =
-                buildList {
+                mutableListOf<Long>()
 
-                    add(
-                        current.transaction.id
-                    )
+            transactionIds.add(
+                current.transaction.id
+            )
 
-                    addAll(
-                        selectedIds
-                    )
-                }
-                    .distinct()
+            transactionIds.addAll(
+                selectedIds
+            )
+
+            //--------------------------------------------------
+            // Remove duplicates.
+            //--------------------------------------------------
+
+            val distinctTransactionIds =
+                transactionIds.distinct()
 
             //--------------------------------------------------
             // Persist relationship.
@@ -417,27 +456,22 @@ class TransactionDetailViewModel @Inject constructor(
             transactionRepository.linkTransactions(
 
                 transactionIds =
-                    transactionIds,
+                    distinctTransactionIds,
 
                 transactionLinkId =
                     transactionLinkId
             )
 
             //--------------------------------------------------
-            // Clear temporary selection.
+            // Clear temporary selections.
             //--------------------------------------------------
 
-            selectedTransactionIds.value =
+            _selectedTransactionIds.value =
                 emptySet()
 
             //--------------------------------------------------
-            // Refresh relationship information.
+            // Room Flow will refresh the UI.
             //--------------------------------------------------
-
-            refreshLinkingData(
-                currentTransactionId =
-                    current.transaction.id
-            )
         }
     }
 
@@ -466,17 +500,17 @@ class TransactionDetailViewModel @Inject constructor(
                 )
 
             transactionRepository.unlinkTransaction(
+
                 transactionId =
                     current.transaction.id
             )
 
-            selectedTransactionIds.value =
+            _selectedTransactionIds.value =
                 emptySet()
 
-            refreshLinkingData(
-                currentTransactionId =
-                    current.transaction.id
-            )
+            //--------------------------------------------------
+            // Room Flow refreshes the UI.
+            //--------------------------------------------------
         }
     }
 
@@ -514,8 +548,7 @@ class TransactionDetailViewModel @Inject constructor(
             //--------------------------------------------------
             // Learn user correction.
             //
-            // Role is transaction-specific and therefore
-            // intentionally NOT stored in the learning rule.
+            // Role remains transaction-specific.
             //--------------------------------------------------
 
             if (

@@ -18,11 +18,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.varsel.expensetracker.domain.model.TransactionRole
 import com.varsel.expensetracker.ui.transaction.components.BottomActionBar
 import com.varsel.expensetracker.ui.transaction.components.CategorySection
 import com.varsel.expensetracker.ui.transaction.components.DescriptionSection
 import com.varsel.expensetracker.ui.transaction.components.TransactionInfoSection
+import com.varsel.expensetracker.ui.transaction.components.TransactionLinkSection
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -144,6 +144,10 @@ fun TransactionDetailScreen(
                     val transaction =
                         state.transaction
 
+                    //--------------------------------------------------
+                    // Description
+                    //--------------------------------------------------
+
                     DescriptionSection(
 
                         description =
@@ -153,6 +157,10 @@ fun TransactionDetailScreen(
                             viewModel::updateDescription
                     )
 
+                    //--------------------------------------------------
+                    // Category
+                    //--------------------------------------------------
+
                     CategorySection(
 
                         selectedCategory =
@@ -161,6 +169,10 @@ fun TransactionDetailScreen(
                         onCategorySelected =
                             viewModel::updateCategory
                     )
+
+                    //--------------------------------------------------
+                    // Role
+                    //--------------------------------------------------
 
                     TransactionRoleSection(
 
@@ -173,6 +185,41 @@ fun TransactionDetailScreen(
                         onRoleSelected =
                             viewModel::updateRole
                     )
+
+                    //--------------------------------------------------
+                    // Transaction linking
+                    //--------------------------------------------------
+
+                    TransactionLinkSection(
+
+                        linkedTransactions =
+                            state.linkedTransactions,
+
+                        reimbursementCandidates =
+                            state.reimbursementCandidates,
+
+                        selectedTransactionIds =
+                            viewModel
+                                .selectedTransactionIds
+                                .collectAsStateWithLifecycle()
+                                .value,
+
+                        isLinking =
+                            state.isLinking,
+
+                        onToggleCandidate =
+                            viewModel::toggleReimbursementSelection,
+
+                        onLinkSelected =
+                            viewModel::linkSelectedTransactions,
+
+                        onUnlink =
+                            viewModel::unlinkCurrentTransaction
+                    )
+
+                    //--------------------------------------------------
+                    // Transaction information
+                    //--------------------------------------------------
 
                     TransactionInfoSection(
 
