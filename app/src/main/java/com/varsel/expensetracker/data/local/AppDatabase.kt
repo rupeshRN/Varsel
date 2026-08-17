@@ -24,7 +24,7 @@ import javax.inject.Provider
         CustomRuleEntity::class,
         StatementSnapshotEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -92,6 +92,26 @@ abstract class AppDatabase : RoomDatabase() {
                 """
                 ALTER TABLE transactions
                 ADD COLUMN role TEXT NOT NULL DEFAULT 'NORMAL'
+                """.trimIndent()
+            )
+        }
+    }
+
+        /**
+     * Adds support for manually linking related transactions.
+     *
+     * The value is nullable because existing transactions are
+     * not linked automatically.
+     */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+
+        override fun migrate(
+            database: SupportSQLiteDatabase
+        ) {
+            database.execSQL(
+                """
+                ALTER TABLE transactions
+                ADD COLUMN transactionLinkId TEXT
                 """.trimIndent()
             )
         }
