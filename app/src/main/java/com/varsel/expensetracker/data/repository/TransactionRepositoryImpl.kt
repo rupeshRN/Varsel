@@ -72,6 +72,28 @@ class TransactionRepositoryImpl @Inject constructor(
             .findExistingFingerprints(fingerprints)
             .toSet()
     }
+
+    override suspend fun linkTransactions(
+    transactionIds: List<Long>,
+    transactionLinkId: String
+) {
+    if (transactionIds.isEmpty()) {
+        return
+    }
+
+    transactionDao.linkTransactions(
+        transactionIds = transactionIds,
+        transactionLinkId = transactionLinkId
+    )
+}
+
+override suspend fun unlinkTransaction(
+    transactionId: Long
+) {
+    transactionDao.unlinkTransaction(
+        transactionId
+    )
+}
 }
 
 fun TransactionEntity.toDomain() = Transaction(
