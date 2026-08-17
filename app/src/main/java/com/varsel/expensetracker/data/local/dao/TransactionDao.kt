@@ -72,4 +72,40 @@ suspend fun findExistingFingerprints(
     suspend fun unlinkTransaction(
         transactionId: Long
     )
+
+        /**
+     * Return all transactions belonging to a link group.
+     */
+    @Query(
+        """
+        SELECT *
+        FROM transactions
+        WHERE transactionLinkId = :transactionLinkId
+        ORDER BY dateTimestamp ASC
+        """
+    )
+    suspend fun getLinkedTransactions(
+        transactionLinkId: String
+    ): List<TransactionEntity>
+    
+    /**
+     * Return reimbursement transactions that have not
+     * already been manually linked.
+     *
+     * The current transaction is excluded.
+     */
+    @Query(
+        """
+        SELECT *
+        FROM transactions
+        WHERE type = 'INCOME'
+        AND role = 'REIMBURSEMENT'
+        AND transactionLinkId IS NULL
+        AND id != :currentTransactionId
+        ORDER BY dateTimestamp DESC
+        """
+    )
+    suspend fun getUnlinkedReimbursements(
+        currentTransactionId: Long
+    ): List<TransactionEntity>
 }
