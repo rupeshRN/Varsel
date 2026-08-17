@@ -36,5 +36,19 @@ data class TransactionEntity(
      */
     val accountLast4: String? = null,
 
+    /**
+     * Internal relationship/group identifier.
+     *
+     * Multiple related transactions can share this value.
+     *
+     * Example:
+     * Lent ₹3,000
+     * Reimbursement ₹1,000
+     * Reimbursement ₹1,000
+     *
+     * All three can have the same transactionLinkId.
+     */
+    val transactionLinkId: String? = null,
+
     val role: String = TransactionRole.NORMAL.name
 )
