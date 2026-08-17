@@ -3,13 +3,16 @@ package com.varsel.expensetracker.ui.transaction
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.varsel.expensetracker.data.repository.CustomRuleRepository
+import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionRole
+import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -35,6 +38,20 @@ class TransactionDetailViewModel @Inject constructor(
     val saveCompleted: StateFlow<Boolean> =
         _saveCompleted.asStateFlow()
 
+    /**
+     * IDs selected by the user for manual linking.
+     *
+     * These are UI selections only.
+     * Nothing is persisted until linkSelectedTransactions()
+     * is explicitly called.
+     */
+    private val selectedTransactionIds =
+        MutableStateFlow<Set<Long>>(emptySet())
+
+    //--------------------------------------------------
+    // Load transaction
+    //--------------------------------------------------
+
     fun loadTransaction(
         transactionId: Long
     ) {
@@ -46,36 +63,157 @@ class TransactionDetailViewModel @Inject constructor(
                     transactionId
                 )
 
-            _uiState.value =
+            if (transaction == null) {
 
-                if (transaction != null) {
-
-                    TransactionDetailUiState.Loaded(
-
-                        transaction = transaction,
-
-                        editableDescription =
-                            transaction.description,
-
-                        selectedCategory =
-                            transaction.category,
-
-                        selectedRole =
-                            transaction.role,
-
-                        hasChanges = false,
-
-                        isSaving = false
-                    )
-
-                } else {
-
+                _uiState.value =
                     TransactionDetailUiState.Error(
                         "Transaction not found."
                     )
-                }
+
+                return@launch
+            }
+
+            _uiState.value =
+                TransactionDetailUiState.Loaded(
+
+                    transaction = transaction,
+
+                    editableDescription =
+                        transaction.description,
+
+                    selectedCategory =
+                        transaction.category,
+
+                    selectedRole =
+                        transaction.role,
+
+                    hasChanges = false,
+
+                    isSaving = false,
+
+                    linkedTransactions =
+                        emptyList(),
+
+                    reimbursementCandidates =
+                        emptyList(),
+
+                    isLinking = false
+                )
+
+            //--------------------------------------------------
+            // Load relationship information
+            //--------------------------------------------------
+
+            refreshLinkingData(
+                currentTransactionId = transactionId
+            )
         }
     }
+
+    //--------------------------------------------------
+    // Refresh linking data
+    //--------------------------------------------------
+
+    private suspend fun refreshLinkingData(
+        currentTransactionId: Long
+    ) {
+
+        val currentState =
+            _uiState.value as?
+                TransactionDetailUiState.Loaded
+                ?: return
+
+        val allTransactions =
+            transactionRepository
+                .getAllTransactions()
+                .let { flow ->
+
+                    kotlinx.coroutines.flow.first(
+                        flow
+                    )
+                }
+
+        val currentTransaction =
+            allTransactions.firstOrNull {
+                it.id == currentTransactionId
+            }
+                ?: currentState.transaction
+
+        //--------------------------------------------------
+        // Existing link group
+        //--------------------------------------------------
+
+        val linkedTransactions =
+            currentTransaction.transactionLinkId
+                ?.let { linkId ->
+
+                    allTransactions.filter {
+                        it.transactionLinkId == linkId
+                    }
+                }
+                .orEmpty()
+
+        //--------------------------------------------------
+        // Reimbursement candidates
+        //
+        // Only:
+        // - INCOME
+        // - REIMBURSEMENT
+        // - currently unlinked
+        // - not the current transaction
+        //--------------------------------------------------
+
+        val reimbursementCandidates =
+            allTransactions
+                .filter {
+
+                    it.id != currentTransactionId &&
+
+                    it.type ==
+                        TransactionType.INCOME &&
+
+                    it.role ==
+                        TransactionRole.REIMBURSEMENT &&
+
+                    it.transactionLinkId == null
+                }
+                .sortedByDescending {
+                    it.dateTimestamp
+                }
+
+        //--------------------------------------------------
+        // Remove selections that are no longer available.
+        //--------------------------------------------------
+
+        selectedTransactionIds.value =
+            selectedTransactionIds.value
+                .filter { selectedId ->
+
+                    reimbursementCandidates.any {
+                        it.id == selectedId
+                    }
+                }
+                .toSet()
+
+        _uiState.value =
+            currentState.copy(
+
+                transaction =
+                    currentTransaction,
+
+                linkedTransactions =
+                    linkedTransactions,
+
+                reimbursementCandidates =
+                    reimbursementCandidates,
+
+                isLinking = false
+            )
+    }
+
+    //--------------------------------------------------
+    // Description
+    //--------------------------------------------------
 
     fun updateDescription(
         description: String
@@ -104,6 +242,10 @@ class TransactionDetailViewModel @Inject constructor(
             )
     }
 
+    //--------------------------------------------------
+    // Category
+    //--------------------------------------------------
+
     fun updateCategory(
         category: String
     ) {
@@ -131,6 +273,10 @@ class TransactionDetailViewModel @Inject constructor(
             )
     }
 
+    //--------------------------------------------------
+    // Transaction role
+    //--------------------------------------------------
+
     fun updateRole(
         role: TransactionRole
     ) {
@@ -157,6 +303,186 @@ class TransactionDetailViewModel @Inject constructor(
                         current.transaction.category
             )
     }
+
+    //--------------------------------------------------
+    // Toggle reimbursement selection
+    //--------------------------------------------------
+
+    fun toggleReimbursementSelection(
+        transactionId: Long
+    ) {
+
+        val current =
+            _uiState.value as?
+                TransactionDetailUiState.Loaded
+                ?: return
+
+        if (
+            current.reimbursementCandidates.none {
+                it.id == transactionId
+            }
+        ) {
+            return
+        }
+
+        val currentSelection =
+            selectedTransactionIds.value
+
+        selectedTransactionIds.value =
+            if (
+                transactionId in currentSelection
+            ) {
+                currentSelection - transactionId
+            } else {
+                currentSelection + transactionId
+            }
+    }
+
+    //--------------------------------------------------
+    // Selection state
+    //--------------------------------------------------
+
+    fun isReimbursementSelected(
+        transactionId: Long
+    ): Boolean {
+
+        return transactionId in
+            selectedTransactionIds.value
+    }
+
+    fun getSelectedReimbursementIds(): Set<Long> {
+
+        return selectedTransactionIds.value
+    }
+
+    //--------------------------------------------------
+    // Manual link confirmation
+    //--------------------------------------------------
+
+    fun linkSelectedTransactions() {
+
+        val current =
+            _uiState.value as?
+                TransactionDetailUiState.Loaded
+                ?: return
+
+        val selectedIds =
+            selectedTransactionIds.value
+
+        if (selectedIds.isEmpty()) {
+            return
+        }
+
+        viewModelScope.launch {
+
+            _uiState.value =
+                current.copy(
+                    isLinking = true
+                )
+
+            //--------------------------------------------------
+            // Existing link?
+            //
+            // If the current transaction already belongs to
+            // a link group, reuse that group's ID.
+            //
+            // Otherwise create a new internal UUID.
+            //--------------------------------------------------
+
+            val transactionLinkId =
+                current.transaction.transactionLinkId
+                    ?: UUID.randomUUID().toString()
+
+            //--------------------------------------------------
+            // Current transaction + selected reimbursements
+            //--------------------------------------------------
+
+            val transactionIds =
+                buildList {
+
+                    add(
+                        current.transaction.id
+                    )
+
+                    addAll(
+                        selectedIds
+                    )
+                }
+                    .distinct()
+
+            //--------------------------------------------------
+            // Persist relationship.
+            //--------------------------------------------------
+
+            transactionRepository.linkTransactions(
+
+                transactionIds =
+                    transactionIds,
+
+                transactionLinkId =
+                    transactionLinkId
+            )
+
+            //--------------------------------------------------
+            // Clear temporary selection.
+            //--------------------------------------------------
+
+            selectedTransactionIds.value =
+                emptySet()
+
+            //--------------------------------------------------
+            // Refresh relationship information.
+            //--------------------------------------------------
+
+            refreshLinkingData(
+                currentTransactionId =
+                    current.transaction.id
+            )
+        }
+    }
+
+    //--------------------------------------------------
+    // Unlink current transaction
+    //--------------------------------------------------
+
+    fun unlinkCurrentTransaction() {
+
+        val current =
+            _uiState.value as?
+                TransactionDetailUiState.Loaded
+                ?: return
+
+        if (
+            current.transaction.transactionLinkId == null
+        ) {
+            return
+        }
+
+        viewModelScope.launch {
+
+            _uiState.value =
+                current.copy(
+                    isLinking = true
+                )
+
+            transactionRepository.unlinkTransaction(
+                transactionId =
+                    current.transaction.id
+            )
+
+            selectedTransactionIds.value =
+                emptySet()
+
+            refreshLinkingData(
+                currentTransactionId =
+                    current.transaction.id
+            )
+        }
+    }
+
+    //--------------------------------------------------
+    // Save transaction changes
+    //--------------------------------------------------
 
     fun saveChanges() {
 
@@ -188,8 +514,8 @@ class TransactionDetailViewModel @Inject constructor(
             //--------------------------------------------------
             // Learn user correction.
             //
-            // Role is intentionally NOT stored in the
-            // learning rule. Role is transaction-specific.
+            // Role is transaction-specific and therefore
+            // intentionally NOT stored in the learning rule.
             //--------------------------------------------------
 
             if (
@@ -217,18 +543,14 @@ class TransactionDetailViewModel @Inject constructor(
 
             //--------------------------------------------------
             // Persist transaction.
-            //
-            // transactionFingerprint, accountId,
-            // accountLast4 and all other immutable
-            // transaction identity fields are preserved
-            // by transaction.copy().
             //--------------------------------------------------
 
             transactionRepository.updateTransaction(
                 updatedTransaction
             )
 
-            _saveCompleted.value = true
+            _saveCompleted.value =
+                true
 
             _uiState.value =
                 current.copy(
@@ -246,8 +568,13 @@ class TransactionDetailViewModel @Inject constructor(
         }
     }
 
+    //--------------------------------------------------
+    // Save completion
+    //--------------------------------------------------
+
     fun consumeSaveCompleted() {
 
-        _saveCompleted.value = false
+        _saveCompleted.value =
+            false
     }
 }
