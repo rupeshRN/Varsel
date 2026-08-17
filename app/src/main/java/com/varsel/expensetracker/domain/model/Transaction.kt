@@ -26,5 +26,16 @@ data class Transaction(
      */
     val accountLast4: String? = null,
 
+    /**
+     * Logical financial-event link shared by related transactions.
+     *
+     * Examples:
+     * - Lent expense + one or more reimbursements
+     * - Transfer out + transfer in between own accounts
+     *
+     * This value is internal and is never entered by the user.
+     */
+    val transactionLinkId: String? = null,
+    
     val role: TransactionRole = TransactionRole.NORMAL
 )
