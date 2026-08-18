@@ -26,37 +26,43 @@ sealed interface TransactionDetailUiState {
         // Manual transaction linking
         //--------------------------------------------------
 
+        /**
+         * All transactions currently belonging to the same
+         * financial event.
+         */
         val linkedTransactions: List<Transaction> =
             emptyList(),
 
-        val reimbursementCandidates: List<Transaction> =
+        /**
+         * Transactions that the user can manually select
+         * and add to the current financial event.
+         *
+         * When the current transaction is an EXPENSE:
+         *     unlinked REIMBURSEMENT incomes are shown.
+         *
+         * When the current transaction is a REIMBURSEMENT:
+         *     unlinked expenses are shown.
+         *
+         * No automatic linking is performed.
+         */
+        val linkableTransactions: List<Transaction> =
             emptyList(),
 
+        /**
+         * True while a link/unlink operation is being
+         * persisted.
+         */
         val isLinking: Boolean = false,
 
         //--------------------------------------------------
         // Optional report group
         //--------------------------------------------------
 
-        /**
-         * Existing report-group metadata for this
-         * transaction link, if one exists.
-         */
-        val transactionLinkGroup: TransactionLinkGroup? =
-            null,
+        val transactionLinkGroup:
+            TransactionLinkGroup? = null,
 
-        /**
-         * True when the UI should offer the user the
-         * option to create a report group.
-         *
-         * This is intentionally NOT automatically true
-         * for every transaction link.
-         */
         val showCreateGroupPrompt: Boolean = false,
 
-        /**
-         * True while group metadata is being persisted.
-         */
         val isSavingGroup: Boolean = false
 
     ) : TransactionDetailUiState
