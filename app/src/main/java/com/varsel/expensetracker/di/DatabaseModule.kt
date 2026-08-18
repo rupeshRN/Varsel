@@ -17,6 +17,7 @@ import java.security.SecureRandom
 import javax.inject.Provider
 import javax.inject.Singleton
 import com.varsel.expensetracker.data.local.dao.StatementSnapshotDao
+import com.varsel.expensetracker.data.local.dao.TransactionLinkGroupDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -60,7 +61,8 @@ return Room.databaseBuilder(
         AppDatabase.MIGRATION_3_4,
         AppDatabase.MIGRATION_4_5,
         AppDatabase.MIGRATION_5_6,
-        AppDatabase.MIGRATION_6_7
+        AppDatabase.MIGRATION_6_7,
+        AppDatabase.MIGRATION_7_8
     )
     .addCallback(
         AppDatabase.SeedCallback(categoryDaoProvider)
@@ -80,4 +82,10 @@ return Room.databaseBuilder(
 
     @Provides
 fun provideStatementSnapshotDao(db: AppDatabase): StatementSnapshotDao = db.statementSnapshotDao()
+
+@Provides
+fun provideTransactionLinkGroupDao(
+    db: AppDatabase
+): TransactionLinkGroupDao =
+    db.transactionLinkGroupDao()
 }
