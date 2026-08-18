@@ -53,6 +53,21 @@ fun TransactionLinkSection(
 
     onDismissCreateGroupPrompt: () -> Unit,
 
+    transactionLinkGroup =
+    state.transactionLinkGroup,
+
+showCreateGroupPrompt =
+    state.showCreateGroupPrompt,
+
+isSavingGroup =
+    state.isSavingGroup,
+
+onDismissCreateGroupPrompt =
+    viewModel::dismissCreateGroupPrompt,
+
+onCreateReportGroup =
+    viewModel::createReportGroup,
+
     onCreateReportGroup: (
         groupName: String,
         category: String
