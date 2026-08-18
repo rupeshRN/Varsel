@@ -12,43 +12,63 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionLinkGroup
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.ui.unit.dp
 
 @Composable
 fun TransactionLinkSection(
-    linkedTransactions: List<Transaction>,
-    reimbursementCandidates: List<Transaction>,
-    selectedTransactionIds: Set<Long>,
-    isLinking: Boolean,
 
-    // Optional report group
-    transactionLinkGroup: TransactionLinkGroup?,
-    showCreateGroupPrompt: Boolean,
-    isSavingGroup: Boolean,
+    linkedTransactions:
+        List<Transaction>,
 
-    // Existing actions
-    onToggleCandidate: (Long) -> Unit,
-    onLinkSelected: () -> Unit,
-    onUnlink: () -> Unit,
+    linkableTransactions:
+        List<Transaction>,
 
-    // Report group actions
-    onDismissCreateGroupPrompt: () -> Unit,
-    onCreateReportGroup: (groupName: String, category: String) -> Unit
+    selectedTransactionIds:
+        Set<Long>,
+
+    isLinking:
+        Boolean,
+
+    transactionLinkGroup:
+        TransactionLinkGroup?,
+
+    showCreateGroupPrompt:
+        Boolean,
+
+    isSavingGroup:
+        Boolean,
+
+    onToggleCandidate:
+        (Long) -> Unit,
+
+    onLinkSelected:
+        () -> Unit,
+
+    onUnlink:
+        () -> Unit,
+
+    onDismissCreateGroupPrompt:
+        () -> Unit,
+
+    onCreateReportGroup:
+        (
+            groupName: String,
+            category: String
+        ) -> Unit
 ) {
 
     Column(
@@ -58,8 +78,11 @@ fun TransactionLinkSection(
 
         verticalArrangement =
             Arrangement.spacedBy(12.dp)
-
     ) {
+
+        //--------------------------------------------------
+        // Section title
+        //--------------------------------------------------
 
         Text(
 
@@ -74,7 +97,9 @@ fun TransactionLinkSection(
         // Existing linked transactions
         //--------------------------------------------------
 
-        if (linkedTransactions.isNotEmpty()) {
+        if (
+            linkedTransactions.isNotEmpty()
+        ) {
 
             Text(
 
@@ -88,7 +113,8 @@ fun TransactionLinkSection(
             linkedTransactions.forEach { transaction ->
 
                 LinkedTransactionRow(
-                    transaction = transaction
+                    transaction =
+                        transaction
                 )
             }
 
@@ -96,46 +122,6 @@ fun TransactionLinkSection(
                 modifier =
                     Modifier.height(4.dp)
             )
-
-            //--------------------------------------------------
-            // Existing report group
-            //--------------------------------------------------
-
-            if (transactionLinkGroup != null) {
-
-                ReportGroupSummary(
-                    group =
-                        transactionLinkGroup
-                )
-            }
-
-            //--------------------------------------------------
-            // Create group button
-            //
-            // This is only shown when the ViewModel determines
-            // that a group is applicable.
-            //--------------------------------------------------
-
-            if (
-                showCreateGroupPrompt &&
-                transactionLinkGroup == null
-            ) {
-
-                ReportGroupPrompt(
-                    onCreateGroup =
-                        onCreateReportGroup,
-
-                    onDismiss =
-                        onDismissCreateGroupPrompt,
-
-                    isSaving =
-                        isSavingGroup
-                )
-            }
-
-            //--------------------------------------------------
-            // Unlink
-            //--------------------------------------------------
 
             OutlinedButton(
 
@@ -147,7 +133,6 @@ fun TransactionLinkSection(
 
                 modifier =
                     Modifier.fillMaxWidth()
-
             ) {
 
                 Text(
@@ -157,11 +142,11 @@ fun TransactionLinkSection(
         }
 
         //--------------------------------------------------
-        // Available reimbursement candidates
+        // Available transactions
         //--------------------------------------------------
 
         if (
-            reimbursementCandidates.isNotEmpty()
+            linkableTransactions.isNotEmpty()
         ) {
 
             Spacer(
@@ -172,7 +157,7 @@ fun TransactionLinkSection(
             Text(
 
                 text =
-                    "Possible Reimbursements",
+                    "Possible Transactions to Link",
 
                 style =
                     MaterialTheme.typography.titleSmall
@@ -181,17 +166,22 @@ fun TransactionLinkSection(
             Text(
 
                 text =
-                    "Select the reimbursement transactions " +
-                    "that belong to this expense.",
+                    "Select the transactions that " +
+                    "belong to this financial event.",
 
                 style =
                     MaterialTheme.typography.bodySmall,
 
                 color =
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
             )
 
-            reimbursementCandidates.forEach { transaction ->
+            //--------------------------------------------------
+            // Candidate selection
+            //--------------------------------------------------
+
+            linkableTransactions.forEach { transaction ->
 
                 val selected =
                     transaction.id in
@@ -231,7 +221,7 @@ fun TransactionLinkSection(
             ) {
 
                 val selectedAmount =
-                    reimbursementCandidates
+                    linkableTransactions
                         .filter {
                             it.id in
                                 selectedTransactionIds
@@ -243,10 +233,11 @@ fun TransactionLinkSection(
                 Text(
 
                     text =
-                        "Selected reimbursement: " +
-                        "₹%,.2f".format(
-                            selectedAmount
-                        ),
+                        "Selected total: " +
+                        "₹%,.2f"
+                            .format(
+                                selectedAmount
+                            ),
 
                     style =
                         MaterialTheme.typography.bodyMedium,
@@ -255,6 +246,10 @@ fun TransactionLinkSection(
                         MaterialTheme.colorScheme.primary
                 )
 
+                //--------------------------------------------------
+                // Link button
+                //--------------------------------------------------
+
                 Button(
 
                     onClick =
@@ -262,18 +257,21 @@ fun TransactionLinkSection(
 
                     enabled =
                         !isLinking &&
-                        selectedTransactionIds.isNotEmpty(),
+                        selectedTransactionIds
+                            .isNotEmpty(),
 
                     modifier =
                         Modifier.fillMaxWidth()
-
                 ) {
 
                     Text(
 
                         if (isLinking) {
+
                             "Linking..."
+
                         } else {
+
                             "Link Selected Transactions"
                         }
                     )
@@ -282,62 +280,91 @@ fun TransactionLinkSection(
         }
 
         //--------------------------------------------------
-        // No candidates
+        // No linkable transactions
         //--------------------------------------------------
 
         if (
-            reimbursementCandidates.isEmpty() &&
+            linkableTransactions.isEmpty() &&
             linkedTransactions.isEmpty()
         ) {
 
             Text(
 
                 text =
-                    "No reimbursement transactions " +
-                    "available for linking.",
+                    "No transactions available " +
+                    "for linking.",
 
                 style =
                     MaterialTheme.typography.bodySmall,
 
                 color =
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
+            )
+        }
+
+        //--------------------------------------------------
+        // Existing report group
+        //--------------------------------------------------
+
+        if (
+            transactionLinkGroup != null
+        ) {
+
+            ReportGroupCard(
+
+                group =
+                    transactionLinkGroup
+            )
+        }
+
+        //--------------------------------------------------
+        // Create report group dialog
+        //--------------------------------------------------
+
+        if (
+            showCreateGroupPrompt
+        ) {
+
+            CreateReportGroupDialog(
+
+                isSaving =
+                    isSavingGroup,
+
+                onDismiss =
+                    onDismissCreateGroupPrompt,
+
+                onCreate =
+                    onCreateReportGroup
             )
         }
     }
 }
 
-//--------------------------------------------------
-// Report group summary
-//--------------------------------------------------
-
 @Composable
-private fun ReportGroupSummary(
-    group: TransactionLinkGroup
+private fun CandidateLabel(
+    transaction: Transaction
 ) {
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-    ) {
-
-        Text(
-
-            text =
-                "Report Group",
-
-            style =
-                MaterialTheme.typography.titleSmall,
-
-            color =
-                MaterialTheme.colorScheme.primary
+    val date =
+        SimpleDateFormat(
+            "dd MMM yyyy",
+            Locale.ENGLISH
+        ).format(
+            Date(
+                transaction.dateTimestamp
+            )
         )
 
+    Column {
+
         Text(
 
             text =
-                group.groupName,
+                "₹%,.2f"
+                    .format(
+                        transaction.amount
+                    ),
 
             style =
                 MaterialTheme.typography.bodyMedium
@@ -346,33 +373,155 @@ private fun ReportGroupSummary(
         Text(
 
             text =
-                "Category: ${group.category}",
+                "${transaction.description} • $date",
 
             style =
                 MaterialTheme.typography.bodySmall,
 
             color =
-                MaterialTheme.colorScheme.onSurfaceVariant
+                MaterialTheme.colorScheme
+                    .onSurfaceVariant
         )
     }
 }
 
-//--------------------------------------------------
-// Report group creation dialog
-//--------------------------------------------------
+@Composable
+private fun LinkedTransactionRow(
+    transaction: Transaction
+) {
+
+    val date =
+        SimpleDateFormat(
+            "dd MMM yyyy",
+            Locale.ENGLISH
+        ).format(
+            Date(
+                transaction.dateTimestamp
+            )
+        )
+
+    Row(
+
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    vertical = 4.dp
+                ),
+
+        horizontalArrangement =
+            Arrangement.SpaceBetween
+    ) {
+
+        Column(
+
+            modifier =
+                Modifier.weight(1f)
+        ) {
+
+            Text(
+
+                text =
+                    transaction.description,
+
+                style =
+                    MaterialTheme.typography.bodyMedium
+            )
+
+            Text(
+
+                text =
+                    date,
+
+                style =
+                    MaterialTheme.typography.bodySmall,
+
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
+            )
+        }
+
+        Text(
+
+            text =
+                "₹%,.2f"
+                    .format(
+                        transaction.amount
+                    ),
+
+            style =
+                MaterialTheme.typography.bodyMedium
+        )
+    }
+}
 
 @Composable
-private fun ReportGroupPrompt(
+private fun ReportGroupCard(
+    group: TransactionLinkGroup
+) {
 
-    onCreateGroup: (
-        groupName: String,
-        category: String
-    ) -> Unit,
+    Column(
 
-    onDismiss: () -> Unit,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = 4.dp
+                )
+    ) {
 
-    isSaving: Boolean
+        Text(
 
+            text =
+                "Report Group",
+
+            style =
+                MaterialTheme.typography.titleSmall
+        )
+
+        Text(
+
+            text =
+                group.groupName,
+
+            style =
+                MaterialTheme.typography.bodyMedium,
+
+            fontWeight =
+                androidx.compose.ui.text.font
+                    .FontWeight.SemiBold
+        )
+
+        Text(
+
+            text =
+                group.category,
+
+            style =
+                MaterialTheme.typography.bodySmall,
+
+            color =
+                MaterialTheme.colorScheme
+                    .onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun CreateReportGroupDialog(
+
+    isSaving:
+        Boolean,
+
+    onDismiss:
+        () -> Unit,
+
+    onCreate:
+        (
+            groupName: String,
+            category: String
+        ) -> Unit
 ) {
 
     var groupName by
@@ -404,6 +553,7 @@ private fun ReportGroupPrompt(
         text = {
 
             Column(
+
                 verticalArrangement =
                     Arrangement.spacedBy(12.dp)
             ) {
@@ -412,14 +562,15 @@ private fun ReportGroupPrompt(
 
                     text =
                         "These transactions contain " +
-                        "multiple expenses. You can group " +
-                        "them for clearer reporting.",
+                        "multiple expenses. Give this " +
+                        "financial event a name and category " +
+                        "for reporting.",
 
                     style =
                         MaterialTheme.typography.bodyMedium
                 )
 
-                OutlinedTextField(
+                TextField(
 
                     value =
                         groupName,
@@ -441,7 +592,7 @@ private fun ReportGroupPrompt(
                         Modifier.fillMaxWidth()
                 )
 
-                OutlinedTextField(
+                TextField(
 
                     value =
                         category,
@@ -451,13 +602,7 @@ private fun ReportGroupPrompt(
                     },
 
                     label = {
-                        Text("Category")
-                    },
-
-                    placeholder = {
-                        Text(
-                            "Example: Travel"
-                        )
+                        Text("Report category")
                     },
 
                     singleLine = true,
@@ -477,7 +622,7 @@ private fun ReportGroupPrompt(
 
                 onClick = {
 
-                    onCreateGroup(
+                    onCreate(
                         groupName,
                         category
                     )
@@ -487,13 +632,16 @@ private fun ReportGroupPrompt(
                     !isSaving &&
                     groupName.isNotBlank() &&
                     category.isNotBlank()
-
             ) {
 
                 Text(
+
                     if (isSaving) {
+
                         "Saving..."
+
                     } else {
+
                         "Create"
                     }
                 )
@@ -509,128 +657,10 @@ private fun ReportGroupPrompt(
 
                 enabled =
                     !isSaving
-
             ) {
 
-                Text("Not now")
+                Text("Later")
             }
         }
     )
-}
-
-//--------------------------------------------------
-// Candidate label
-//--------------------------------------------------
-
-@Composable
-private fun CandidateLabel(
-    transaction: Transaction
-) {
-
-    val date =
-        SimpleDateFormat(
-            "dd MMM yyyy",
-            Locale.ENGLISH
-        ).format(
-            Date(
-                transaction.dateTimestamp
-            )
-        )
-
-    Column {
-
-        Text(
-
-            text =
-                "₹%,.2f".format(
-                    transaction.amount
-                ),
-
-            style =
-                MaterialTheme.typography.bodyMedium
-        )
-
-        Text(
-
-            text =
-                "${transaction.description} • $date",
-
-            style =
-                MaterialTheme.typography.bodySmall,
-
-            color =
-                MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-//--------------------------------------------------
-// Linked transaction row
-//--------------------------------------------------
-
-@Composable
-private fun LinkedTransactionRow(
-    transaction: Transaction
-) {
-
-    val date =
-        SimpleDateFormat(
-            "dd MMM yyyy",
-            Locale.ENGLISH
-        ).format(
-            Date(
-                transaction.dateTimestamp
-            )
-        )
-
-    Row(
-
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-
-        horizontalArrangement =
-            Arrangement.SpaceBetween
-
-    ) {
-
-        Column(
-            modifier =
-                Modifier.weight(1f)
-        ) {
-
-            Text(
-
-                text =
-                    transaction.description,
-
-                style =
-                    MaterialTheme.typography.bodyMedium
-            )
-
-            Text(
-
-                text =
-                    date,
-
-                style =
-                    MaterialTheme.typography.bodySmall,
-
-                color =
-                    MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Text(
-
-            text =
-                "₹%,.2f".format(
-                    transaction.amount
-                ),
-
-            style =
-                MaterialTheme.typography.bodyMedium
-        )
-    }
 }
