@@ -30,49 +30,24 @@ import java.util.Locale
 
 @Composable
 fun TransactionLinkSection(
-
     linkedTransactions: List<Transaction>,
-
     reimbursementCandidates: List<Transaction>,
-
     selectedTransactionIds: Set<Long>,
-
     isLinking: Boolean,
 
+    // Optional report group
     transactionLinkGroup: TransactionLinkGroup?,
-
     showCreateGroupPrompt: Boolean,
-
     isSavingGroup: Boolean,
 
+    // Existing actions
     onToggleCandidate: (Long) -> Unit,
-
     onLinkSelected: () -> Unit,
-
     onUnlink: () -> Unit,
 
+    // Report group actions
     onDismissCreateGroupPrompt: () -> Unit,
-
-    transactionLinkGroup =
-    state.transactionLinkGroup,
-
-showCreateGroupPrompt =
-    state.showCreateGroupPrompt,
-
-isSavingGroup =
-    state.isSavingGroup,
-
-onDismissCreateGroupPrompt =
-    viewModel::dismissCreateGroupPrompt,
-
-onCreateReportGroup =
-    viewModel::createReportGroup,
-
-    onCreateReportGroup: (
-        groupName: String,
-        category: String
-    ) -> Unit
-
+    onCreateReportGroup: (groupName: String, category: String) -> Unit
 ) {
 
     Column(
