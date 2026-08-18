@@ -13,6 +13,7 @@ import com.varsel.expensetracker.data.local.entity.CustomRuleEntity
 import com.varsel.expensetracker.data.local.entity.StatementSnapshotEntity
 import com.varsel.expensetracker.data.local.entity.TransactionEntity
 import com.varsel.expensetracker.data.local.entity.TransactionLinkGroupEntity
+import com.varsel.expensetracker.data.local.dao.TransactionLinkGroupDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
