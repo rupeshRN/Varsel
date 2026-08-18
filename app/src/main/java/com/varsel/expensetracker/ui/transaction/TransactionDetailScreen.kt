@@ -2,6 +2,7 @@ package com.varsel.expensetracker.ui.transaction
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -54,10 +55,18 @@ fun TransactionDetailScreen(
     val scrollState =
         rememberScrollState()
 
+    //--------------------------------------------------
+    // Load transaction
+    //--------------------------------------------------
+
     LaunchedEffect(transactionId) {
 
         viewModel.loadTransaction(transactionId)
     }
+
+    //--------------------------------------------------
+    // Handle successful save
+    //--------------------------------------------------
 
     LaunchedEffect(saveCompleted) {
 
@@ -135,19 +144,32 @@ fun TransactionDetailScreen(
 
             verticalArrangement =
                 Arrangement.spacedBy(16.dp)
+
         ) {
 
             when (val state = uiState) {
+
+                //--------------------------------------------------
+                // Loading
+                //--------------------------------------------------
 
                 TransactionDetailUiState.Loading -> {
 
                     Text("Loading...")
                 }
 
+                //--------------------------------------------------
+                // Error
+                //--------------------------------------------------
+
                 is TransactionDetailUiState.Error -> {
 
                     Text(state.message)
                 }
+
+                //--------------------------------------------------
+                // Loaded
+                //--------------------------------------------------
 
                 is TransactionDetailUiState.Loaded -> {
 
@@ -181,7 +203,7 @@ fun TransactionDetailScreen(
                     )
 
                     //--------------------------------------------------
-                    // Role
+                    // Transaction Role
                     //--------------------------------------------------
 
                     TransactionRoleSection(
@@ -197,7 +219,10 @@ fun TransactionDetailScreen(
                     )
 
                     //--------------------------------------------------
-                    // Transaction linking
+                    // Transaction Linking
+                    //
+                    // This now also receives the optional report-group
+                    // information and the actions needed to create it.
                     //--------------------------------------------------
 
                     TransactionLinkSection(
@@ -214,6 +239,15 @@ fun TransactionDetailScreen(
                         isLinking =
                             state.isLinking,
 
+                        transactionLinkGroup =
+                            state.transactionLinkGroup,
+
+                        showCreateGroupPrompt =
+                            state.showCreateGroupPrompt,
+
+                        isSavingGroup =
+                            state.isSavingGroup,
+
                         onToggleCandidate =
                             viewModel::toggleReimbursementSelection,
 
@@ -221,11 +255,17 @@ fun TransactionDetailScreen(
                             viewModel::linkSelectedTransactions,
 
                         onUnlink =
-                            viewModel::unlinkCurrentTransaction
+                            viewModel::unlinkCurrentTransaction,
+
+                        onDismissCreateGroupPrompt =
+                            viewModel::dismissCreateGroupPrompt,
+
+                        onCreateReportGroup =
+                            viewModel::createReportGroup
                     )
 
                     //--------------------------------------------------
-                    // Transaction information
+                    // Transaction Information
                     //--------------------------------------------------
 
                     TransactionInfoSection(
@@ -250,14 +290,13 @@ fun TransactionDetailScreen(
                     )
 
                     //--------------------------------------------------
-                    // Extra bottom space.
+                    // Bottom spacing
                     //
-                    // Gives the user enough room to scroll the final
-                    // content above the fixed bottom action bar.
+                    // Keeps the final content visible above the
+                    // fixed BottomActionBar.
                     //--------------------------------------------------
 
-                    androidx.compose.foundation.layout.Spacer(
-
+                    Spacer(
                         modifier =
                             Modifier.padding(
                                 bottom = 24.dp
