@@ -39,6 +39,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun statementSnapshotDao(): StatementSnapshotDao
 
+    abstract fun transactionLinkGroupDao(): TransactionLinkGroupDao
+
     companion object {
 
     val MIGRATION_3_4 = object : Migration(3, 4) {
