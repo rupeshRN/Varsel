@@ -1,6 +1,7 @@
 package com.varsel.expensetracker.ui.transaction
 
 import com.varsel.expensetracker.domain.model.Transaction
+import com.varsel.expensetracker.domain.model.TransactionLinkGroup
 import com.varsel.expensetracker.domain.model.TransactionRole
 
 sealed interface TransactionDetailUiState {
@@ -25,31 +26,38 @@ sealed interface TransactionDetailUiState {
         // Manual transaction linking
         //--------------------------------------------------
 
-        /**
-         * Transactions currently linked to this transaction.
-         *
-         * Normally this will contain:
-         *
-         * - the current transaction
-         * - one or more related transactions
-         */
-        val linkedTransactions: List<Transaction> = emptyList(),
+        val linkedTransactions: List<Transaction> =
+            emptyList(),
 
-                /**
-         * Reimbursement transactions that the user can
-         * manually choose to link.
-         *
-         * These are suggestions/candidates only.
-         * No automatic linking is performed.
-         */
         val reimbursementCandidates: List<Transaction> =
             emptyList(),
 
+        val isLinking: Boolean = false,
+
+        //--------------------------------------------------
+        // Optional report group
+        //--------------------------------------------------
+
         /**
-         * True while a link/unlink operation is being
-         * persisted.
+         * Existing report-group metadata for this
+         * transaction link, if one exists.
          */
-        val isLinking: Boolean = false
+        val transactionLinkGroup: TransactionLinkGroup? =
+            null,
+
+        /**
+         * True when the UI should offer the user the
+         * option to create a report group.
+         *
+         * This is intentionally NOT automatically true
+         * for every transaction link.
+         */
+        val showCreateGroupPrompt: Boolean = false,
+
+        /**
+         * True while group metadata is being persisted.
+         */
+        val isSavingGroup: Boolean = false
 
     ) : TransactionDetailUiState
 
