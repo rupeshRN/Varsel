@@ -21,9 +21,11 @@ import javax.inject.Inject
 @HiltViewModel
 class TransactionDetailViewModel @Inject constructor(
 
-    private val transactionRepository: TransactionRepository,
+    private val transactionRepository:
+        TransactionRepository,
 
-    private val customRuleRepository: CustomRuleRepository,
+    private val customRuleRepository:
+        CustomRuleRepository,
 
     private val transactionLinkGroupRepository:
         TransactionLinkGroupRepository
@@ -57,7 +59,8 @@ class TransactionDetailViewModel @Inject constructor(
     private val _selectedTransactionIds =
         MutableStateFlow<Set<Long>>(emptySet())
 
-    val selectedTransactionIds: StateFlow<Set<Long>> =
+    val selectedTransactionIds:
+        StateFlow<Set<Long>> =
         _selectedTransactionIds.asStateFlow()
 
     //--------------------------------------------------
@@ -68,14 +71,19 @@ class TransactionDetailViewModel @Inject constructor(
         transactionId: Long
     ) {
 
-        currentTransactionId = transactionId
+        currentTransactionId =
+            transactionId
+
+        _selectedTransactionIds.value =
+            emptySet()
 
         viewModelScope.launch {
 
             val transaction =
-                transactionRepository.getTransactionById(
-                    transactionId
-                )
+                transactionRepository
+                    .getTransactionById(
+                        transactionId
+                    )
 
             if (transaction == null) {
 
@@ -90,7 +98,8 @@ class TransactionDetailViewModel @Inject constructor(
             _uiState.value =
                 TransactionDetailUiState.Loaded(
 
-                    transaction = transaction,
+                    transaction =
+                        transaction,
 
                     editableDescription =
                         transaction.description,
@@ -101,9 +110,11 @@ class TransactionDetailViewModel @Inject constructor(
                     selectedRole =
                         transaction.role,
 
-                    hasChanges = false,
+                    hasChanges =
+                        false,
 
-                    isSaving = false,
+                    isSaving =
+                        false,
 
                     linkedTransactions =
                         emptyList(),
@@ -111,7 +122,8 @@ class TransactionDetailViewModel @Inject constructor(
                     reimbursementCandidates =
                         emptyList(),
 
-                    isLinking = false,
+                    isLinking =
+                        false,
 
                     transactionLinkGroup =
                         null,
@@ -144,6 +156,7 @@ class TransactionDetailViewModel @Inject constructor(
                 .collectLatest { allTransactions ->
 
                     updateLinkingState(
+
                         transactionId =
                             transactionId,
 
@@ -156,11 +169,18 @@ class TransactionDetailViewModel @Inject constructor(
 
     //--------------------------------------------------
     // Build linking UI state
+    //
+    // IMPORTANT:
+    // This is suspend because it reads the optional
+    // report group through a suspend repository call.
     //--------------------------------------------------
 
-    private fun updateLinkingState(
+    private suspend fun updateLinkingState(
+
         transactionId: Long,
+
         allTransactions: List<Transaction>
+
     ) {
 
         val currentState =
@@ -169,9 +189,10 @@ class TransactionDetailViewModel @Inject constructor(
                 ?: return
 
         val currentTransaction =
-            allTransactions.firstOrNull {
-                it.id == transactionId
-            }
+            allTransactions
+                .firstOrNull {
+                    it.id == transactionId
+                }
                 ?: currentState.transaction
 
         //--------------------------------------------------
@@ -186,9 +207,9 @@ class TransactionDetailViewModel @Inject constructor(
                 ?.let { linkId ->
 
                     allTransactions.filter {
-                        it.transactionLinkId == linkId
+                        it.transactionLinkId ==
+                            linkId
                     }
-
                 }
                 .orEmpty()
 
@@ -196,13 +217,17 @@ class TransactionDetailViewModel @Inject constructor(
         // Reimbursement candidates
         //
         // No automatic matching.
+        //
+        // Only unlinked INCOME transactions explicitly
+        // marked as REIMBURSEMENT are suggested.
         //--------------------------------------------------
 
         val reimbursementCandidates =
             allTransactions
                 .filter { transaction ->
 
-                    transaction.id != transactionId &&
+                    transaction.id !=
+                        transactionId &&
 
                     transaction.type ==
                         TransactionType.INCOME &&
@@ -210,7 +235,8 @@ class TransactionDetailViewModel @Inject constructor(
                     transaction.role ==
                         TransactionRole.REIMBURSEMENT &&
 
-                    transaction.transactionLinkId == null
+                    transaction.transactionLinkId ==
+                        null
                 }
                 .sortedByDescending {
                     it.dateTimestamp
@@ -221,7 +247,8 @@ class TransactionDetailViewModel @Inject constructor(
         //--------------------------------------------------
 
         val validSelectedIds =
-            _selectedTransactionIds.value
+            _selectedTransactionIds
+                .value
                 .filter { selectedId ->
 
                     reimbursementCandidates.any {
@@ -235,25 +262,42 @@ class TransactionDetailViewModel @Inject constructor(
 
         //--------------------------------------------------
         // Existing report group
+        //
+        // getGroup() is suspend, and this entire function
+        // now executes from the collectLatest coroutine.
         //--------------------------------------------------
 
         val existingGroup =
-            transactionLinkId?.let { linkId ->
+            transactionLinkId
+                ?.let { linkId ->
 
-                transactionLinkGroupRepository
-                    .getGroup(linkId)
-            }
+                    transactionLinkGroupRepository
+                        .getGroup(linkId)
+                }
 
         //--------------------------------------------------
-        // Determine whether a group is applicable.
+        // Determine whether a report group is applicable.
         //
-        // A group is relevant only when the linked event
-        // contains more than one expense transaction.
+        // A report group is offered only when the linked
+        // financial event contains more than one expense.
+        //
+        // Therefore:
+        //
+        // 1 expense -> multiple reimbursements
+        //     No group required.
+        //
+        // Multiple expenses -> 1 reimbursement
+        //     Offer group.
+        //
+        // Multiple expenses -> multiple reimbursements
+        //     Offer group.
         //--------------------------------------------------
 
         val expenseCount =
             linkedTransactions.count {
-                it.type == TransactionType.EXPENSE
+
+                it.type ==
+                    TransactionType.EXPENSE
             }
 
         val shouldOfferGroup =
@@ -262,7 +306,7 @@ class TransactionDetailViewModel @Inject constructor(
             existingGroup == null
 
         //--------------------------------------------------
-        // Preserve temporary UI state.
+        // Preserve temporary UI state
         //--------------------------------------------------
 
         _uiState.value =
@@ -309,6 +353,7 @@ class TransactionDetailViewModel @Inject constructor(
                     description,
 
                 hasChanges =
+
                     description !=
                         current.transaction.description ||
 
@@ -340,6 +385,7 @@ class TransactionDetailViewModel @Inject constructor(
                     category,
 
                 hasChanges =
+
                     category !=
                         current.transaction.category ||
 
@@ -371,6 +417,7 @@ class TransactionDetailViewModel @Inject constructor(
                     role,
 
                 hasChanges =
+
                     role !=
                         current.transaction.role ||
 
@@ -397,6 +444,7 @@ class TransactionDetailViewModel @Inject constructor(
 
         val isCandidate =
             current.reimbursementCandidates.any {
+
                 it.id == transactionId
             }
 
@@ -408,7 +456,11 @@ class TransactionDetailViewModel @Inject constructor(
             _selectedTransactionIds.value
 
         _selectedTransactionIds.value =
-            if (transactionId in currentSelection) {
+
+            if (
+                transactionId in
+                    currentSelection
+            ) {
 
                 currentSelection -
                     transactionId
@@ -424,7 +476,8 @@ class TransactionDetailViewModel @Inject constructor(
     // Selected reimbursement IDs
     //--------------------------------------------------
 
-    fun getSelectedReimbursementIds(): Set<Long> {
+    fun getSelectedReimbursementIds():
+        Set<Long> {
 
         return _selectedTransactionIds.value
     }
@@ -460,8 +513,10 @@ class TransactionDetailViewModel @Inject constructor(
             //--------------------------------------------------
 
             val transactionLinkId =
-                current.transaction.transactionLinkId
-                    ?: UUID.randomUUID().toString()
+                current.transaction
+                    .transactionLinkId
+                    ?: UUID.randomUUID()
+                        .toString()
 
             //--------------------------------------------------
             // Current transaction + selected reimbursements
@@ -485,14 +540,15 @@ class TransactionDetailViewModel @Inject constructor(
             // Persist relationship
             //--------------------------------------------------
 
-            transactionRepository.linkTransactions(
+            transactionRepository
+                .linkTransactions(
 
-                transactionIds =
-                    distinctTransactionIds,
+                    transactionIds =
+                        distinctTransactionIds,
 
-                transactionLinkId =
-                    transactionLinkId
-            )
+                    transactionLinkId =
+                        transactionLinkId
+                )
 
             //--------------------------------------------------
             // Clear temporary selections
@@ -502,11 +558,7 @@ class TransactionDetailViewModel @Inject constructor(
                 emptySet()
 
             //--------------------------------------------------
-            // Room Flow refreshes UI.
-            //
-            // If the resulting linked set contains multiple
-            // expenses, updateLinkingState() will offer the
-            // optional report-group setup.
+            // Room Flow will refresh the linking state.
             //--------------------------------------------------
         }
     }
@@ -524,7 +576,9 @@ class TransactionDetailViewModel @Inject constructor(
 
         _uiState.value =
             current.copy(
-                showCreateGroupPrompt = false
+
+                showCreateGroupPrompt =
+                    false
             )
     }
 
@@ -533,8 +587,11 @@ class TransactionDetailViewModel @Inject constructor(
     //--------------------------------------------------
 
     fun createReportGroup(
+
         groupName: String,
+
         category: String
+
     ) {
 
         val current =
@@ -543,7 +600,8 @@ class TransactionDetailViewModel @Inject constructor(
                 ?: return
 
         val transactionLinkId =
-            current.transaction.transactionLinkId
+            current.transaction
+                .transactionLinkId
                 ?: return
 
         if (
@@ -576,9 +634,10 @@ class TransactionDetailViewModel @Inject constructor(
                         System.currentTimeMillis()
                 )
 
-            transactionLinkGroupRepository.saveGroup(
-                group
-            )
+            transactionLinkGroupRepository
+                .saveGroup(
+                    group
+                )
 
             _uiState.value =
                 current.copy(
@@ -607,18 +666,22 @@ class TransactionDetailViewModel @Inject constructor(
                 ?: return
 
         val transactionLinkId =
-            current.transaction.transactionLinkId
+            current.transaction
+                .transactionLinkId
                 ?: return
 
         viewModelScope.launch {
 
-            transactionLinkGroupRepository.deleteGroup(
-                transactionLinkId
-            )
+            transactionLinkGroupRepository
+                .deleteGroup(
+                    transactionLinkId
+                )
 
             _uiState.value =
                 current.copy(
-                    transactionLinkGroup = null
+
+                    transactionLinkGroup =
+                        null
                 )
         }
     }
@@ -635,7 +698,8 @@ class TransactionDetailViewModel @Inject constructor(
                 ?: return
 
         if (
-            current.transaction.transactionLinkId == null
+            current.transaction
+                .transactionLinkId == null
         ) {
             return
         }
@@ -647,12 +711,23 @@ class TransactionDetailViewModel @Inject constructor(
                     isLinking = true
                 )
 
-            transactionRepository.unlinkTransaction(
-                current.transaction.id
-            )
+            transactionRepository
+                .unlinkTransaction(
+                    current.transaction.id
+                )
 
             _selectedTransactionIds.value =
                 emptySet()
+
+            //--------------------------------------------------
+            // Important:
+            //
+            // The report group is metadata for the entire
+            // transactionLinkId. We do NOT delete it here.
+            //
+            // The Room transaction flow will refresh the
+            // linking state after unlinking.
+            //--------------------------------------------------
         }
     }
 
@@ -714,9 +789,14 @@ class TransactionDetailViewModel @Inject constructor(
                 )
             }
 
-            transactionRepository.updateTransaction(
-                updatedTransaction
-            )
+            //--------------------------------------------------
+            // Persist transaction
+            //--------------------------------------------------
+
+            transactionRepository
+                .updateTransaction(
+                    updatedTransaction
+                )
 
             _saveCompleted.value =
                 true
