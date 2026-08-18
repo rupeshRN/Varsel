@@ -27,6 +27,7 @@ import com.varsel.expensetracker.domain.model.TransactionLinkGroup
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun TransactionLinkSection(
