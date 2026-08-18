@@ -61,7 +61,9 @@ fun TransactionDetailScreen(
 
     LaunchedEffect(transactionId) {
 
-        viewModel.loadTransaction(transactionId)
+        viewModel.loadTransaction(
+            transactionId
+        )
     }
 
     //--------------------------------------------------
@@ -139,7 +141,9 @@ fun TransactionDetailScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .verticalScroll(scrollState)
+                    .verticalScroll(
+                        scrollState
+                    )
                     .padding(24.dp),
 
             verticalArrangement =
@@ -220,9 +224,6 @@ fun TransactionDetailScreen(
 
                     //--------------------------------------------------
                     // Transaction Linking
-                    //
-                    // This now also receives the optional report-group
-                    // information and the actions needed to create it.
                     //--------------------------------------------------
 
                     TransactionLinkSection(
@@ -230,8 +231,8 @@ fun TransactionDetailScreen(
                         linkedTransactions =
                             state.linkedTransactions,
 
-                        reimbursementCandidates =
-                            state.reimbursementCandidates,
+                        linkableTransactions =
+                            state.linkableTransactions,
 
                         selectedTransactionIds =
                             selectedTransactionIds,
@@ -291,9 +292,6 @@ fun TransactionDetailScreen(
 
                     //--------------------------------------------------
                     // Bottom spacing
-                    //
-                    // Keeps the final content visible above the
-                    // fixed BottomActionBar.
                     //--------------------------------------------------
 
                     Spacer(
