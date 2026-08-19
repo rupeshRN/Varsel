@@ -15,7 +15,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +44,6 @@ import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
-
 private enum class AddTransactionMode {
     EXPENSE,
     REIMBURSEMENT
@@ -48,11 +51,8 @@ private enum class AddTransactionMode {
 
 @Composable
 fun FinancialEventScreen(
-
     transactionLinkId: String,
-
     onBackClick: () -> Unit
-
 ) {
 
     val viewModel:
@@ -67,9 +67,9 @@ fun FinancialEventScreen(
         rememberScrollState()
 
     var addMode by
-    remember {
-        mutableStateOf<AddTransactionMode?>(null)
-    }
+        remember {
+            mutableStateOf<AddTransactionMode?>(null)
+        }
 
     LaunchedEffect(transactionLinkId) {
 
@@ -85,7 +85,9 @@ fun FinancialEventScreen(
             CenterAlignedTopAppBar(
 
                 title = {
-                    Text("Financial Event")
+                    Text(
+                        "Financial Event"
+                    )
                 },
 
                 navigationIcon = {
@@ -121,12 +123,18 @@ fun FinancialEventScreen(
                     .padding(24.dp),
 
             verticalArrangement =
-                Arrangement.spacedBy(16.dp)
+                Arrangement.spacedBy(
+                    16.dp
+                )
         ) {
 
             when (
                 val state = uiState
             ) {
+
+                //--------------------------------------------------
+                // Loading
+                //--------------------------------------------------
 
                 FinancialEventUiState.Loading -> {
 
@@ -135,12 +143,20 @@ fun FinancialEventScreen(
                     )
                 }
 
+                //--------------------------------------------------
+                // Error
+                //--------------------------------------------------
+
                 is FinancialEventUiState.Error -> {
 
                     Text(
                         state.message
                     )
                 }
+
+                //--------------------------------------------------
+                // Loaded
+                //--------------------------------------------------
 
                 is FinancialEventUiState.Loaded -> {
 
@@ -154,6 +170,7 @@ fun FinancialEventScreen(
                     ) {
 
                         Column(
+
                             modifier =
                                 Modifier.padding(
                                     16.dp
@@ -196,6 +213,7 @@ fun FinancialEventScreen(
                             )
 
                             OutlinedButton(
+
                                 onClick =
                                     viewModel
                                         ::startEditingGroup,
@@ -271,33 +289,36 @@ fun FinancialEventScreen(
                     }
 
                     //--------------------------------------------------
-                    // Add expense
+                    // Add expenses
                     //--------------------------------------------------
 
-if (
-    state.availableExpenses.isNotEmpty()
-) {
+                    if (
+                        state.availableExpenses
+                            .isNotEmpty()
+                    ) {
 
-    OutlinedButton(
+                        OutlinedButton(
 
-        onClick = {
-            addMode =
-                AddTransactionMode.EXPENSE
-        },
+                            onClick = {
 
-        enabled =
-            !state.isUpdating,
+                                addMode =
+                                    AddTransactionMode
+                                        .EXPENSE
+                            },
 
-        modifier =
-            Modifier.fillMaxWidth()
+                            enabled =
+                                !state.isUpdating,
 
-    ) {
+                            modifier =
+                                Modifier.fillMaxWidth()
 
-        Text(
-            "Add Expenses"
-        )
-    }
-}
+                        ) {
+
+                            Text(
+                                "Add Expenses"
+                            )
+                        }
+                    }
 
                     //--------------------------------------------------
                     // Reimbursements
@@ -357,36 +378,39 @@ if (
                     }
 
                     //--------------------------------------------------
-                    // Add reimbursement
+                    // Add reimbursements
                     //--------------------------------------------------
 
-if (
-    state.availableReimbursements.isNotEmpty()
-) {
+                    if (
+                        state.availableReimbursements
+                            .isNotEmpty()
+                    ) {
 
-    OutlinedButton(
+                        OutlinedButton(
 
-        onClick = {
-            addMode =
-                AddTransactionMode.REIMBURSEMENT
-        },
+                            onClick = {
 
-        enabled =
-            !state.isUpdating,
+                                addMode =
+                                    AddTransactionMode
+                                        .REIMBURSEMENT
+                            },
 
-        modifier =
-            Modifier.fillMaxWidth()
+                            enabled =
+                                !state.isUpdating,
 
-    ) {
+                            modifier =
+                                Modifier.fillMaxWidth()
 
-        Text(
-            "Add Reimbursements"
-        )
-    }
-}
+                        ) {
+
+                            Text(
+                                "Add Reimbursements"
+                            )
+                        }
+                    }
 
                     //--------------------------------------------------
-                    // Summary
+                    // Event Summary
                     //--------------------------------------------------
 
                     Card(
@@ -395,6 +419,7 @@ if (
                     ) {
 
                         Column(
+
                             modifier =
                                 Modifier.padding(
                                     16.dp
@@ -451,73 +476,99 @@ if (
                         }
                     }
 
+                    //--------------------------------------------------
+                    // Month-wise transaction picker
+                    //--------------------------------------------------
+
                     if (
-    addMode != null
-) {
+                        addMode != null
+                    ) {
 
-    val transactions =
-        when (addMode) {
+                        val transactions =
+                            when (addMode) {
 
-            AddTransactionMode.EXPENSE ->
-                state.availableExpenses
+                                AddTransactionMode
+                                    .EXPENSE ->
 
-            AddTransactionMode.REIMBURSEMENT ->
-                state.availableReimbursements
+                                    state
+                                        .availableExpenses
 
-            null ->
-                emptyList()
-        }
+                                AddTransactionMode
+                                    .REIMBURSEMENT ->
 
-    MonthWiseTransactionPicker(
+                                    state
+                                        .availableReimbursements
 
-        title =
-            when (addMode) {
+                                null ->
+                                    emptyList()
+                            }
 
-                AddTransactionMode.EXPENSE ->
-                    "Add Expenses"
+                        MonthWiseTransactionPicker(
 
-                AddTransactionMode.REIMBURSEMENT ->
-                    "Add Reimbursements"
+                            title =
+                                when (addMode) {
 
-                null ->
-                    ""
-            },
+                                    AddTransactionMode
+                                        .EXPENSE ->
 
-        transactions =
-            transactions,
+                                        "Add Expenses"
 
-        isUpdating =
-            state.isUpdating,
+                                    AddTransactionMode
+                                        .REIMBURSEMENT ->
 
-        onDismiss = {
-            addMode = null
-        },
+                                        "Add Reimbursements"
 
-        onConfirm = { selectedIds ->
+                                    null ->
+                                        ""
+                                },
 
-            when (addMode) {
+                            transactions =
+                                transactions,
 
-                AddTransactionMode.EXPENSE -> {
+                            isUpdating =
+                                state.isUpdating,
 
-                    viewModel.addExpenses(
-                        selectedIds
-                    )
-                }
+                            onDismiss = {
 
-                AddTransactionMode.REIMBURSEMENT -> {
+                                addMode =
+                                    null
+                            },
 
-                    viewModel.addReimbursements(
-                        selectedIds
-                    )
-                }
+                            onConfirm = {
+                                selectedIds ->
 
-                null -> Unit
-            }
+                                when (addMode) {
 
-            addMode = null
-        }
-    )
-}
+                                    AddTransactionMode
+                                        .EXPENSE -> {
+
+                                        viewModel
+                                            .addExpenses(
+                                                selectedIds
+                                            )
+                                    }
+
+                                    AddTransactionMode
+                                        .REIMBURSEMENT -> {
+
+                                        viewModel
+                                            .addReimbursements(
+                                                selectedIds
+                                            )
+                                    }
+
+                                    null -> Unit
+                                }
+
+                                addMode =
+                                    null
+                            }
+                        )
+                    }
+
+                    //--------------------------------------------------
+                    // Bottom spacing
+                    //--------------------------------------------------
 
                     Spacer(
                         modifier =
@@ -527,7 +578,7 @@ if (
                     )
 
                     //--------------------------------------------------
-                    // Edit dialog
+                    // Edit Financial Event dialog
                     //--------------------------------------------------
 
                     if (
@@ -544,6 +595,9 @@ if (
                                 state.group
                                     .category,
 
+                            categories =
+                                state.categories,
+
                             onDismiss =
                                 viewModel
                                     ::cancelEditingGroup,
@@ -558,6 +612,10 @@ if (
         }
     }
 }
+
+//--------------------------------------------------
+// Month-wise transaction picker
+//--------------------------------------------------
 
 @Composable
 private fun MonthWiseTransactionPicker(
@@ -636,6 +694,7 @@ private fun MonthWiseTransactionPicker(
             ) {
 
                 Text(
+
                     text =
                         "Select transactions by month.",
 
@@ -664,7 +723,9 @@ private fun MonthWiseTransactionPicker(
 
                         val monthSelectedCount =
                             monthTransactions.count {
-                                it.id in selectedIds
+
+                                it.id in
+                                    selectedIds
                             }
 
                         Card(
@@ -683,8 +744,11 @@ private fun MonthWiseTransactionPicker(
                                                 expandedMonth ==
                                                     key
                                             ) {
+
                                                 null
+
                                             } else {
+
                                                 key
                                             }
                                     },
@@ -698,8 +762,10 @@ private fun MonthWiseTransactionPicker(
                                 ) {
 
                                     Row(
+
                                         modifier =
-                                            Modifier.fillMaxWidth(),
+                                            Modifier
+                                                .fillMaxWidth(),
 
                                         horizontalArrangement =
                                             Arrangement
@@ -718,6 +784,7 @@ private fun MonthWiseTransactionPicker(
                                         ) {
 
                                             Text(
+
                                                 "$monthSelectedCount selected",
 
                                                 color =
@@ -779,6 +846,7 @@ private fun MonthWiseTransactionPicker(
                 ) {
 
                     Text(
+
                         text =
                             "${selectedIds.size} transaction(s) selected",
 
@@ -814,9 +882,13 @@ private fun MonthWiseTransactionPicker(
             ) {
 
                 Text(
+
                     if (isUpdating) {
+
                         "Adding..."
+
                     } else {
+
                         "Add Selected"
                     }
                 )
@@ -842,6 +914,10 @@ private fun MonthWiseTransactionPicker(
         }
     )
 }
+
+//--------------------------------------------------
+// Transaction picker row
+//--------------------------------------------------
 
 @Composable
 private fun TransactionPickerRow(
@@ -873,12 +949,13 @@ private fun TransactionPickerRow(
 
     ) {
 
-        androidx.compose.material3.Checkbox(
+        Checkbox(
 
             checked =
                 selected,
 
             onCheckedChange = {
+
                 onToggle()
             },
 
@@ -894,6 +971,7 @@ private fun TransactionPickerRow(
         ) {
 
             Text(
+
                 text =
                     transaction.description,
 
@@ -904,6 +982,7 @@ private fun TransactionPickerRow(
             )
 
             Text(
+
                 text =
                     SimpleDateFormat(
                         "dd MMM yyyy",
@@ -927,6 +1006,7 @@ private fun TransactionPickerRow(
         }
 
         Text(
+
             text =
                 "₹%,.2f".format(
                     transaction.amount
@@ -939,6 +1019,10 @@ private fun TransactionPickerRow(
         )
     }
 }
+
+//--------------------------------------------------
+// Month helpers
+//--------------------------------------------------
 
 private fun monthKey(
     transaction: Transaction
@@ -968,6 +1052,10 @@ private fun monthLabel(
     )
 }
 
+//--------------------------------------------------
+// Linked transaction row
+//--------------------------------------------------
+
 @Composable
 private fun FinancialEventTransactionRow(
 
@@ -995,8 +1083,11 @@ private fun FinancialEventTransactionRow(
     ) {
 
         Column(
+
             modifier =
-                Modifier.padding(16.dp),
+                Modifier.padding(
+                    16.dp
+                ),
 
             verticalArrangement =
                 Arrangement.spacedBy(
@@ -1020,6 +1111,7 @@ private fun FinancialEventTransactionRow(
                 ) {
 
                     Text(
+
                         transaction.description,
 
                         style =
@@ -1029,6 +1121,7 @@ private fun FinancialEventTransactionRow(
                     )
 
                     Text(
+
                         date,
 
                         style =
@@ -1044,6 +1137,7 @@ private fun FinancialEventTransactionRow(
                 }
 
                 Text(
+
                     "₹%,.2f".format(
                         transaction.amount
                     ),
@@ -1065,18 +1159,30 @@ private fun FinancialEventTransactionRow(
                     Modifier.fillMaxWidth()
             ) {
 
-                Text("Remove from Event")
+                Text(
+                    "Remove from Event"
+                )
             }
         }
     }
 }
 
+//--------------------------------------------------
+// Edit Financial Event dialog
+//
+// Category is now a dropdown backed by the existing
+// application category list.
+//--------------------------------------------------
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EditFinancialEventDialog(
 
     initialName: String,
 
     initialCategory: String,
+
+    categories: List<String>,
 
     onDismiss: () -> Unit,
 
@@ -1089,6 +1195,7 @@ private fun EditFinancialEventDialog(
 
     var groupName by
         remember(initialName) {
+
             mutableStateOf(
                 initialName
             )
@@ -1096,9 +1203,16 @@ private fun EditFinancialEventDialog(
 
     var category by
         remember(initialCategory) {
+
             mutableStateOf(
                 initialCategory
             )
+        }
+
+    var categoryExpanded by
+        remember {
+
+            mutableStateOf(false)
         }
 
     AlertDialog(
@@ -1107,6 +1221,7 @@ private fun EditFinancialEventDialog(
             onDismiss,
 
         title = {
+
             Text(
                 "Edit Financial Event"
             )
@@ -1115,11 +1230,19 @@ private fun EditFinancialEventDialog(
         text = {
 
             Column(
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
                 verticalArrangement =
                     Arrangement.spacedBy(
                         12.dp
                     )
             ) {
+
+                //--------------------------------------------------
+                // Event name
+                //--------------------------------------------------
 
                 OutlinedTextField(
 
@@ -1127,11 +1250,16 @@ private fun EditFinancialEventDialog(
                         groupName,
 
                     onValueChange = {
-                        groupName = it
+
+                        groupName =
+                            it
                     },
 
                     label = {
-                        Text("Event name")
+
+                        Text(
+                            "Event name"
+                        )
                     },
 
                     singleLine = true,
@@ -1140,24 +1268,97 @@ private fun EditFinancialEventDialog(
                         Modifier.fillMaxWidth()
                 )
 
-                OutlinedTextField(
+                //--------------------------------------------------
+                // Category dropdown
+                //--------------------------------------------------
 
-                    value =
-                        category,
+                ExposedDropdownMenuBox(
 
-                    onValueChange = {
-                        category = it
+                    expanded =
+                        categoryExpanded,
+
+                    onExpandedChange = {
+
+                        categoryExpanded =
+                            !categoryExpanded
                     },
-
-                    label = {
-                        Text("Category")
-                    },
-
-                    singleLine = true,
 
                     modifier =
                         Modifier.fillMaxWidth()
-                )
+                ) {
+
+                    OutlinedTextField(
+
+                        value =
+                            category,
+
+                        onValueChange = {},
+
+                        readOnly = true,
+
+                        label = {
+
+                            Text(
+                                "Category"
+                            )
+                        },
+
+                        trailingIcon = {
+
+                            ExposedDropdownMenuDefaults
+                                .TrailingIcon(
+                                    expanded =
+                                        categoryExpanded
+                                )
+                        },
+
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(
+                                    ExposedDropdownMenuAnchorType
+                                        .PrimaryNotEditable
+                                )
+                    )
+
+                    ExposedDropdownMenu(
+
+                        expanded =
+                            categoryExpanded,
+
+                        onDismissRequest = {
+
+                            categoryExpanded =
+                                false
+                        }
+                    ) {
+
+                        categories.forEach {
+
+                            availableCategory ->
+
+                            androidx.compose.material3
+                                .DropdownMenuItem(
+
+                                    text = {
+
+                                        Text(
+                                            availableCategory
+                                        )
+                                    },
+
+                                    onClick = {
+
+                                        category =
+                                            availableCategory
+
+                                        categoryExpanded =
+                                            false
+                                    }
+                                )
+                        }
+                    }
+                }
             }
         },
 
@@ -1168,28 +1369,37 @@ private fun EditFinancialEventDialog(
                 onClick = {
 
                     onSave(
+
                         groupName,
+
                         category
                     )
                 },
 
                 enabled =
                     groupName.isNotBlank() &&
-                    category.isNotBlank()
+                    category.isNotBlank() &&
+                    category in categories
+
             ) {
 
-                Text("Save")
+                Text(
+                    "Save"
+                )
             }
         },
 
         dismissButton = {
 
             OutlinedButton(
+
                 onClick =
                     onDismiss
             ) {
 
-                Text("Cancel")
+                Text(
+                    "Cancel"
+                )
             }
         }
     )
