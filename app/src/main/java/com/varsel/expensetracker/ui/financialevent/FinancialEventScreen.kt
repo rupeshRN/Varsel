@@ -1272,46 +1272,69 @@ private fun EditFinancialEventDialog(
                 //--------------------------------------------------
                 // Category dropdown
                 //--------------------------------------------------
-ExposedDropdownMenuBox(
-    expanded = categoryExpanded,
-    onExpandedChange = {
-        categoryExpanded = !categoryExpanded
-    },
+Column(
     modifier = Modifier.fillMaxWidth()
 ) {
 
-    OutlinedTextField(
-        value = category,
-        onValueChange = {},
-        readOnly = true,
-        label = {
-            Text("Category")
-        },
-        trailingIcon = {
-            ExposedDropdownMenuDefaults.TrailingIcon(
-                expanded = categoryExpanded
-            )
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .menuAnchor()
-    )
+    Box(
+        modifier = Modifier.fillMaxWidth()
+    ) {
 
-    ExposedDropdownMenu(
+        OutlinedTextField(
+            value = category,
+            onValueChange = {},
+            readOnly = true,
+            label = {
+                Text("Category")
+            },
+            trailingIcon = {
+                Text(
+                    text =
+                        if (categoryExpanded) "▲"
+                        else "▼",
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+            },
+            modifier =
+                Modifier.fillMaxWidth()
+        )
+
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .clickable {
+                        categoryExpanded =
+                            !categoryExpanded
+                    }
+        )
+    }
+
+    DropdownMenu(
         expanded = categoryExpanded,
         onDismissRequest = {
             categoryExpanded = false
         }
     ) {
+
         categories.forEach { availableCategory ->
 
             DropdownMenuItem(
                 text = {
-                    Text(availableCategory)
+                    Text(
+                        availableCategory
+                    )
                 },
                 onClick = {
-                    category = availableCategory
-                    categoryExpanded = false
+
+                    category =
+                        availableCategory
+
+                    categoryExpanded =
+                        false
                 }
             )
         }
