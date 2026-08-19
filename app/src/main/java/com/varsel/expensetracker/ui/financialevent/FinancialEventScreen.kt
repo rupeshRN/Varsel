@@ -42,6 +42,10 @@ import com.varsel.expensetracker.domain.model.Transaction
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExposedDropdownMenu
 
 @OptIn(ExperimentalMaterial3Api::class)
 private enum class AddTransactionMode {
@@ -1271,94 +1275,52 @@ private fun EditFinancialEventDialog(
                 //--------------------------------------------------
                 // Category dropdown
                 //--------------------------------------------------
+ExposedDropdownMenuBox(
+    expanded = categoryExpanded,
+    onExpandedChange = {
+        categoryExpanded = !categoryExpanded
+    },
+    modifier = Modifier.fillMaxWidth()
+) {
 
-                ExposedDropdownMenuBox(
+    OutlinedTextField(
+        value = category,
+        onValueChange = {},
+        readOnly = true,
+        label = {
+            Text("Category")
+        },
+        trailingIcon = {
+            ExposedDropdownMenuDefaults.TrailingIcon(
+                expanded = categoryExpanded
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .menuAnchor()
+    )
 
-                    expanded =
-                        categoryExpanded,
+    ExposedDropdownMenu(
+        expanded = categoryExpanded,
+        onDismissRequest = {
+            categoryExpanded = false
+        }
+    ) {
 
-                    onExpandedChange = {
+        categories.forEach { availableCategory ->
 
-                        categoryExpanded =
-                            !categoryExpanded
-                    },
-
-                    modifier =
-                        Modifier.fillMaxWidth()
-                ) {
-
-                    OutlinedTextField(
-
-                        value =
-                            category,
-
-                        onValueChange = {},
-
-                        readOnly = true,
-
-                        label = {
-
-                            Text(
-                                "Category"
-                            )
-                        },
-
-                        trailingIcon = {
-
-                            ExposedDropdownMenuDefaults
-                                .TrailingIcon(
-                                    expanded =
-                                        categoryExpanded
-                                )
-                        },
-
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(
-                                    ExposedDropdownMenuAnchorType
-                                        .PrimaryNotEditable
-                                )
-                    )
-
-                    ExposedDropdownMenu(
-
-                        expanded =
-                            categoryExpanded,
-
-                        onDismissRequest = {
-
-                            categoryExpanded =
-                                false
-                        }
-                    ) {
-
-                        categories.forEach {
-
-                            availableCategory ->
-
-                            androidx.compose.material3
-                                .DropdownMenuItem(
-
-                                    text = {
-
-                                        Text(
-                                            availableCategory
-                                        )
-                                    },
-
-                                    onClick = {
-
-                                        category =
-                                            availableCategory
-
-                                        categoryExpanded =
-                                            false
-                                    }
-                                )
-                        }
-                    }
+            DropdownMenuItem(
+                text = {
+                    Text(availableCategory)
+                },
+                onClick = {
+                    category = availableCategory
+                    categoryExpanded = false
                 }
+            )
+        }
+    }
+}
             }
         },
 
