@@ -258,9 +258,7 @@ class FinancialEventViewModel @Inject constructor(
             _uiState.value as?
                 FinancialEventUiState.Loaded
 
-        val isUpdating =
-            current?.isUpdating
-                ?: false
+        val isUpdating = false
 
         val isEditingGroup =
             current?.isEditingGroup
