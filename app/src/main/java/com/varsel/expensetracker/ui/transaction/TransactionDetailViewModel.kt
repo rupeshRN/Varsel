@@ -101,9 +101,7 @@ class TransactionDetailViewModel @Inject constructor(
                         transactionId
                     )
 
-            if (
-                transaction == null
-            ) {
+            if (transaction == null) {
 
                 _uiState.value =
                     TransactionDetailUiState.Error(
@@ -115,9 +113,6 @@ class TransactionDetailViewModel @Inject constructor(
 
             //--------------------------------------------------
             // Load existing application categories.
-            //
-            // These are used by the Financial Event /
-            // Report Group creation dialog.
             //--------------------------------------------------
 
             val categories =
@@ -208,9 +203,7 @@ class TransactionDetailViewModel @Inject constructor(
 
                 transactionRepository
                     .getAllTransactions()
-                    .collectLatest {
-
-                        allTransactions ->
+                    .collectLatest { allTransactions ->
 
                         updateLinkingState(
 
@@ -228,7 +221,18 @@ class TransactionDetailViewModel @Inject constructor(
     // Build linking UI state
     //
     // IMPORTANT:
-    // This is suspend because getGroup() is suspend.
+    //
+    // Financial-event participation is no longer based
+    // on the transaction role.
+    //
+    // If current transaction is EXPENSE:
+    //     show unlinked INCOME transactions.
+    //
+    // If current transaction is INCOME:
+    //     show unlinked EXPENSE transactions.
+    //
+    // The user can therefore create/manage a financial
+    // event from either side of the financial event.
     //--------------------------------------------------
 
     private suspend fun updateLinkingState(
@@ -249,8 +253,7 @@ class TransactionDetailViewModel @Inject constructor(
         val currentTransaction =
             allTransactions
                 .firstOrNull {
-                    it.id ==
-                        transactionId
+                    it.id == transactionId
                 }
                 ?: currentState.transaction
 
@@ -262,15 +265,21 @@ class TransactionDetailViewModel @Inject constructor(
             currentTransaction
                 .transactionLinkId
 
+        //--------------------------------------------------
+        // All transactions currently belonging to the
+        // same financial event.
+        //--------------------------------------------------
+
         val linkedTransactions =
             transactionLinkId
                 ?.let { linkId ->
 
                     allTransactions
                         .filter {
-
-                            it.transactionLinkId ==
-                                linkId
+                            it.transactionLinkId == linkId
+                        }
+                        .sortedByDescending {
+                            it.dateTimestamp
                         }
                 }
                 .orEmpty()
@@ -278,20 +287,25 @@ class TransactionDetailViewModel @Inject constructor(
         //--------------------------------------------------
         // Linkable transactions
         //
-        // Preserve current manual-linking behaviour.
+        // IMPORTANT:
         //
-        // Expense:
-        //     unlinked reimbursement incomes.
+        // Do NOT require TransactionRole.REIMBURSEMENT.
         //
-        // Reimbursement:
-        //     unlinked expenses.
+        // Any unlinked income can be selected when the
+        // user is working from an expense.
+        //
+        // Any unlinked expense can be selected when the
+        // user is working from an income.
+        //
+        // The financial event workflow will establish
+        // the relationship. Role is not used as an
+        // eligibility gate here.
         //--------------------------------------------------
 
         val linkableTransactions =
-            when {
+            when (currentTransaction.type) {
 
-                currentTransaction.type ==
-                    TransactionType.EXPENSE -> {
+                TransactionType.EXPENSE -> {
 
                     allTransactions
                         .filter { transaction ->
@@ -302,19 +316,12 @@ class TransactionDetailViewModel @Inject constructor(
                             transaction.type ==
                                 TransactionType.INCOME &&
 
-                            transaction.role ==
-                                TransactionRole.REIMBURSEMENT &&
-
                             transaction.transactionLinkId ==
                                 null
                         }
                 }
 
-                currentTransaction.type ==
-                    TransactionType.INCOME &&
-
-                currentTransaction.role ==
-                    TransactionRole.REIMBURSEMENT -> {
+                TransactionType.INCOME -> {
 
                     allTransactions
                         .filter { transaction ->
@@ -348,8 +355,7 @@ class TransactionDetailViewModel @Inject constructor(
                 .value
                 .filter { selectedId ->
 
-                    linkableTransactions.any {
-                        candidate ->
+                    linkableTransactions.any { candidate ->
 
                         candidate.id ==
                             selectedId
@@ -361,10 +367,11 @@ class TransactionDetailViewModel @Inject constructor(
             validSelectedIds
 
         //--------------------------------------------------
-        // Existing Financial Event / Report Group
+        // Existing Financial Event
         //
-        // getGroup() is suspend, therefore this whole
-        // state-building function is suspend.
+        // getGroup() is suspend, so this method remains
+        // suspend and is called from the coroutine that
+        // observes Room transactions.
         //--------------------------------------------------
 
         val existingGroup =
@@ -378,25 +385,19 @@ class TransactionDetailViewModel @Inject constructor(
                 }
 
         //--------------------------------------------------
-        // Determine whether Financial Event group prompt
-        // should be shown.
+        // Determine whether Financial Event creation
+        // should be offered.
         //
-        // Current behaviour:
-        // offer creation once the event contains more
-        // than one expense.
+        // A financial event becomes meaningful when there
+        // are at least TWO linked transactions.
+        //
+        // This works regardless of which transaction
+        // detail screen the user started from.
         //--------------------------------------------------
-
-        val expenseCount =
-            linkedTransactions
-                .count {
-
-                    it.type ==
-                        TransactionType.EXPENSE
-                }
 
         val shouldOfferGroup =
             transactionLinkId != null &&
-            expenseCount > 1 &&
+            linkedTransactions.size > 1 &&
             existingGroup == null
 
         //--------------------------------------------------
@@ -422,9 +423,8 @@ class TransactionDetailViewModel @Inject constructor(
                     existingGroup,
 
                 showCreateGroupPrompt =
-                    currentState
-                        .showCreateGroupPrompt ||
-                    shouldOfferGroup,
+                    currentState.showCreateGroupPrompt ||
+                        shouldOfferGroup,
 
                 isLinking =
                     false
@@ -452,16 +452,13 @@ class TransactionDetailViewModel @Inject constructor(
 
                 hasChanges =
                     description !=
-                        current.transaction
-                            .description ||
+                        current.transaction.description ||
 
                     current.selectedCategory !=
-                        current.transaction
-                            .category ||
+                        current.transaction.category ||
 
                     current.selectedRole !=
-                        current.transaction
-                            .role
+                        current.transaction.role
             )
     }
 
@@ -486,16 +483,13 @@ class TransactionDetailViewModel @Inject constructor(
 
                 hasChanges =
                     category !=
-                        current.transaction
-                            .category ||
+                        current.transaction.category ||
 
                     current.editableDescription !=
-                        current.transaction
-                            .description ||
+                        current.transaction.description ||
 
                     current.selectedRole !=
-                        current.transaction
-                            .role
+                        current.transaction.role
             )
     }
 
@@ -520,16 +514,13 @@ class TransactionDetailViewModel @Inject constructor(
 
                 hasChanges =
                     role !=
-                        current.transaction
-                            .role ||
+                        current.transaction.role ||
 
                     current.editableDescription !=
-                        current.transaction
-                            .description ||
+                        current.transaction.description ||
 
                     current.selectedCategory !=
-                        current.transaction
-                            .category
+                        current.transaction.category
             )
     }
 
@@ -549,7 +540,6 @@ class TransactionDetailViewModel @Inject constructor(
         val isCandidate =
             current.linkableTransactions
                 .any {
-
                     it.id ==
                         transactionId
                 }
@@ -580,7 +570,7 @@ class TransactionDetailViewModel @Inject constructor(
     //--------------------------------------------------
     // Generic candidate toggle
     //
-    // Used by the newer TransactionLinkSection.
+    // Used by TransactionLinkSection.
     //--------------------------------------------------
 
     fun toggleCandidate(
@@ -629,7 +619,8 @@ class TransactionDetailViewModel @Inject constructor(
             _selectedTransactionIds.value
 
         if (
-            selectedIds.isEmpty()
+            selectedIds.isEmpty() ||
+            current.isLinking
         ) {
             return
         }
@@ -643,6 +634,7 @@ class TransactionDetailViewModel @Inject constructor(
 
             //--------------------------------------------------
             // Reuse existing link ID when one exists.
+            // Otherwise create a new financial-event link.
             //--------------------------------------------------
 
             val transactionLinkId =
@@ -691,7 +683,7 @@ class TransactionDetailViewModel @Inject constructor(
                 emptySet()
 
             //--------------------------------------------------
-            // Room Flow will refresh the UI.
+            // Room Flow refreshes the state.
             //--------------------------------------------------
         }
     }
@@ -709,9 +701,12 @@ class TransactionDetailViewModel @Inject constructor(
 
         if (
             current.transaction
-                .transactionLinkId ==
-            null
+                .transactionLinkId == null
         ) {
+            return
+        }
+
+        if (current.isLinking) {
             return
         }
 
@@ -793,8 +788,8 @@ class TransactionDetailViewModel @Inject constructor(
         }
 
         //--------------------------------------------------
-        // Validate category against the existing
-        // application category list.
+        // Validate category against existing application
+        // categories.
         //--------------------------------------------------
 
         val selectedCategory =
@@ -808,13 +803,15 @@ class TransactionDetailViewModel @Inject constructor(
                 }
                 ?: return
 
+        if (current.isSavingGroup) {
+            return
+        }
+
         viewModelScope.launch {
 
             _uiState.value =
                 current.copy(
-
-                    isSavingGroup =
-                        true
+                    isSavingGroup = true
                 )
 
             val group =
@@ -896,29 +893,28 @@ class TransactionDetailViewModel @Inject constructor(
                 TransactionDetailUiState.Loaded
                 ?: return
 
+        if (current.isSaving) {
+            return
+        }
+
         viewModelScope.launch {
 
             _uiState.value =
                 current.copy(
-
-                    isSaving =
-                        true
+                    isSaving = true
                 )
 
             val updatedTransaction =
                 current.transaction.copy(
 
                     description =
-                        current
-                            .editableDescription,
+                        current.editableDescription,
 
                     category =
-                        current
-                            .selectedCategory,
+                        current.selectedCategory,
 
                     role =
-                        current
-                            .selectedRole
+                        current.selectedRole
                 )
 
             //--------------------------------------------------
@@ -927,12 +923,10 @@ class TransactionDetailViewModel @Inject constructor(
 
             if (
 
-                current.transaction
-                    .description !=
+                current.transaction.description !=
                     current.editableDescription ||
 
-                current.transaction
-                    .category !=
+                current.transaction.category !=
                     current.selectedCategory
 
             ) {
@@ -941,8 +935,7 @@ class TransactionDetailViewModel @Inject constructor(
                     .saveRule(
 
                         pattern =
-                            current.transaction
-                                .description,
+                            current.transaction.description,
 
                         displayDescription =
                             current.editableDescription,
@@ -971,8 +964,7 @@ class TransactionDetailViewModel @Inject constructor(
                         updatedTransaction,
 
                     selectedRole =
-                        updatedTransaction
-                            .role,
+                        updatedTransaction.role,
 
                     hasChanges =
                         false,
