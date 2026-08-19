@@ -29,6 +29,8 @@ import com.varsel.expensetracker.ui.transaction.components.TransactionLinkSectio
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.OutlinedButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
