@@ -2,6 +2,7 @@ package com.varsel.expensetracker.ui.financialevent
 
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionLinkGroup
+import com.varsel.expensetracker.data.local.entity.CategoryEntity
 
 sealed interface FinancialEventUiState {
 
@@ -33,7 +34,9 @@ sealed interface FinancialEventUiState {
 
         val isUpdating: Boolean = false,
 
-        val isEditingGroup: Boolean = false
+        val isEditingGroup: Boolean = false,
+
+        val categories: List<CategoryEntity> = emptyList(),
 
     ) : FinancialEventUiState {
 
