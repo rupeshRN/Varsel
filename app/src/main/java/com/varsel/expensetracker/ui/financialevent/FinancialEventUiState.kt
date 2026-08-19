@@ -5,8 +5,7 @@ import com.varsel.expensetracker.domain.model.TransactionLinkGroup
 
 sealed interface FinancialEventUiState {
 
-    data object Loading :
-        FinancialEventUiState
+    data object Loading : FinancialEventUiState
 
     data class Loaded(
 
@@ -16,16 +15,31 @@ sealed interface FinancialEventUiState {
 
         val reimbursements: List<Transaction>,
 
+        /**
+         * Expenses that are not currently part of this
+         * financial event and can be added manually.
+         */
+        val availableExpenses: List<Transaction>,
+
+        /**
+         * Reimbursement transactions that are not currently
+         * part of this financial event and can be added manually.
+         */
+        val availableReimbursements: List<Transaction>,
+
         val totalExpenses: Double,
 
-        val totalReimbursements: Double
+        val totalReimbursements: Double,
+
+        val isUpdating: Boolean = false,
+
+        val isEditingGroup: Boolean = false
 
     ) : FinancialEventUiState {
 
         val actualExpense: Double
             get() =
-                totalExpenses -
-                    totalReimbursements
+                totalExpenses - totalReimbursements
     }
 
     data class Error(
