@@ -265,6 +265,9 @@ fun TransactionDetailScreen(
                         onDismissCreateGroupPrompt =
                             viewModel::dismissCreateGroupPrompt,
 
+                        categories =
+                            state.categories,
+
                         onCreateReportGroup =
                             viewModel::createReportGroup
                     )
