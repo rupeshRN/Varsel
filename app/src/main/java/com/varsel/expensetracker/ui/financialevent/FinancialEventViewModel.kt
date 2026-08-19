@@ -195,13 +195,6 @@ class FinancialEventViewModel @Inject constructor(
         val current =
             _uiState.value
 
-        val isUpdating =
-            (
-                current as?
-                    FinancialEventUiState.Loaded
-            )?.isUpdating
-                ?: false
-
         val isEditingGroup =
             (
                 current as?
@@ -210,35 +203,36 @@ class FinancialEventViewModel @Inject constructor(
                 ?: false
 
         _uiState.value =
-            FinancialEventUiState.Loaded(
+    FinancialEventUiState.Loaded(
 
-                group =
-                    group,
+        group =
+            group,
 
-                expenses =
-                    expenses,
+        expenses =
+            expenses,
 
-                reimbursements =
-                    reimbursements,
+        reimbursements =
+            reimbursements,
 
-                availableExpenses =
-                    availableExpenses,
+        availableExpenses =
+            availableExpenses,
 
-                availableReimbursements =
-                    availableReimbursements,
+        availableReimbursements =
+            availableReimbursements,
 
-                totalExpenses =
-                    totalExpenses,
+        totalExpenses =
+            totalExpenses,
 
-                totalReimbursements =
-                    totalReimbursements,
+        totalReimbursements =
+            totalReimbursements,
 
-                isUpdating =
-                    isUpdating,
+        // Database/Room refresh completed.
+        isUpdating =
+            false,
 
-                isEditingGroup =
-                    isEditingGroup
-            )
+        isEditingGroup =
+            isEditingGroup
+    )
     }
 
     //--------------------------------------------------
