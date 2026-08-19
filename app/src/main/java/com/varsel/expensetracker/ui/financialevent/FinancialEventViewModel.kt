@@ -239,91 +239,101 @@ class FinancialEventViewModel @Inject constructor(
     // Add an expense
     //--------------------------------------------------
 
-    fun addExpense(
-        transactionId: Long
+//--------------------------------------------------
+// Add multiple expenses at once
+//--------------------------------------------------
+
+fun addExpenses(
+    transactionIds: Set<Long>
+) {
+
+    val current =
+        _uiState.value as?
+            FinancialEventUiState.Loaded
+            ?: return
+
+    if (
+        current.isUpdating ||
+        transactionIds.isEmpty()
     ) {
-
-        val current =
-            _uiState.value as?
-                FinancialEventUiState.Loaded
-                ?: return
-
-        if (
-            current.isUpdating
-        ) {
-            return
-        }
-
-        val transaction =
-            current.availableExpenses
-                .firstOrNull {
-                    it.id == transactionId
-                }
-                ?: return
-
-        viewModelScope.launch {
-
-            _uiState.value =
-                current.copy(
-                    isUpdating = true
-                )
-
-            transactionRepository
-                .linkTransactions(
-
-                    transactionIds =
-                        listOf(transaction.id),
-
-                    transactionLinkId =
-                        current.group.transactionLinkId
-                )
-        }
+        return
     }
 
-    //--------------------------------------------------
-    // Add a reimbursement
-    //--------------------------------------------------
+    val validIds =
+        current.availableExpenses
+            .map { it.id }
+            .toSet()
+            .intersect(transactionIds)
 
-    fun addReimbursement(
-        transactionId: Long
-    ) {
-
-        val current =
-            _uiState.value as?
-                FinancialEventUiState.Loaded
-                ?: return
-
-        if (
-            current.isUpdating
-        ) {
-            return
-        }
-
-        val transaction =
-            current.availableReimbursements
-                .firstOrNull {
-                    it.id == transactionId
-                }
-                ?: return
-
-        viewModelScope.launch {
-
-            _uiState.value =
-                current.copy(
-                    isUpdating = true
-                )
-
-            transactionRepository
-                .linkTransactions(
-
-                    transactionIds =
-                        listOf(transaction.id),
-
-                    transactionLinkId =
-                        current.group.transactionLinkId
-                )
-        }
+    if (validIds.isEmpty()) {
+        return
     }
+
+    viewModelScope.launch {
+
+        _uiState.value =
+            current.copy(
+                isUpdating = true
+            )
+
+        transactionRepository.linkTransactions(
+
+            transactionIds =
+                validIds.toList(),
+
+            transactionLinkId =
+                current.group.transactionLinkId
+        )
+    }
+}
+
+//--------------------------------------------------
+// Add multiple reimbursements at once
+//--------------------------------------------------
+
+fun addReimbursements(
+    transactionIds: Set<Long>
+) {
+
+    val current =
+        _uiState.value as?
+            FinancialEventUiState.Loaded
+            ?: return
+
+    if (
+        current.isUpdating ||
+        transactionIds.isEmpty()
+    ) {
+        return
+    }
+
+    val validIds =
+        current.availableReimbursements
+            .map { it.id }
+            .toSet()
+            .intersect(transactionIds)
+
+    if (validIds.isEmpty()) {
+        return
+    }
+
+    viewModelScope.launch {
+
+        _uiState.value =
+            current.copy(
+                isUpdating = true
+            )
+
+        transactionRepository.linkTransactions(
+
+            transactionIds =
+                validIds.toList(),
+
+            transactionLinkId =
+                current.group.transactionLinkId
+        )
+    }
+}
 
     //--------------------------------------------------
     // Remove transaction from event
