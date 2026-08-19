@@ -2,32 +2,34 @@ package com.varsel.expensetracker.ui.financialevent
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.varsel.expensetracker.domain.model.TransactionType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.Composable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,66 +91,62 @@ fun FinancialEventScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .verticalScroll(scrollState)
+                    .verticalScroll(
+                        scrollState
+                    )
                     .padding(24.dp),
 
             verticalArrangement =
                 Arrangement.spacedBy(16.dp)
-
         ) {
 
             when (val state = uiState) {
 
                 FinancialEventUiState.Loading -> {
 
-                    Text("Loading financial event...")
+                    Text(
+                        text =
+                            "Loading financial event..."
+                    )
                 }
 
                 is FinancialEventUiState.Error -> {
 
                     Text(
-                        text = state.message
+                        text =
+                            state.message
                     )
                 }
 
                 is FinancialEventUiState.Loaded -> {
 
-                    val event =
-                        state.group
+                    //--------------------------------------------------
+                    // Event header
+                    //--------------------------------------------------
 
                     Text(
                         text =
-                            event.groupName,
+                            state.group.groupName,
 
                         style =
-                            androidx.compose.material3
-                                .MaterialTheme
-                                .typography
-                                .headlineSmall
+                            MaterialTheme.typography
+                                .headlineSmall,
+
+                        fontWeight =
+                            FontWeight.Bold
                     )
 
                     Text(
                         text =
-                            event.category,
+                            state.group.category,
 
                         style =
-                            androidx.compose.material3
-                                .MaterialTheme
-                                .typography
+                            MaterialTheme.typography
                                 .bodyMedium,
 
                         color =
-                            androidx.compose.material3
-                                .MaterialTheme
-                                .colorScheme
+                            MaterialTheme.colorScheme
                                 .onSurfaceVariant
-                    )
-
-                    Spacer(
-                        modifier =
-                            Modifier.padding(
-                                top = 4.dp
-                            )
                     )
 
                     //--------------------------------------------------
@@ -156,26 +154,32 @@ fun FinancialEventScreen(
                     //--------------------------------------------------
 
                     Text(
-                        text = "Expenses",
+                        text =
+                            "Expenses",
 
                         style =
-                            androidx.compose.material3
-                                .MaterialTheme
-                                .typography
-                                .titleMedium
+                            MaterialTheme.typography
+                                .titleMedium,
+
+                        fontWeight =
+                            FontWeight.SemiBold
                     )
 
-                    if (state.expenses.isEmpty()) {
+                    if (
+                        state.expenses.isEmpty()
+                    ) {
 
                         Text(
                             text =
                                 "No expenses linked.",
 
                             style =
-                                androidx.compose.material3
-                                    .MaterialTheme
-                                    .typography
-                                    .bodyMedium
+                                MaterialTheme.typography
+                                    .bodyMedium,
+
+                            color =
+                                MaterialTheme.colorScheme
+                                    .onSurfaceVariant
                         )
 
                     } else {
@@ -183,7 +187,6 @@ fun FinancialEventScreen(
                         state.expenses.forEach { transaction ->
 
                             FinancialEventTransactionRow(
-
                                 description =
                                     transaction.description,
 
@@ -205,10 +208,11 @@ fun FinancialEventScreen(
                             "Reimbursements",
 
                         style =
-                            androidx.compose.material3
-                                .MaterialTheme
-                                .typography
-                                .titleMedium
+                            MaterialTheme.typography
+                                .titleMedium,
+
+                        fontWeight =
+                            FontWeight.SemiBold
                     )
 
                     if (
@@ -220,10 +224,12 @@ fun FinancialEventScreen(
                                 "No reimbursements linked.",
 
                             style =
-                                androidx.compose.material3
-                                    .MaterialTheme
-                                    .typography
-                                    .bodyMedium
+                                MaterialTheme.typography
+                                    .bodyMedium,
+
+                            color =
+                                MaterialTheme.colorScheme
+                                    .onSurfaceVariant
                         )
 
                     } else {
@@ -232,7 +238,6 @@ fun FinancialEventScreen(
                             transaction ->
 
                             FinancialEventTransactionRow(
-
                                 description =
                                     transaction.description,
 
@@ -245,6 +250,10 @@ fun FinancialEventScreen(
                         }
                     }
 
+                    //--------------------------------------------------
+                    // Summary
+                    //--------------------------------------------------
+
                     Spacer(
                         modifier =
                             Modifier.padding(
@@ -252,58 +261,59 @@ fun FinancialEventScreen(
                             )
                     )
 
-                    //--------------------------------------------------
-                    // Summary
-                    //--------------------------------------------------
+                    Card(
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
 
-                    Text(
-                        text =
-                            "Total Expenses: " +
-                                "₹%,.2f"
-                                    .format(
-                                        state.totalExpenses
-                                    ),
+                        Column(
+                            modifier =
+                                Modifier.padding(16.dp),
 
-                        style =
-                            androidx.compose.material3
-                                .MaterialTheme
-                                .typography
-                                .bodyLarge
-                    )
+                            verticalArrangement =
+                                Arrangement.spacedBy(8.dp)
+                        ) {
 
-                    Text(
-                        text =
-                            "Total Reimbursed: " +
-                                "₹%,.2f"
-                                    .format(
-                                        state.totalReimbursements
-                                    ),
+                            Text(
+                                text =
+                                    "Event Summary",
 
-                        style =
-                            androidx.compose.material3
-                                .MaterialTheme
-                                .typography
-                                .bodyLarge
-                    )
+                                style =
+                                    MaterialTheme.typography
+                                        .titleMedium,
 
-                    Text(
-                        text =
-                            "My Actual Expense: " +
-                                "₹%,.2f"
-                                    .format(
-                                        state.actualExpense
-                                    ),
+                                fontWeight =
+                                    FontWeight.SemiBold
+                            )
 
-                        style =
-                            androidx.compose.material3
-                                .MaterialTheme
-                                .typography
-                                .titleMedium,
+                            Text(
+                                text =
+                                    "Total Expenses: " +
+                                        "₹%,.2f".format(
+                                            state.totalExpenses
+                                        )
+                            )
 
-                        fontWeight =
-                            androidx.compose.ui.text.font
-                                .FontWeight.Bold
-                    )
+                            Text(
+                                text =
+                                    "Total Reimbursed: " +
+                                        "₹%,.2f".format(
+                                            state.totalReimbursements
+                                        )
+                            )
+
+                            Text(
+                                text =
+                                    "My Actual Expense: " +
+                                        "₹%,.2f".format(
+                                            state.actualExpense
+                                        ),
+
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+                        }
+                    }
 
                     Spacer(
                         modifier =
@@ -332,67 +342,63 @@ private fun FinancialEventTransactionRow(
             Date(dateTimestamp)
         )
 
-    androidx.compose.material3.Card(
+    Card(
         modifier =
-            Modifier.fillMaxSize()
+            Modifier.fillMaxWidth()
     ) {
 
-        Column(
-            modifier =
-                Modifier.padding(16.dp),
+        Row(
 
-            verticalArrangement =
-                Arrangement.spacedBy(4.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+
+            horizontalArrangement =
+                Arrangement.SpaceBetween
         ) {
 
-            androidx.compose.foundation.layout.Row(
-
+            Column(
                 modifier =
-                    Modifier.fillMaxWidth(),
+                    Modifier.weight(1f),
 
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
+                verticalArrangement =
+                    Arrangement.spacedBy(4.dp)
             ) {
 
                 Text(
-                    text = description,
-
-                    modifier =
-                        Modifier.weight(1f),
+                    text =
+                        description,
 
                     style =
-                        androidx.compose.material3
-                            .MaterialTheme
-                            .typography
+                        MaterialTheme.typography
                             .bodyMedium
                 )
 
                 Text(
                     text =
-                        "₹%,.2f".format(amount),
+                        date,
 
                     style =
-                        androidx.compose.material3
-                            .MaterialTheme
-                            .typography
-                            .bodyMedium
+                        MaterialTheme.typography
+                            .bodySmall,
+
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
                 )
             }
 
             Text(
-                text = date,
+                text =
+                    "₹%,.2f".format(amount),
 
                 style =
-                    androidx.compose.material3
-                        .MaterialTheme
-                        .typography
-                        .bodySmall,
+                    MaterialTheme.typography
+                        .bodyMedium,
 
-                color =
-                    androidx.compose.material3
-                        .MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant
+                fontWeight =
+                    FontWeight.SemiBold
             )
         }
     }
