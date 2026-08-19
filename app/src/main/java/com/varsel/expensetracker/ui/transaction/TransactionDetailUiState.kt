@@ -23,6 +23,21 @@ sealed interface TransactionDetailUiState {
         val isSaving: Boolean = false,
 
         //--------------------------------------------------
+        // Categories
+        //--------------------------------------------------
+
+        /**
+         * Existing application categories.
+         *
+         * Used by the Financial Event / Report Group
+         * creation dialog so the user selects a category
+         * from the application's existing category list
+         * instead of typing arbitrary text.
+         */
+        val categories: List<String> =
+            emptyList(),
+
+        //--------------------------------------------------
         // Manual transaction linking
         //--------------------------------------------------
 
