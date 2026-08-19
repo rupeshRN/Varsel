@@ -36,7 +36,7 @@ sealed interface FinancialEventUiState {
 
         val isEditingGroup: Boolean = false,
 
-        val categories: List<CategoryEntity> = emptyList(),
+        val categories: List<String>
 
     ) : FinancialEventUiState {
 
