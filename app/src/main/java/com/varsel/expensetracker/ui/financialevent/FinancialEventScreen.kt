@@ -43,9 +43,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.ExposedDropdownMenu
 
 @OptIn(ExperimentalMaterial3Api::class)
 private enum class AddTransactionMode {
@@ -1306,7 +1303,6 @@ ExposedDropdownMenuBox(
             categoryExpanded = false
         }
     ) {
-
         categories.forEach { availableCategory ->
 
             DropdownMenuItem(
