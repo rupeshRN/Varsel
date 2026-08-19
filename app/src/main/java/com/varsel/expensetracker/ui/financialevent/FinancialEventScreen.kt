@@ -25,6 +25,8 @@ import com.varsel.expensetracker.domain.model.TransactionType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -345,7 +347,7 @@ private fun FinancialEventTransactionRow(
             androidx.compose.foundation.layout.Row(
 
                 modifier =
-                    Modifier.fillMaxSize(),
+                    Modifier.fillMaxWidth(),
 
                 horizontalArrangement =
                     Arrangement.SpaceBetween
