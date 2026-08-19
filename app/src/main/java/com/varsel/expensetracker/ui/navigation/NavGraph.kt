@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Palette
 import com.varsel.expensetracker.ui.more.SettingsDetailScreen
 import com.varsel.expensetracker.ui.developer.DeveloperSettingsScreen
 import com.varsel.expensetracker.ui.transaction.TransactionDetailScreen
+import com.varsel.expensetracker.ui.financialevent.FinancialEventScreen
 
 @Composable
 fun NavGraph(
@@ -84,12 +85,38 @@ TransactionDetailScreen(
 
     onBackClick = {
 
-        navController.popBackStack()
+        navController.popBackStack()},
 
-    }
+        onFinancialEventClick = { transactionLinkId ->
+
+            navController.navigate(
+                "financial_event/$transactionLinkId"
+            )
+        }
 
 )
 
+}
+
+composable(
+    route = "financial_event/{transactionLinkId}"
+) { backStackEntry ->
+
+    val transactionLinkId =
+        backStackEntry
+            .arguments
+            ?.getString("transactionLinkId")
+            ?: return@composable
+
+    FinancialEventScreen(
+
+        transactionLinkId =
+            transactionLinkId,
+
+        onBackClick = {
+            navController.popBackStack()
+        }
+    )
 }
 
         composable(AppDestination.Reports.route) {
