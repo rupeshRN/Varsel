@@ -11,22 +11,30 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.varsel.expensetracker.domain.model.Transaction
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -34,11 +42,15 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinancialEventScreen(
+
     transactionLinkId: String,
+
     onBackClick: () -> Unit
+
 ) {
 
-    val viewModel: FinancialEventViewModel =
+    val viewModel:
+        FinancialEventViewModel =
         hiltViewModel()
 
     val uiState by
@@ -68,7 +80,8 @@ fun FinancialEventScreen(
                 navigationIcon = {
 
                     IconButton(
-                        onClick = onBackClick
+                        onClick =
+                            onBackClick
                     ) {
 
                         Icon(
@@ -100,54 +113,96 @@ fun FinancialEventScreen(
                 Arrangement.spacedBy(16.dp)
         ) {
 
-            when (val state = uiState) {
+            when (
+                val state = uiState
+            ) {
 
                 FinancialEventUiState.Loading -> {
 
                     Text(
-                        text =
-                            "Loading financial event..."
+                        "Loading financial event..."
                     )
                 }
 
                 is FinancialEventUiState.Error -> {
 
                     Text(
-                        text =
-                            state.message
+                        state.message
                     )
                 }
 
                 is FinancialEventUiState.Loaded -> {
 
                     //--------------------------------------------------
-                    // Event header
+                    // Header
                     //--------------------------------------------------
 
-                    Text(
-                        text =
-                            state.group.groupName,
+                    Card(
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
 
-                        style =
-                            MaterialTheme.typography
-                                .headlineSmall,
+                        Column(
+                            modifier =
+                                Modifier.padding(
+                                    16.dp
+                                ),
 
-                        fontWeight =
-                            FontWeight.Bold
-                    )
+                            verticalArrangement =
+                                Arrangement.spacedBy(
+                                    8.dp
+                                )
+                        ) {
 
-                    Text(
-                        text =
-                            state.group.category,
+                            Text(
+                                text =
+                                    state.group
+                                        .groupName,
 
-                        style =
-                            MaterialTheme.typography
-                                .bodyMedium,
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .headlineSmall,
 
-                        color =
-                            MaterialTheme.colorScheme
-                                .onSurfaceVariant
-                    )
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+
+                            Text(
+                                text =
+                                    state.group
+                                        .category,
+
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .bodyMedium,
+
+                                color =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .onSurfaceVariant
+                            )
+
+                            OutlinedButton(
+                                onClick =
+                                    viewModel
+                                        ::startEditingGroup,
+
+                                enabled =
+                                    !state.isUpdating,
+
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                            ) {
+
+                                Text(
+                                    "Edit Financial Event"
+                                )
+                            }
+                        }
+                    }
 
                     //--------------------------------------------------
                     // Expenses
@@ -158,7 +213,8 @@ fun FinancialEventScreen(
                             "Expenses",
 
                         style =
-                            MaterialTheme.typography
+                            MaterialTheme
+                                .typography
                                 .titleMedium,
 
                         fontWeight =
@@ -173,30 +229,79 @@ fun FinancialEventScreen(
                             text =
                                 "No expenses linked.",
 
-                            style =
-                                MaterialTheme.typography
-                                    .bodyMedium,
-
                             color =
-                                MaterialTheme.colorScheme
+                                MaterialTheme
+                                    .colorScheme
                                     .onSurfaceVariant
                         )
 
                     } else {
 
-                        state.expenses.forEach { transaction ->
+                        state.expenses.forEach {
+                            transaction ->
 
                             FinancialEventTransactionRow(
-                                description =
-                                    transaction.description,
 
-                                amount =
-                                    transaction.amount,
+                                transaction =
+                                    transaction,
 
-                                dateTimestamp =
-                                    transaction.dateTimestamp
+                                onRemove = {
+
+                                    viewModel
+                                        .removeTransaction(
+                                            transaction.id
+                                        )
+                                },
+
+                                enabled =
+                                    !state.isUpdating
                             )
                         }
+                    }
+
+                    //--------------------------------------------------
+                    // Add expense
+                    //--------------------------------------------------
+
+                    if (
+                        state.availableExpenses
+                            .isNotEmpty()
+                    ) {
+
+                        Text(
+                            text =
+                                "Add Expense",
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleSmall
+                        )
+
+                        state.availableExpenses
+                            .forEach {
+                                transaction ->
+
+                                AvailableTransactionRow(
+
+                                    transaction =
+                                        transaction,
+
+                                    buttonText =
+                                        "Add",
+
+                                    onClick = {
+
+                                        viewModel
+                                            .addExpense(
+                                                transaction.id
+                                            )
+                                    },
+
+                                    enabled =
+                                        !state.isUpdating
+                                )
+                            }
                     }
 
                     //--------------------------------------------------
@@ -208,7 +313,8 @@ fun FinancialEventScreen(
                             "Reimbursements",
 
                         style =
-                            MaterialTheme.typography
+                            MaterialTheme
+                                .typography
                                 .titleMedium,
 
                         fontWeight =
@@ -216,50 +322,93 @@ fun FinancialEventScreen(
                     )
 
                     if (
-                        state.reimbursements.isEmpty()
+                        state.reimbursements
+                            .isEmpty()
                     ) {
 
                         Text(
                             text =
                                 "No reimbursements linked.",
 
-                            style =
-                                MaterialTheme.typography
-                                    .bodyMedium,
-
                             color =
-                                MaterialTheme.colorScheme
+                                MaterialTheme
+                                    .colorScheme
                                     .onSurfaceVariant
                         )
 
                     } else {
 
-                        state.reimbursements.forEach {
-                            transaction ->
+                        state.reimbursements
+                            .forEach {
+                                transaction ->
 
-                            FinancialEventTransactionRow(
-                                description =
-                                    transaction.description,
+                                FinancialEventTransactionRow(
 
-                                amount =
-                                    transaction.amount,
+                                    transaction =
+                                        transaction,
 
-                                dateTimestamp =
-                                    transaction.dateTimestamp
-                            )
-                        }
+                                    onRemove = {
+
+                                        viewModel
+                                            .removeTransaction(
+                                                transaction.id
+                                            )
+                                    },
+
+                                    enabled =
+                                        !state.isUpdating
+                                )
+                            }
+                    }
+
+                    //--------------------------------------------------
+                    // Add reimbursement
+                    //--------------------------------------------------
+
+                    if (
+                        state.availableReimbursements
+                            .isNotEmpty()
+                    ) {
+
+                        Text(
+                            text =
+                                "Add Reimbursement",
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleSmall
+                        )
+
+                        state.availableReimbursements
+                            .forEach {
+                                transaction ->
+
+                                AvailableTransactionRow(
+
+                                    transaction =
+                                        transaction,
+
+                                    buttonText =
+                                        "Add",
+
+                                    onClick = {
+
+                                        viewModel
+                                            .addReimbursement(
+                                                transaction.id
+                                            )
+                                    },
+
+                                    enabled =
+                                        !state.isUpdating
+                                )
+                            }
                     }
 
                     //--------------------------------------------------
                     // Summary
                     //--------------------------------------------------
-
-                    Spacer(
-                        modifier =
-                            Modifier.padding(
-                                top = 8.dp
-                            )
-                    )
 
                     Card(
                         modifier =
@@ -268,10 +417,14 @@ fun FinancialEventScreen(
 
                         Column(
                             modifier =
-                                Modifier.padding(16.dp),
+                                Modifier.padding(
+                                    16.dp
+                                ),
 
                             verticalArrangement =
-                                Arrangement.spacedBy(8.dp)
+                                Arrangement.spacedBy(
+                                    8.dp
+                                )
                         ) {
 
                             Text(
@@ -279,7 +432,8 @@ fun FinancialEventScreen(
                                     "Event Summary",
 
                                 style =
-                                    MaterialTheme.typography
+                                    MaterialTheme
+                                        .typography
                                         .titleMedium,
 
                                 fontWeight =
@@ -290,7 +444,8 @@ fun FinancialEventScreen(
                                 text =
                                     "Total Expenses: " +
                                         "₹%,.2f".format(
-                                            state.totalExpenses
+                                            state
+                                                .totalExpenses
                                         )
                             )
 
@@ -298,7 +453,8 @@ fun FinancialEventScreen(
                                 text =
                                     "Total Reimbursed: " +
                                         "₹%,.2f".format(
-                                            state.totalReimbursements
+                                            state
+                                                .totalReimbursements
                                         )
                             )
 
@@ -306,7 +462,8 @@ fun FinancialEventScreen(
                                 text =
                                     "My Actual Expense: " +
                                         "₹%,.2f".format(
-                                            state.actualExpense
+                                            state
+                                                .actualExpense
                                         ),
 
                                 fontWeight =
@@ -321,6 +478,34 @@ fun FinancialEventScreen(
                                 bottom = 24.dp
                             )
                     )
+
+                    //--------------------------------------------------
+                    // Edit dialog
+                    //--------------------------------------------------
+
+                    if (
+                        state.isEditingGroup
+                    ) {
+
+                        EditFinancialEventDialog(
+
+                            initialName =
+                                state.group
+                                    .groupName,
+
+                            initialCategory =
+                                state.group
+                                    .category,
+
+                            onDismiss =
+                                viewModel
+                                    ::cancelEditingGroup,
+
+                            onSave =
+                                viewModel
+                                    ::saveGroup
+                        )
+                    }
                 }
             }
         }
@@ -329,9 +514,13 @@ fun FinancialEventScreen(
 
 @Composable
 private fun FinancialEventTransactionRow(
-    description: String,
-    amount: Double,
-    dateTimestamp: Long
+
+    transaction: Transaction,
+
+    onRemove: () -> Unit,
+
+    enabled: Boolean
+
 ) {
 
     val date =
@@ -339,7 +528,9 @@ private fun FinancialEventTransactionRow(
             "dd MMM yyyy",
             Locale.ENGLISH
         ).format(
-            Date(dateTimestamp)
+            Date(
+                transaction.dateTimestamp
+            )
         )
 
     Card(
@@ -347,59 +538,308 @@ private fun FinancialEventTransactionRow(
             Modifier.fillMaxWidth()
     ) {
 
-        Row(
-
+        Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                Modifier.padding(16.dp),
 
-            horizontalArrangement =
-                Arrangement.SpaceBetween
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    6.dp
+                )
         ) {
 
-            Column(
-                modifier =
-                    Modifier.weight(1f),
+            Row(
 
-                verticalArrangement =
-                    Arrangement.spacedBy(4.dp)
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement
+                        .SpaceBetween
             ) {
 
-                Text(
-                    text =
-                        description,
+                Column(
+                    modifier =
+                        Modifier.weight(1f)
+                ) {
 
-                    style =
-                        MaterialTheme.typography
-                            .bodyMedium
-                )
+                    Text(
+                        transaction.description,
 
-                Text(
-                    text =
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodyMedium
+                    )
+
+                    Text(
                         date,
 
-                    style =
-                        MaterialTheme.typography
-                            .bodySmall,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
 
-                    color =
-                        MaterialTheme.colorScheme
-                            .onSurfaceVariant
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+                }
+
+                Text(
+                    "₹%,.2f".format(
+                        transaction.amount
+                    ),
+
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
             }
 
-            Text(
-                text =
-                    "₹%,.2f".format(amount),
+            OutlinedButton(
 
-                style =
-                    MaterialTheme.typography
-                        .bodyMedium,
+                onClick =
+                    onRemove,
 
-                fontWeight =
-                    FontWeight.SemiBold
-            )
+                enabled =
+                    enabled,
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+
+                Text("Remove from Event")
+            }
         }
     }
+}
+
+@Composable
+private fun AvailableTransactionRow(
+
+    transaction: Transaction,
+
+    buttonText: String,
+
+    onClick: () -> Unit,
+
+    enabled: Boolean
+
+) {
+
+    val date =
+        SimpleDateFormat(
+            "dd MMM yyyy",
+            Locale.ENGLISH
+        ).format(
+            Date(
+                transaction.dateTimestamp
+            )
+        )
+
+    Card(
+        modifier =
+            Modifier.fillMaxWidth()
+    ) {
+
+        Column(
+            modifier =
+                Modifier.padding(16.dp),
+
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    6.dp
+                )
+        ) {
+
+            Row(
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement
+                        .SpaceBetween
+            ) {
+
+                Column(
+                    modifier =
+                        Modifier.weight(1f)
+                ) {
+
+                    Text(
+                        transaction.description,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodyMedium
+                    )
+
+                    Text(
+                        date,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+                }
+
+                Text(
+                    "₹%,.2f".format(
+                        transaction.amount
+                    ),
+
+                    fontWeight =
+                        FontWeight.SemiBold
+                )
+            }
+
+            Button(
+
+                onClick =
+                    onClick,
+
+                enabled =
+                    enabled,
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+
+                Text(buttonText)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditFinancialEventDialog(
+
+    initialName: String,
+
+    initialCategory: String,
+
+    onDismiss: () -> Unit,
+
+    onSave: (
+        String,
+        String
+    ) -> Unit
+
+) {
+
+    var groupName by
+        remember(initialName) {
+            mutableStateOf(
+                initialName
+            )
+        }
+
+    var category by
+        remember(initialCategory) {
+            mutableStateOf(
+                initialCategory
+            )
+        }
+
+    AlertDialog(
+
+        onDismissRequest =
+            onDismiss,
+
+        title = {
+            Text(
+                "Edit Financial Event"
+            )
+        },
+
+        text = {
+
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        12.dp
+                    )
+            ) {
+
+                OutlinedTextField(
+
+                    value =
+                        groupName,
+
+                    onValueChange = {
+                        groupName = it
+                    },
+
+                    label = {
+                        Text("Event name")
+                    },
+
+                    singleLine = true,
+
+                    modifier =
+                        Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+
+                    value =
+                        category,
+
+                    onValueChange = {
+                        category = it
+                    },
+
+                    label = {
+                        Text("Category")
+                    },
+
+                    singleLine = true,
+
+                    modifier =
+                        Modifier.fillMaxWidth()
+                )
+            }
+        },
+
+        confirmButton = {
+
+            Button(
+
+                onClick = {
+
+                    onSave(
+                        groupName,
+                        category
+                    )
+                },
+
+                enabled =
+                    groupName.isNotBlank() &&
+                    category.isNotBlank()
+            ) {
+
+                Text("Save")
+            }
+        },
+
+        dismissButton = {
+
+            OutlinedButton(
+                onClick =
+                    onDismiss
+            ) {
+
+                Text("Cancel")
+            }
+        }
+    )
 }
