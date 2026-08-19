@@ -44,7 +44,8 @@ class FinancialEventViewModel @Inject constructor(
     private var currentTransactionLinkId:
         String? = null
 
-    private var observeJob: Job? = null
+    private var observeJob:
+        Job? = null
 
     //--------------------------------------------------
     // Load financial event
@@ -75,7 +76,6 @@ class FinancialEventViewModel @Inject constructor(
                     .collectLatest { transactions ->
 
                         rebuildState(
-
                             transactionLinkId =
                                 transactionLinkId,
 
@@ -141,17 +141,26 @@ class FinancialEventViewModel @Inject constructor(
 
         //--------------------------------------------------
         // Reimbursements
+        //
+        // IMPORTANT:
+        //
+        // Once an income transaction is linked to a
+        // Financial Event, the event itself determines
+        // that it belongs on the reimbursement side.
+        //
+        // Therefore we DO NOT require
+        // TransactionRole.REIMBURSEMENT here.
+        //
+        // This allows a normal income to be added through
+        // "Add Reimbursements" without first editing the
+        // individual transaction.
         //--------------------------------------------------
 
         val reimbursements =
             linkedTransactions
                 .filter {
-
                     it.type ==
-                        TransactionType.INCOME &&
-
-                    it.role ==
-                        TransactionRole.REIMBURSEMENT
+                        TransactionType.INCOME
                 }
                 .sortedByDescending {
                     it.dateTimestamp
@@ -160,8 +169,8 @@ class FinancialEventViewModel @Inject constructor(
         //--------------------------------------------------
         // Available expenses
         //
-        // An expense can be added to this event only if
-        // it is currently not linked to another event.
+        // An expense can be added to this event only when
+        // it is not already linked to another event.
         //--------------------------------------------------
 
         val availableExpenses =
@@ -181,9 +190,17 @@ class FinancialEventViewModel @Inject constructor(
         //--------------------------------------------------
         // Available reimbursements
         //
-        // A reimbursement can belong to this event only
-        // when it is explicitly marked as REIMBURSEMENT
-        // and is not currently linked elsewhere.
+        // IMPORTANT:
+        //
+        // "Add Reimbursements" intentionally shows ALL
+        // unlinked income transactions.
+        //
+        // The user does NOT need to first edit the income
+        // transaction and change its role to
+        // TransactionRole.REIMBURSEMENT.
+        //
+        // The Financial Event picker determines that the
+        // selected income is being used as reimbursement.
         //--------------------------------------------------
 
         val availableReimbursements =
@@ -192,9 +209,6 @@ class FinancialEventViewModel @Inject constructor(
 
                     it.type ==
                         TransactionType.INCOME &&
-
-                    it.role ==
-                        TransactionRole.REIMBURSEMENT &&
 
                     it.transactionLinkId ==
                         null
@@ -207,7 +221,7 @@ class FinancialEventViewModel @Inject constructor(
         // Existing application categories
         //
         // Use the same category source as the rest of
-        // the application. Do not create a second list.
+        // the application.
         //--------------------------------------------------
 
         val categories =
@@ -317,7 +331,9 @@ class FinancialEventViewModel @Inject constructor(
                 }
                 .distinct()
 
-        if (validIds.isEmpty()) {
+        if (
+            validIds.isEmpty()
+        ) {
             return
         }
 
@@ -358,6 +374,15 @@ class FinancialEventViewModel @Inject constructor(
 
     //--------------------------------------------------
     // Add multiple reimbursements
+    //
+    // IMPORTANT:
+    //
+    // The button and function remain named
+    // "Add Reimbursements".
+    //
+    // The selected transactions are income transactions.
+    // They no longer need to already have the
+    // REIMBURSEMENT role.
     //--------------------------------------------------
 
     fun addReimbursements(
@@ -386,7 +411,9 @@ class FinancialEventViewModel @Inject constructor(
                 }
                 .distinct()
 
-        if (validIds.isEmpty()) {
+        if (
+            validIds.isEmpty()
+        ) {
             return
         }
 
@@ -452,7 +479,9 @@ class FinancialEventViewModel @Inject constructor(
                 it.id == transactionId
             }
 
-        if (!belongsToEvent) {
+        if (
+            !belongsToEvent
+        ) {
             return
         }
 
@@ -552,12 +581,14 @@ class FinancialEventViewModel @Inject constructor(
                 )
             }
 
-        if (!categoryExists) {
+        if (
+            !categoryExists
+        ) {
             return
         }
 
         //--------------------------------------------------
-        // Use the canonical spelling from the category list.
+        // Use canonical spelling from the category list.
         //--------------------------------------------------
 
         val selectedCategory =
