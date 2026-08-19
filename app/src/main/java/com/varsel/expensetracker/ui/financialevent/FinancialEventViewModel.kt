@@ -2,6 +2,7 @@ package com.varsel.expensetracker.ui.financialevent
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.varsel.expensetracker.data.local.dao.CategoryDao
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionLinkGroup
 import com.varsel.expensetracker.domain.model.TransactionRole
@@ -24,7 +25,10 @@ class FinancialEventViewModel @Inject constructor(
         TransactionRepository,
 
     private val transactionLinkGroupRepository:
-        TransactionLinkGroupRepository
+        TransactionLinkGroupRepository,
+
+    private val categoryDao:
+        CategoryDao
 
 ) : ViewModel() {
 
@@ -71,6 +75,7 @@ class FinancialEventViewModel @Inject constructor(
                     .collectLatest { transactions ->
 
                         rebuildState(
+
                             transactionLinkId =
                                 transactionLinkId,
 
@@ -110,7 +115,7 @@ class FinancialEventViewModel @Inject constructor(
         }
 
         //--------------------------------------------------
-        // Transactions already belonging to this event
+        // Existing transactions in this financial event
         //--------------------------------------------------
 
         val linkedTransactions =
@@ -119,6 +124,10 @@ class FinancialEventViewModel @Inject constructor(
                     it.transactionLinkId ==
                         transactionLinkId
                 }
+
+        //--------------------------------------------------
+        // Expenses
+        //--------------------------------------------------
 
         val expenses =
             linkedTransactions
@@ -129,6 +138,10 @@ class FinancialEventViewModel @Inject constructor(
                 .sortedByDescending {
                     it.dateTimestamp
                 }
+
+        //--------------------------------------------------
+        // Reimbursements
+        //--------------------------------------------------
 
         val reimbursements =
             linkedTransactions
@@ -145,10 +158,10 @@ class FinancialEventViewModel @Inject constructor(
                 }
 
         //--------------------------------------------------
-        // Available transactions
+        // Available expenses
         //
-        // We deliberately do NOT automatically select or
-        // match anything.
+        // An expense can be added to this event only if
+        // it is currently not linked to another event.
         //--------------------------------------------------
 
         val availableExpenses =
@@ -164,6 +177,14 @@ class FinancialEventViewModel @Inject constructor(
                 .sortedByDescending {
                     it.dateTimestamp
                 }
+
+        //--------------------------------------------------
+        // Available reimbursements
+        //
+        // A reimbursement can belong to this event only
+        // when it is explicitly marked as REIMBURSEMENT
+        // and is not currently linked elsewhere.
+        //--------------------------------------------------
 
         val availableReimbursements =
             transactions
@@ -182,6 +203,29 @@ class FinancialEventViewModel @Inject constructor(
                     it.dateTimestamp
                 }
 
+        //--------------------------------------------------
+        // Existing application categories
+        //
+        // Use the same category source as the rest of
+        // the application. Do not create a second list.
+        //--------------------------------------------------
+
+        val categories =
+            categoryDao
+                .getAllCategoriesSnapshot()
+                .map {
+                    it.name
+                }
+                .filter {
+                    it.isNotBlank()
+                }
+                .distinct()
+                .sorted()
+
+        //--------------------------------------------------
+        // Totals
+        //--------------------------------------------------
+
         val totalExpenses =
             expenses.sumOf {
                 it.amount
@@ -192,148 +236,194 @@ class FinancialEventViewModel @Inject constructor(
                 it.amount
             }
 
+        //--------------------------------------------------
+        // Preserve transient UI state
+        //--------------------------------------------------
+
         val current =
-            _uiState.value
+            _uiState.value as?
+                FinancialEventUiState.Loaded
+
+        val isUpdating =
+            current?.isUpdating
+                ?: false
 
         val isEditingGroup =
-            (
-                current as?
-                    FinancialEventUiState.Loaded
-            )?.isEditingGroup
+            current?.isEditingGroup
                 ?: false
 
         _uiState.value =
-    FinancialEventUiState.Loaded(
+            FinancialEventUiState.Loaded(
 
-        group =
-            group,
+                group =
+                    group,
 
-        expenses =
-            expenses,
+                expenses =
+                    expenses,
 
-        reimbursements =
-            reimbursements,
+                reimbursements =
+                    reimbursements,
 
-        availableExpenses =
-            availableExpenses,
+                availableExpenses =
+                    availableExpenses,
 
-        availableReimbursements =
-            availableReimbursements,
+                availableReimbursements =
+                    availableReimbursements,
 
-        totalExpenses =
-            totalExpenses,
+                categories =
+                    categories,
 
-        totalReimbursements =
-            totalReimbursements,
+                totalExpenses =
+                    totalExpenses,
 
-        // Database/Room refresh completed.
-        isUpdating =
-            false,
+                totalReimbursements =
+                    totalReimbursements,
 
-        isEditingGroup =
-            isEditingGroup
-    )
+                isUpdating =
+                    isUpdating,
+
+                isEditingGroup =
+                    isEditingGroup
+            )
     }
 
     //--------------------------------------------------
-    // Add an expense
+    // Add multiple expenses
     //--------------------------------------------------
 
-//--------------------------------------------------
-// Add multiple expenses at once
-//--------------------------------------------------
-
-fun addExpenses(
-    transactionIds: Set<Long>
-) {
-
-    val current =
-        _uiState.value as?
-            FinancialEventUiState.Loaded
-            ?: return
-
-    if (
-        current.isUpdating ||
-        transactionIds.isEmpty()
+    fun addExpenses(
+        transactionIds: Set<Long>
     ) {
-        return
+
+        val current =
+            _uiState.value as?
+                FinancialEventUiState.Loaded
+                ?: return
+
+        if (
+            current.isUpdating ||
+            transactionIds.isEmpty()
+        ) {
+            return
+        }
+
+        val validIds =
+            current.availableExpenses
+                .filter {
+                    it.id in transactionIds
+                }
+                .map {
+                    it.id
+                }
+                .distinct()
+
+        if (validIds.isEmpty()) {
+            return
+        }
+
+        viewModelScope.launch {
+
+            _uiState.value =
+                current.copy(
+                    isUpdating = true
+                )
+
+            transactionRepository
+                .linkTransactions(
+
+                    transactionIds =
+                        validIds,
+
+                    transactionLinkId =
+                        current.group
+                            .transactionLinkId
+                )
+        }
     }
 
-    val validIds =
-        current.availableExpenses
-            .map { it.id }
-            .toSet()
-            .intersect(transactionIds)
+    //--------------------------------------------------
+    // Add a single expense
+    //
+    // Kept for compatibility with existing callers.
+    //--------------------------------------------------
 
-    if (validIds.isEmpty()) {
-        return
-    }
+    fun addExpense(
+        transactionId: Long
+    ) {
 
-    viewModelScope.launch {
-
-        _uiState.value =
-            current.copy(
-                isUpdating = true
-            )
-
-        transactionRepository.linkTransactions(
-
-            transactionIds =
-                validIds.toList(),
-
-            transactionLinkId =
-                current.group.transactionLinkId
+        addExpenses(
+            setOf(transactionId)
         )
     }
-}
 
-//--------------------------------------------------
-// Add multiple reimbursements at once
-//--------------------------------------------------
+    //--------------------------------------------------
+    // Add multiple reimbursements
+    //--------------------------------------------------
 
-fun addReimbursements(
-    transactionIds: Set<Long>
-) {
-
-    val current =
-        _uiState.value as?
-            FinancialEventUiState.Loaded
-            ?: return
-
-    if (
-        current.isUpdating ||
-        transactionIds.isEmpty()
+    fun addReimbursements(
+        transactionIds: Set<Long>
     ) {
-        return
+
+        val current =
+            _uiState.value as?
+                FinancialEventUiState.Loaded
+                ?: return
+
+        if (
+            current.isUpdating ||
+            transactionIds.isEmpty()
+        ) {
+            return
+        }
+
+        val validIds =
+            current.availableReimbursements
+                .filter {
+                    it.id in transactionIds
+                }
+                .map {
+                    it.id
+                }
+                .distinct()
+
+        if (validIds.isEmpty()) {
+            return
+        }
+
+        viewModelScope.launch {
+
+            _uiState.value =
+                current.copy(
+                    isUpdating = true
+                )
+
+            transactionRepository
+                .linkTransactions(
+
+                    transactionIds =
+                        validIds,
+
+                    transactionLinkId =
+                        current.group
+                            .transactionLinkId
+                )
+        }
     }
 
-    val validIds =
-        current.availableReimbursements
-            .map { it.id }
-            .toSet()
-            .intersect(transactionIds)
+    //--------------------------------------------------
+    // Add a single reimbursement
+    //
+    // Kept for compatibility with existing callers.
+    //--------------------------------------------------
 
-    if (validIds.isEmpty()) {
-        return
-    }
+    fun addReimbursement(
+        transactionId: Long
+    ) {
 
-    viewModelScope.launch {
-
-        _uiState.value =
-            current.copy(
-                isUpdating = true
-            )
-
-        transactionRepository.linkTransactions(
-
-            transactionIds =
-                validIds.toList(),
-
-            transactionLinkId =
-                current.group.transactionLinkId
+        addReimbursements(
+            setOf(transactionId)
         )
     }
-}
 
     //--------------------------------------------------
     // Remove transaction from event
@@ -437,6 +527,10 @@ fun addReimbursements(
         val cleanCategory =
             category.trim()
 
+        //--------------------------------------------------
+        // Basic validation
+        //--------------------------------------------------
+
         if (
             cleanName.isBlank() ||
             cleanCategory.isBlank()
@@ -444,19 +538,52 @@ fun addReimbursements(
             return
         }
 
+        //--------------------------------------------------
+        // Category must come from the application's
+        // existing category list.
+        //--------------------------------------------------
+
+        val categoryExists =
+            current.categories.any {
+
+                it.equals(
+                    cleanCategory,
+                    ignoreCase = true
+                )
+            }
+
+        if (!categoryExists) {
+            return
+        }
+
+        //--------------------------------------------------
+        // Use the canonical spelling from the category list.
+        //--------------------------------------------------
+
+        val selectedCategory =
+            current.categories
+                .first {
+
+                    it.equals(
+                        cleanCategory,
+                        ignoreCase = true
+                    )
+                }
+
         viewModelScope.launch {
 
             val updatedGroup =
                 TransactionLinkGroup(
 
                     transactionLinkId =
-                        current.group.transactionLinkId,
+                        current.group
+                            .transactionLinkId,
 
                     groupName =
                         cleanName,
 
                     category =
-                        cleanCategory,
+                        selectedCategory,
 
                     createdAt =
                         current.group.createdAt
