@@ -267,6 +267,23 @@ fun TransactionDetailScreen(
                             viewModel::createReportGroup
                     )
 
+                    state.transaction.transactionLinkId?.let { linkId ->
+
+    androidx.compose.material3.OutlinedButton(
+
+        onClick = {
+            onFinancialEventClick(linkId)
+        },
+
+        modifier =
+            Modifier.fillMaxWidth()
+    ) {
+
+        Text(
+            text = "Manage Financial Event"
+        )
+    }
+}
                     //--------------------------------------------------
                     // Transaction Information
                     //--------------------------------------------------
