@@ -38,7 +38,9 @@ fun TransactionDetailScreen(
 
     viewModel: TransactionDetailViewModel,
 
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+
+    onFinancialEventClick: (String) -> Unit
 
 ) {
 
