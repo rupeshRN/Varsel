@@ -9,19 +9,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.ExperimentalMaterial3Api
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionLinkGroup
 import java.text.SimpleDateFormat
@@ -52,6 +58,9 @@ fun TransactionLinkSection(
     isSavingGroup:
         Boolean,
 
+    categories:
+        List<String>,
+
     onToggleCandidate:
         (Long) -> Unit,
 
@@ -69,6 +78,7 @@ fun TransactionLinkSection(
             groupName: String,
             category: String
         ) -> Unit
+
 ) {
 
     Column(
@@ -77,7 +87,10 @@ fun TransactionLinkSection(
             Modifier.fillMaxWidth(),
 
         verticalArrangement =
-            Arrangement.spacedBy(12.dp)
+            Arrangement.spacedBy(
+                12.dp
+            )
+
     ) {
 
         //--------------------------------------------------
@@ -90,7 +103,9 @@ fun TransactionLinkSection(
                 "Transaction Linking",
 
             style =
-                MaterialTheme.typography.titleMedium
+                MaterialTheme
+                    .typography
+                    .titleMedium
         )
 
         //--------------------------------------------------
@@ -107,12 +122,17 @@ fun TransactionLinkSection(
                     "Linked Transactions",
 
                 style =
-                    MaterialTheme.typography.titleSmall
+                    MaterialTheme
+                        .typography
+                        .titleSmall
             )
 
-            linkedTransactions.forEach { transaction ->
+            linkedTransactions.forEach {
+
+                transaction ->
 
                 LinkedTransactionRow(
+
                     transaction =
                         transaction
                 )
@@ -120,7 +140,9 @@ fun TransactionLinkSection(
 
             Spacer(
                 modifier =
-                    Modifier.height(4.dp)
+                    Modifier.height(
+                        4.dp
+                    )
             )
 
             OutlinedButton(
@@ -133,6 +155,7 @@ fun TransactionLinkSection(
 
                 modifier =
                     Modifier.fillMaxWidth()
+
             ) {
 
                 Text(
@@ -151,7 +174,9 @@ fun TransactionLinkSection(
 
             Spacer(
                 modifier =
-                    Modifier.height(4.dp)
+                    Modifier.height(
+                        4.dp
+                    )
             )
 
             Text(
@@ -160,20 +185,25 @@ fun TransactionLinkSection(
                     "Possible Transactions to Link",
 
                 style =
-                    MaterialTheme.typography.titleSmall
+                    MaterialTheme
+                        .typography
+                        .titleSmall
             )
 
             Text(
 
                 text =
                     "Select the transactions that " +
-                    "belong to this financial event.",
+                        "belong to this financial event.",
 
                 style =
-                    MaterialTheme.typography.bodySmall,
+                    MaterialTheme
+                        .typography
+                        .bodySmall,
 
                 color =
-                    MaterialTheme.colorScheme
+                    MaterialTheme
+                        .colorScheme
                         .onSurfaceVariant
             )
 
@@ -181,7 +211,9 @@ fun TransactionLinkSection(
             // Candidate selection
             //--------------------------------------------------
 
-            linkableTransactions.forEach { transaction ->
+            linkableTransactions.forEach {
+
+                transaction ->
 
                 val selected =
                     transaction.id in
@@ -223,10 +255,12 @@ fun TransactionLinkSection(
                 val selectedAmount =
                     linkableTransactions
                         .filter {
+
                             it.id in
                                 selectedTransactionIds
                         }
                         .sumOf {
+
                             it.amount
                         }
 
@@ -234,16 +268,20 @@ fun TransactionLinkSection(
 
                     text =
                         "Selected total: " +
-                        "₹%,.2f"
-                            .format(
-                                selectedAmount
-                            ),
+                            "₹%,.2f"
+                                .format(
+                                    selectedAmount
+                                ),
 
                     style =
-                        MaterialTheme.typography.bodyMedium,
+                        MaterialTheme
+                            .typography
+                            .bodyMedium,
 
                     color =
-                        MaterialTheme.colorScheme.primary
+                        MaterialTheme
+                            .colorScheme
+                            .primary
                 )
 
                 //--------------------------------------------------
@@ -262,11 +300,14 @@ fun TransactionLinkSection(
 
                     modifier =
                         Modifier.fillMaxWidth()
+
                 ) {
 
                     Text(
 
-                        if (isLinking) {
+                        if (
+                            isLinking
+                        ) {
 
                             "Linking..."
 
@@ -292,13 +333,16 @@ fun TransactionLinkSection(
 
                 text =
                     "No transactions available " +
-                    "for linking.",
+                        "for linking.",
 
                 style =
-                    MaterialTheme.typography.bodySmall,
+                    MaterialTheme
+                        .typography
+                        .bodySmall,
 
                 color =
-                    MaterialTheme.colorScheme
+                    MaterialTheme
+                        .colorScheme
                         .onSurfaceVariant
             )
         }
@@ -328,6 +372,9 @@ fun TransactionLinkSection(
 
             CreateReportGroupDialog(
 
+                categories =
+                    categories,
+
                 isSaving =
                     isSavingGroup,
 
@@ -343,7 +390,10 @@ fun TransactionLinkSection(
 
 @Composable
 private fun CandidateLabel(
-    transaction: Transaction
+
+    transaction:
+        Transaction
+
 ) {
 
     val date =
@@ -367,7 +417,9 @@ private fun CandidateLabel(
                     ),
 
             style =
-                MaterialTheme.typography.bodyMedium
+                MaterialTheme
+                    .typography
+                    .bodyMedium
         )
 
         Text(
@@ -376,10 +428,13 @@ private fun CandidateLabel(
                 "${transaction.description} • $date",
 
             style =
-                MaterialTheme.typography.bodySmall,
+                MaterialTheme
+                    .typography
+                    .bodySmall,
 
             color =
-                MaterialTheme.colorScheme
+                MaterialTheme
+                    .colorScheme
                     .onSurfaceVariant
         )
     }
@@ -387,7 +442,10 @@ private fun CandidateLabel(
 
 @Composable
 private fun LinkedTransactionRow(
-    transaction: Transaction
+
+    transaction:
+        Transaction
+
 ) {
 
     val date =
@@ -411,12 +469,14 @@ private fun LinkedTransactionRow(
 
         horizontalArrangement =
             Arrangement.SpaceBetween
+
     ) {
 
         Column(
 
             modifier =
                 Modifier.weight(1f)
+
         ) {
 
             Text(
@@ -425,7 +485,9 @@ private fun LinkedTransactionRow(
                     transaction.description,
 
                 style =
-                    MaterialTheme.typography.bodyMedium
+                    MaterialTheme
+                        .typography
+                        .bodyMedium
             )
 
             Text(
@@ -434,10 +496,13 @@ private fun LinkedTransactionRow(
                     date,
 
                 style =
-                    MaterialTheme.typography.bodySmall,
+                    MaterialTheme
+                        .typography
+                        .bodySmall,
 
                 color =
-                    MaterialTheme.colorScheme
+                    MaterialTheme
+                        .colorScheme
                         .onSurfaceVariant
             )
         }
@@ -451,14 +516,19 @@ private fun LinkedTransactionRow(
                     ),
 
             style =
-                MaterialTheme.typography.bodyMedium
+                MaterialTheme
+                    .typography
+                    .bodyMedium
         )
     }
 }
 
 @Composable
 private fun ReportGroupCard(
-    group: TransactionLinkGroup
+
+    group:
+        TransactionLinkGroup
+
 ) {
 
     Column(
@@ -469,6 +539,7 @@ private fun ReportGroupCard(
                 .padding(
                     top = 4.dp
                 )
+
     ) {
 
         Text(
@@ -477,7 +548,9 @@ private fun ReportGroupCard(
                 "Report Group",
 
             style =
-                MaterialTheme.typography.titleSmall
+                MaterialTheme
+                    .typography
+                    .titleSmall
         )
 
         Text(
@@ -486,11 +559,12 @@ private fun ReportGroupCard(
                 group.groupName,
 
             style =
-                MaterialTheme.typography.bodyMedium,
+                MaterialTheme
+                    .typography
+                    .bodyMedium,
 
             fontWeight =
-                androidx.compose.ui.text.font
-                    .FontWeight.SemiBold
+                FontWeight.SemiBold
         )
 
         Text(
@@ -499,17 +573,26 @@ private fun ReportGroupCard(
                 group.category,
 
             style =
-                MaterialTheme.typography.bodySmall,
+                MaterialTheme
+                    .typography
+                    .bodySmall,
 
             color =
-                MaterialTheme.colorScheme
+                MaterialTheme
+                    .colorScheme
                     .onSurfaceVariant
         )
     }
 }
 
+@OptIn(
+    ExperimentalMaterial3Api::class
+)
 @Composable
 private fun CreateReportGroupDialog(
+
+    categories:
+        List<String>,
 
     isSaving:
         Boolean,
@@ -522,16 +605,30 @@ private fun CreateReportGroupDialog(
             groupName: String,
             category: String
         ) -> Unit
+
 ) {
 
     var groupName by
         remember {
+
             mutableStateOf("")
         }
 
     var category by
         remember {
-            mutableStateOf("")
+
+            mutableStateOf(
+                categories.firstOrNull()
+                    ?: ""
+            )
+        }
+
+    var categoryExpanded by
+        remember {
+
+            mutableStateOf(
+                false
+            )
         }
 
     AlertDialog(
@@ -539,6 +636,7 @@ private fun CreateReportGroupDialog(
         onDismissRequest = {
 
             if (!isSaving) {
+
                 onDismiss()
             }
         },
@@ -546,7 +644,7 @@ private fun CreateReportGroupDialog(
         title = {
 
             Text(
-                "Create Report Group"
+                "Create Financial Event"
             )
         },
 
@@ -555,32 +653,46 @@ private fun CreateReportGroupDialog(
             Column(
 
                 verticalArrangement =
-                    Arrangement.spacedBy(12.dp)
+                    Arrangement.spacedBy(
+                        12.dp
+                    )
+
             ) {
 
                 Text(
 
                     text =
                         "These transactions contain " +
-                        "multiple expenses. Give this " +
-                        "financial event a name and category " +
-                        "for reporting.",
+                            "multiple expenses. Give this " +
+                            "financial event a name and category " +
+                            "for reporting.",
 
                     style =
-                        MaterialTheme.typography.bodyMedium
+                        MaterialTheme
+                            .typography
+                            .bodyMedium
                 )
 
-                TextField(
+                //--------------------------------------------------
+                // Event name
+                //--------------------------------------------------
+
+                OutlinedTextField(
 
                     value =
                         groupName,
 
                     onValueChange = {
-                        groupName = it
+
+                        groupName =
+                            it
                     },
 
                     label = {
-                        Text("Group name")
+
+                        Text(
+                            "Group name"
+                        )
                     },
 
                     singleLine = true,
@@ -592,27 +704,132 @@ private fun CreateReportGroupDialog(
                         Modifier.fillMaxWidth()
                 )
 
-                TextField(
+                //--------------------------------------------------
+                // Category dropdown
+                //--------------------------------------------------
 
-                    value =
-                        category,
+                ExposedDropdownMenuBox(
 
-                    onValueChange = {
-                        category = it
+                    expanded =
+                        categoryExpanded,
+
+                    onExpandedChange = {
+
+                        if (
+                            !isSaving &&
+                            categories.isNotEmpty()
+                        ) {
+
+                            categoryExpanded =
+                                !categoryExpanded
+                        }
                     },
-
-                    label = {
-                        Text("Report category")
-                    },
-
-                    singleLine = true,
-
-                    enabled =
-                        !isSaving,
 
                     modifier =
                         Modifier.fillMaxWidth()
-                )
+
+                ) {
+
+                    OutlinedTextField(
+
+                        value =
+                            category,
+
+                        onValueChange = {},
+
+                        readOnly =
+                            true,
+
+                        label = {
+
+                            Text(
+                                "Report category"
+                            )
+                        },
+
+                        trailingIcon = {
+
+                            ExposedDropdownMenuDefaults
+                                .TrailingIcon(
+
+                                    expanded =
+                                        categoryExpanded
+                                )
+                        },
+
+                        enabled =
+                            !isSaving &&
+                            categories.isNotEmpty(),
+
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                    )
+
+                    ExposedDropdownMenu(
+
+                        expanded =
+                            categoryExpanded,
+
+                        onDismissRequest = {
+
+                            categoryExpanded =
+                                false
+                        }
+
+                    ) {
+
+                        categories.forEach {
+
+                            availableCategory ->
+
+                            DropdownMenuItem(
+
+                                text = {
+
+                                    Text(
+                                        availableCategory
+                                    )
+                                },
+
+                                onClick = {
+
+                                    category =
+                                        availableCategory
+
+                                    categoryExpanded =
+                                        false
+                                },
+
+                                enabled =
+                                    !isSaving
+                            )
+                        }
+                    }
+                }
+
+                if (
+                    categories.isEmpty()
+                ) {
+
+                    Text(
+
+                        text =
+                            "No categories are available. " +
+                                "Create a category first.",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .error
+                    )
+                }
             }
         },
 
@@ -623,7 +840,9 @@ private fun CreateReportGroupDialog(
                 onClick = {
 
                     onCreate(
+
                         groupName,
+
                         category
                     )
                 },
@@ -632,6 +851,7 @@ private fun CreateReportGroupDialog(
                     !isSaving &&
                     groupName.isNotBlank() &&
                     category.isNotBlank()
+
             ) {
 
                 Text(
@@ -657,9 +877,12 @@ private fun CreateReportGroupDialog(
 
                 enabled =
                     !isSaving
+
             ) {
 
-                Text("Later")
+                Text(
+                    "Later"
+                )
             }
         }
     )
