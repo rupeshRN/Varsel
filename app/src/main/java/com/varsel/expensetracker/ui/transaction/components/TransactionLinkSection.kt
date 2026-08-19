@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenu
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -27,7 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.ExperimentalMaterial3Api
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionLinkGroup
 import java.text.SimpleDateFormat
@@ -90,7 +87,6 @@ fun TransactionLinkSection(
             Arrangement.spacedBy(
                 12.dp
             )
-
     ) {
 
         //--------------------------------------------------
@@ -128,7 +124,6 @@ fun TransactionLinkSection(
             )
 
             linkedTransactions.forEach {
-
                 transaction ->
 
                 LinkedTransactionRow(
@@ -155,7 +150,6 @@ fun TransactionLinkSection(
 
                 modifier =
                     Modifier.fillMaxWidth()
-
             ) {
 
                 Text(
@@ -212,7 +206,6 @@ fun TransactionLinkSection(
             //--------------------------------------------------
 
             linkableTransactions.forEach {
-
                 transaction ->
 
                 val selected =
@@ -234,6 +227,7 @@ fun TransactionLinkSection(
                     label = {
 
                         CandidateLabel(
+
                             transaction =
                                 transaction
                         )
@@ -300,7 +294,6 @@ fun TransactionLinkSection(
 
                     modifier =
                         Modifier.fillMaxWidth()
-
                 ) {
 
                     Text(
@@ -469,14 +462,12 @@ private fun LinkedTransactionRow(
 
         horizontalArrangement =
             Arrangement.SpaceBetween
-
     ) {
 
         Column(
 
             modifier =
                 Modifier.weight(1f)
-
         ) {
 
             Text(
@@ -539,7 +530,6 @@ private fun ReportGroupCard(
                 .padding(
                     top = 4.dp
                 )
-
     ) {
 
         Text(
@@ -585,9 +575,6 @@ private fun ReportGroupCard(
     }
 }
 
-@OptIn(
-    ExperimentalMaterial3Api::class
-)
 @Composable
 private fun CreateReportGroupDialog(
 
@@ -615,7 +602,7 @@ private fun CreateReportGroupDialog(
         }
 
     var category by
-        remember {
+        remember(categories) {
 
             mutableStateOf(
                 categories.firstOrNull()
@@ -637,6 +624,9 @@ private fun CreateReportGroupDialog(
 
             if (!isSaving) {
 
+                categoryExpanded =
+                    false
+
                 onDismiss()
             }
         },
@@ -656,7 +646,6 @@ private fun CreateReportGroupDialog(
                     Arrangement.spacedBy(
                         12.dp
                     )
-
             ) {
 
                 Text(
@@ -695,7 +684,8 @@ private fun CreateReportGroupDialog(
                         )
                     },
 
-                    singleLine = true,
+                    singleLine =
+                        true,
 
                     enabled =
                         !isSaving,
@@ -706,28 +696,17 @@ private fun CreateReportGroupDialog(
 
                 //--------------------------------------------------
                 // Category dropdown
+                //
+                // Uses standard DropdownMenu instead of
+                // ExposedDropdownMenu because the current
+                // Material3 dependency does not resolve the
+                // ExposedDropdownMenu API.
                 //--------------------------------------------------
 
-                ExposedDropdownMenuBox(
-
-                    expanded =
-                        categoryExpanded,
-
-                    onExpandedChange = {
-
-                        if (
-                            !isSaving &&
-                            categories.isNotEmpty()
-                        ) {
-
-                            categoryExpanded =
-                                !categoryExpanded
-                        }
-                    },
+                Column(
 
                     modifier =
                         Modifier.fillMaxWidth()
-
                 ) {
 
                     OutlinedTextField(
@@ -747,66 +726,56 @@ private fun CreateReportGroupDialog(
                             )
                         },
 
-                        trailingIcon = {
-
-                            ExposedDropdownMenuDefaults
-                                .TrailingIcon(
-
-                                    expanded =
-                                        categoryExpanded
-                                )
-                        },
-
                         enabled =
                             !isSaving &&
                             categories.isNotEmpty(),
 
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .menuAnchor()
+                            Modifier.fillMaxWidth()
                     )
 
-                    ExposedDropdownMenu(
+                    Spacer(
+                        modifier =
+                            Modifier.height(
+                                4.dp
+                            )
+                    )
+
+                    BoxWithDropdown(
 
                         expanded =
                             categoryExpanded,
 
-                        onDismissRequest = {
+                        enabled =
+                            !isSaving &&
+                            categories.isNotEmpty(),
+
+                        onToggle = {
+
+                            categoryExpanded =
+                                !categoryExpanded
+                        },
+
+                        onDismiss = {
+
+                            categoryExpanded =
+                                false
+                        },
+
+                        categories =
+                            categories,
+
+                        onCategorySelected = {
+
+                            selectedCategory ->
+
+                            category =
+                                selectedCategory
 
                             categoryExpanded =
                                 false
                         }
-
-                    ) {
-
-                        categories.forEach {
-
-                            availableCategory ->
-
-                            DropdownMenuItem(
-
-                                text = {
-
-                                    Text(
-                                        availableCategory
-                                    )
-                                },
-
-                                onClick = {
-
-                                    category =
-                                        availableCategory
-
-                                    categoryExpanded =
-                                        false
-                                },
-
-                                enabled =
-                                    !isSaving
-                            )
-                        }
-                    }
+                    )
                 }
 
                 if (
@@ -851,7 +820,6 @@ private fun CreateReportGroupDialog(
                     !isSaving &&
                     groupName.isNotBlank() &&
                     category.isNotBlank()
-
             ) {
 
                 Text(
@@ -877,7 +845,6 @@ private fun CreateReportGroupDialog(
 
                 enabled =
                     !isSaving
-
             ) {
 
                 Text(
@@ -886,4 +853,105 @@ private fun CreateReportGroupDialog(
             }
         }
     )
+}
+
+@Composable
+private fun BoxWithDropdown(
+
+    expanded:
+        Boolean,
+
+    enabled:
+        Boolean,
+
+    onToggle:
+        () -> Unit,
+
+    onDismiss:
+        () -> Unit,
+
+    categories:
+        List<String>,
+
+    onCategorySelected:
+        (String) -> Unit
+
+) {
+
+    Column(
+
+        modifier =
+            Modifier.fillMaxWidth()
+    ) {
+
+        OutlinedButton(
+
+            onClick =
+                onToggle,
+
+            enabled =
+                enabled,
+
+            modifier =
+                Modifier.fillMaxWidth()
+        ) {
+
+            Row(
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.SpaceBetween
+            ) {
+
+                Text(
+                    "Choose category"
+                )
+
+                Text(
+                    if (expanded) {
+                        "▲"
+                    } else {
+                        "▼"
+                    }
+                )
+            }
+        }
+
+        DropdownMenu(
+
+            expanded =
+                expanded,
+
+            onDismissRequest =
+                onDismiss
+        ) {
+
+            categories.forEach {
+
+                availableCategory ->
+
+                DropdownMenuItem(
+
+                    text = {
+
+                        Text(
+                            availableCategory
+                        )
+                    },
+
+                    onClick = {
+
+                        onCategorySelected(
+                            availableCategory
+                        )
+                    },
+
+                    enabled =
+                        enabled
+                )
+            }
+        }
+    }
 }
