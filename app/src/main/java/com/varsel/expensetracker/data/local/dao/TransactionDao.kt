@@ -150,20 +150,4 @@ interface TransactionDao {
     suspend fun unlinkTransaction(
         transactionId: Long
     )
-
-    //--------------------------------------------------
-    // Get transactions belonging to a Financial Event
-    //--------------------------------------------------
-
-    @Query(
-        """
-        SELECT *
-        FROM transactions
-        WHERE transactionLinkId = :transactionLinkId
-        ORDER BY dateTimestamp ASC
-        """
-    )
-    suspend fun getLinkedTransactions(
-        transactionLinkId: String
-    ): List<TransactionEntity>
 }
