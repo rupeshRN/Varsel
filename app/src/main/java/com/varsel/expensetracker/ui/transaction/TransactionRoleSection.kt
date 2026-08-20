@@ -60,15 +60,21 @@ fun TransactionRoleSection(
             availableRoles.forEach { role ->
 
                 FilterChip(
-                    selected = selectedRole == role,
+
+                    selected =
+                        selectedRole == role,
 
                     onClick = {
-                        onRoleSelected(role)
+
+                        onRoleSelected(
+                            role
+                        )
                     },
 
                     label = {
 
                         Text(
+
                             when (role) {
 
                                 TransactionRole.NORMAL ->
@@ -79,6 +85,12 @@ fun TransactionRoleSection(
 
                                 TransactionRole.REIMBURSEMENT ->
                                     "Reimbursement"
+
+                                TransactionRole.TRANSFER_IN ->
+                                    "Transfer In"
+
+                                TransactionRole.TRANSFER_OUT ->
+                                    "Transfer Out"
                             }
                         )
                     }
