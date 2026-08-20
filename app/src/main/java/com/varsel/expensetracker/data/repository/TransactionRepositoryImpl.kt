@@ -39,7 +39,8 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun insertTransactions(
-        transactions: List<Transaction>
+        transactions:
+            List<Transaction>
     ) {
 
         if (
@@ -62,7 +63,8 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun insertTransaction(
-        transaction: Transaction
+        transaction:
+            Transaction
     ) {
 
         transactionDao
@@ -76,7 +78,8 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun updateTransaction(
-        transaction: Transaction
+        transaction:
+            Transaction
     ) {
 
         transactionDao
@@ -90,7 +93,8 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun deleteTransaction(
-        transaction: Transaction
+        transaction:
+            Transaction
     ) {
 
         transactionDao
@@ -104,8 +108,10 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun getTransactionById(
-        id: Long
-    ): Transaction? {
+        id:
+            Long
+    ):
+        Transaction? {
 
         return transactionDao
             .getTransactionById(
@@ -119,8 +125,10 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun findExistingFingerprints(
-        fingerprints: List<String>
-    ): Set<String> {
+        fingerprints:
+            List<String>
+    ):
+        Set<String> {
 
         if (
             fingerprints.isEmpty()
@@ -178,7 +186,7 @@ class TransactionRepositoryImpl @Inject constructor(
         transferInTransactionId:
             Long,
 
-        transactionLinkId:
+        transferLinkId:
             String
 
     ) {
@@ -199,26 +207,66 @@ class TransactionRepositoryImpl @Inject constructor(
                 transferInTransactionId =
                     transferInTransactionId,
 
-                transactionLinkId =
-                    transactionLinkId
+                transferLinkId =
+                    transferLinkId
             )
     }
 
     //--------------------------------------------------
-    // Unlink relationship
+    // Financial Event unlink
     //--------------------------------------------------
 
     override suspend fun unlinkTransaction(
-
         transactionId:
             Long
-
     ) {
 
         transactionDao
             .unlinkTransaction(
                 transactionId
             )
+    }
+
+    //--------------------------------------------------
+    // Transfer unlink
+    //--------------------------------------------------
+
+    override suspend fun unlinkTransfer(
+        transactionId:
+            Long
+    ) {
+
+        transactionDao
+            .unlinkTransfer(
+                transactionId
+            )
+    }
+
+    //--------------------------------------------------
+    // Get paired transfer
+    //--------------------------------------------------
+
+    override suspend fun getLinkedTransfer(
+
+        transferLinkId:
+            String,
+
+        currentTransactionId:
+            Long
+
+    ):
+        Transaction? {
+
+        return transactionDao
+            .getLinkedTransfer(
+
+                transferLinkId =
+                    transferLinkId,
+
+                currentTransactionId =
+                    currentTransactionId
+            )
+            ?.toDomain()
     }
 }
 
@@ -273,6 +321,9 @@ fun TransactionEntity.toDomain():
         transactionLinkId =
             transactionLinkId,
 
+        transferLinkId =
+            transferLinkId,
+
         role =
             try {
 
@@ -281,7 +332,8 @@ fun TransactionEntity.toDomain():
                 )
 
             } catch (
-                e: IllegalArgumentException
+                e:
+                    IllegalArgumentException
             ) {
 
                 TransactionRole.NORMAL
@@ -306,7 +358,8 @@ fun Transaction.toEntity():
 
         type =
             if (
-                type == TransactionType.INCOME
+                type ==
+                    TransactionType.INCOME
             ) {
 
                 "INCOME"
@@ -339,6 +392,9 @@ fun Transaction.toEntity():
 
         transactionLinkId =
             transactionLinkId,
+
+        transferLinkId =
+            transferLinkId,
 
         role =
             role.name
