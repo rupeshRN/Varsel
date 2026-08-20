@@ -10,6 +10,7 @@ import com.varsel.expensetracker.domain.model.TransactionRole
 import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.domain.repository.TransactionLinkGroupRepository
 import com.varsel.expensetracker.domain.repository.TransactionRepository
+import com.varsel.expensetracker.domain.repository.TransferLinkResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -92,9 +93,6 @@ class TransactionDetailViewModel @Inject constructor(
 
             //--------------------------------------------------
             // Load existing application categories.
-            //
-            // These are used by the Financial Event /
-            // Report Group creation dialog.
             //--------------------------------------------------
 
             val categories =
@@ -137,7 +135,10 @@ class TransactionDetailViewModel @Inject constructor(
                         false,
 
                     isSavingGroup =
-                        false
+                        false,
+
+                    transferErrorMessage =
+                        null
                 )
 
             //--------------------------------------------------
@@ -198,8 +199,7 @@ class TransactionDetailViewModel @Inject constructor(
 
     //--------------------------------------------------
     // Build Financial Event state
-    //
-    // IMPORTANT:
+    //--------------------------------------------------
     //
     // Transaction Details no longer contains the old
     // "Possible Transactions to Link" picker.
@@ -231,7 +231,7 @@ class TransactionDetailViewModel @Inject constructor(
                 ?: return
 
         //--------------------------------------------------
-        // Get the latest version of the current transaction.
+        // Get latest current transaction.
         //--------------------------------------------------
 
         val currentTransaction =
@@ -275,9 +275,6 @@ class TransactionDetailViewModel @Inject constructor(
 
         //--------------------------------------------------
         // Existing Financial Event group.
-        //
-        // getGroup() is suspend, therefore this entire
-        // state-building function is suspend.
         //--------------------------------------------------
 
         val existingGroup =
@@ -291,16 +288,7 @@ class TransactionDetailViewModel @Inject constructor(
                 }
 
         //--------------------------------------------------
-        // Do NOT automatically open the Create Financial
-        // Event dialog.
-        //
-        // The user explicitly chooses:
-        //
-        // Create Financial Event
-        //
-        // or
-        //
-        // Manage Financial Event
+        // Do NOT automatically open Create Financial Event.
         //--------------------------------------------------
 
         _uiState.value =
@@ -345,10 +333,7 @@ class TransactionDetailViewModel @Inject constructor(
         }
 
         //--------------------------------------------------
-        // A Financial Event already exists.
-        //
-        // The screen should use Manage Financial Event
-        // instead of Create Financial Event.
+        // Financial Event already exists.
         //--------------------------------------------------
 
         if (
@@ -468,7 +453,344 @@ class TransactionDetailViewModel @Inject constructor(
     }
 
     //--------------------------------------------------
-    // Unlink current transaction
+    // Transfer linking
+    //--------------------------------------------------
+    //
+    // The current transaction is one side of the transfer.
+    //
+    // The supplied transaction is the other side.
+    //
+    // The repository performs the authoritative validation:
+    //
+    // TRANSFER_OUT + TRANSFER_IN
+    // AND
+    // exact same amount.
+    //--------------------------------------------------
+
+    fun linkTransfer(
+        otherTransactionId: Long
+    ) {
+
+        val current =
+            _uiState.value as?
+                TransactionDetailUiState.Loaded
+                ?: return
+
+        //--------------------------------------------------
+        // Prevent duplicate operation.
+        //--------------------------------------------------
+
+        if (
+            current.isLinking
+        ) {
+            return
+        }
+
+        //--------------------------------------------------
+        // Cannot link transaction to itself.
+        //--------------------------------------------------
+
+        if (
+            current.transaction.id ==
+                otherTransactionId
+        ) {
+
+            _uiState.value =
+                current.copy(
+
+                    transferErrorMessage =
+                        "Please choose a different transaction for the transfer."
+                )
+
+            return
+        }
+
+        //--------------------------------------------------
+        // Determine which side is Transfer Out and which
+        // side is Transfer In.
+        //--------------------------------------------------
+
+        viewModelScope.launch {
+
+            _uiState.value =
+                current.copy(
+
+                    isLinking =
+                        true,
+
+                    transferErrorMessage =
+                        null
+                )
+
+            val otherTransaction =
+                transactionRepository
+                    .getTransactionById(
+                        otherTransactionId
+                    )
+
+            if (
+                otherTransaction == null
+            ) {
+
+                _uiState.value =
+                    current.copy(
+
+                        isLinking =
+                            false,
+
+                        transferErrorMessage =
+                            "The selected transaction could not be found."
+                    )
+
+                return@launch
+            }
+
+            //--------------------------------------------------
+            // Determine pair from roles.
+            //--------------------------------------------------
+
+            val transferOutId:
+                Long
+
+            val transferInId:
+                Long
+
+            when {
+
+                current.transaction.role ==
+                    TransactionRole.TRANSFER_OUT &&
+
+                otherTransaction.role ==
+                    TransactionRole.TRANSFER_IN -> {
+
+                    transferOutId =
+                        current.transaction.id
+
+                    transferInId =
+                        otherTransaction.id
+                }
+
+                current.transaction.role ==
+                    TransactionRole.TRANSFER_IN &&
+
+                otherTransaction.role ==
+                    TransactionRole.TRANSFER_OUT -> {
+
+                    transferOutId =
+                        otherTransaction.id
+
+                    transferInId =
+                        current.transaction.id
+                }
+
+                else -> {
+
+                    _uiState.value =
+                        current.copy(
+
+                            isLinking =
+                                false,
+
+                            transferErrorMessage =
+                                "Please select one Transfer In and one Transfer Out transaction."
+                        )
+
+                    return@launch
+                }
+            }
+
+            //--------------------------------------------------
+            // Repository performs final validation.
+            //--------------------------------------------------
+
+            when (
+                val result =
+                    transactionRepository
+                        .linkTransfer(
+
+                            transferOutTransactionId =
+                                transferOutId,
+
+                            transferInTransactionId =
+                                transferInId
+                        )
+            ) {
+
+                //--------------------------------------------------
+                // Success
+                //--------------------------------------------------
+
+                TransferLinkResult.Success -> {
+
+                    _uiState.value =
+                        current.copy(
+
+                            isLinking =
+                                false,
+
+                            transferErrorMessage =
+                                null
+                        )
+                }
+
+                //--------------------------------------------------
+                // Amount mismatch
+                //--------------------------------------------------
+
+                is TransferLinkResult.AmountMismatch -> {
+
+                    val outAmount =
+                        result
+                            .transferOutAmount
+
+                    val inAmount =
+                        result
+                            .transferInAmount
+
+                    _uiState.value =
+                        current.copy(
+
+                            isLinking =
+                                false,
+
+                            transferErrorMessage =
+                                "The transfer amounts don't match. " +
+                                "Transfer Out: ₹$outAmount, " +
+                                "Transfer In: ₹$inAmount. " +
+                                "Please make sure you selected the correct Transfer In / Transfer Out."
+                        )
+                }
+
+                //--------------------------------------------------
+                // Invalid pair
+                //--------------------------------------------------
+
+                TransferLinkResult.InvalidTransactionPair -> {
+
+                    _uiState.value =
+                        current.copy(
+
+                            isLinking =
+                                false,
+
+                            transferErrorMessage =
+                                "These transactions cannot be linked as a transfer. Please select one Transfer In and one Transfer Out."
+                        )
+                }
+
+                //--------------------------------------------------
+                // Transaction not found
+                //--------------------------------------------------
+
+                TransferLinkResult.TransactionNotFound -> {
+
+                    _uiState.value =
+                        current.copy(
+
+                            isLinking =
+                                false,
+
+                            transferErrorMessage =
+                                "One of the selected transfer transactions could not be found."
+                        )
+                }
+
+                //--------------------------------------------------
+                // Already linked
+                //--------------------------------------------------
+
+                TransferLinkResult.AlreadyLinked -> {
+
+                    _uiState.value =
+                        current.copy(
+
+                            isLinking =
+                                false,
+
+                            transferErrorMessage =
+                                "One of these transactions is already linked to another transfer."
+                        )
+                }
+            }
+        }
+    }
+
+    //--------------------------------------------------
+    // Clear transfer error
+    //--------------------------------------------------
+
+    fun clearTransferError() {
+
+        val current =
+            _uiState.value as?
+                TransactionDetailUiState.Loaded
+                ?: return
+
+        _uiState.value =
+            current.copy(
+
+                transferErrorMessage =
+                    null
+            )
+    }
+
+    //--------------------------------------------------
+    // Unlink transfer
+    //--------------------------------------------------
+
+    fun unlinkTransfer() {
+
+        val current =
+            _uiState.value as?
+                TransactionDetailUiState.Loaded
+                ?: return
+
+        //--------------------------------------------------
+        // Nothing to unlink.
+        //--------------------------------------------------
+
+        if (
+            current.transaction
+                .transferLinkId == null
+        ) {
+            return
+        }
+
+        //--------------------------------------------------
+        // Prevent duplicate operation.
+        //--------------------------------------------------
+
+        if (
+            current.isLinking
+        ) {
+            return
+        }
+
+        viewModelScope.launch {
+
+            _uiState.value =
+                current.copy(
+
+                    isLinking =
+                        true,
+
+                    transferErrorMessage =
+                        null
+                )
+
+            transactionRepository
+                .unlinkTransfer(
+                    current.transaction.id
+                )
+
+            //--------------------------------------------------
+            // Room Flow refreshes the transaction state.
+            //--------------------------------------------------
+        }
+    }
+
+    //--------------------------------------------------
+    // Unlink current Financial Event transaction
     //--------------------------------------------------
 
     fun unlinkCurrentTransaction() {
@@ -484,8 +806,7 @@ class TransactionDetailViewModel @Inject constructor(
 
         if (
             current.transaction
-                .transactionLinkId ==
-            null
+                .transactionLinkId == null
         ) {
             return
         }
@@ -504,7 +825,9 @@ class TransactionDetailViewModel @Inject constructor(
 
             _uiState.value =
                 current.copy(
-                    isLinking = true
+
+                    isLinking =
+                        true
                 )
 
             transactionRepository
@@ -589,8 +912,7 @@ class TransactionDetailViewModel @Inject constructor(
         }
 
         //--------------------------------------------------
-        // Validate category against the existing
-        // application category list.
+        // Validate category.
         //--------------------------------------------------
 
         val selectedCategory =
@@ -614,11 +936,7 @@ class TransactionDetailViewModel @Inject constructor(
                 )
 
             //--------------------------------------------------
-            // Create a Financial Event link ID.
-            //
-            // Normally this transaction is not already
-            // linked because this method is only exposed
-            // through Create Financial Event.
+            // Create Financial Event link ID.
             //--------------------------------------------------
 
             val transactionLinkId =
@@ -628,8 +946,7 @@ class TransactionDetailViewModel @Inject constructor(
                         .toString()
 
             //--------------------------------------------------
-            // Creating a Financial Event establishes the
-            // transaction's Financial Event role.
+            // Financial Event role.
             //
             // EXPENSE / DEBIT -> LENT
             // INCOME / CREDIT -> REIMBURSEMENT
@@ -695,8 +1012,6 @@ class TransactionDetailViewModel @Inject constructor(
 
             //--------------------------------------------------
             // Update UI immediately.
-            //
-            // Room Flow will also refresh the state.
             //--------------------------------------------------
 
             _uiState.value =
@@ -720,7 +1035,10 @@ class TransactionDetailViewModel @Inject constructor(
                         false,
 
                     isLinking =
-                        false
+                        false,
+
+                    transferErrorMessage =
+                        null
                 )
         }
     }
@@ -848,7 +1166,7 @@ class TransactionDetailViewModel @Inject constructor(
                 )
 
             //--------------------------------------------------
-            // Notify screen that save completed.
+            // Notify screen.
             //--------------------------------------------------
 
             _saveCompleted.value =
@@ -872,7 +1190,10 @@ class TransactionDetailViewModel @Inject constructor(
                         false,
 
                     isSaving =
-                        false
+                        false,
+
+                    transferErrorMessage =
+                        null
                 )
         }
     }
