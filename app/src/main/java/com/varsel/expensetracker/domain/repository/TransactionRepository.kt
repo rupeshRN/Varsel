@@ -13,33 +13,45 @@ interface TransactionRepository {
         Flow<List<Transaction>>
 
     suspend fun insertTransactions(
-        transactions: List<Transaction>
+        transactions:
+            List<Transaction>
     )
 
     suspend fun insertTransaction(
-        transaction: Transaction
+        transaction:
+            Transaction
     )
 
     suspend fun updateTransaction(
-        transaction: Transaction
+        transaction:
+            Transaction
     )
 
     suspend fun deleteTransaction(
-        transaction: Transaction
+        transaction:
+            Transaction
     )
 
     suspend fun getTransactionById(
         id: Long
-    ): Transaction?
+    ):
+        Transaction?
 
     suspend fun findExistingFingerprints(
-        fingerprints: List<String>
-    ): Set<String>
+        fingerprints:
+            List<String>
+    ):
+        Set<String>
 
     //--------------------------------------------------
     // Financial Event linking
     //--------------------------------------------------
 
+    /**
+     * Links transactions to a Financial Event.
+     *
+     * Uses transactionLinkId.
+     */
     suspend fun linkTransactions(
 
         transactionIds:
@@ -54,12 +66,16 @@ interface TransactionRepository {
     //--------------------------------------------------
 
     /**
-     * Links one outgoing transaction with one incoming
-     * transaction as an internal account transfer.
+     * Links exactly two transactions as one transfer.
      *
-     * The outgoing transaction becomes TRANSFER_OUT.
+     * transferOutTransactionId:
+     *     outgoing side of the transfer
      *
-     * The incoming transaction becomes TRANSFER_IN.
+     * transferInTransactionId:
+     *     incoming side of the transfer
+     *
+     * transferLinkId:
+     *     shared internal transfer relationship ID
      */
     suspend fun linkTransferTransactions(
 
@@ -69,17 +85,38 @@ interface TransactionRepository {
         transferInTransactionId:
             Long,
 
-        transactionLinkId:
+        transferLinkId:
             String
     )
 
     //--------------------------------------------------
-    // Remove relationship
+    // Financial Event unlink
     //--------------------------------------------------
 
     suspend fun unlinkTransaction(
-
         transactionId:
             Long
     )
+
+    //--------------------------------------------------
+    // Transfer unlink
+    //--------------------------------------------------
+
+    suspend fun unlinkTransfer(
+        transactionId:
+            Long
+    )
+
+    //--------------------------------------------------
+    // Get paired transfer
+    //--------------------------------------------------
+
+    suspend fun getLinkedTransfer(
+        transferLinkId:
+            String,
+
+        currentTransactionId:
+            Long
+    ):
+        Transaction?
 }
