@@ -39,11 +39,14 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun insertTransactions(
-
-        transactions:
-            List<Transaction>
-
+        transactions: List<Transaction>
     ) {
+
+        if (
+            transactions.isEmpty()
+        ) {
+            return
+        }
 
         transactionDao
             .insertTransactions(
@@ -59,10 +62,7 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun insertTransaction(
-
-        transaction:
-            Transaction
-
+        transaction: Transaction
     ) {
 
         transactionDao
@@ -76,10 +76,7 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun updateTransaction(
-
-        transaction:
-            Transaction
-
+        transaction: Transaction
     ) {
 
         transactionDao
@@ -93,10 +90,7 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun deleteTransaction(
-
-        transaction:
-            Transaction
-
+        transaction: Transaction
     ) {
 
         transactionDao
@@ -110,32 +104,27 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
 
     override suspend fun getTransactionById(
-
-        id:
-            Long
-
+        id: Long
     ): Transaction? {
 
         return transactionDao
-            .getTransactionById(id)
+            .getTransactionById(
+                id
+            )
             ?.toDomain()
     }
 
     //--------------------------------------------------
-    // Find existing fingerprints
+    // Existing fingerprints
     //--------------------------------------------------
 
     override suspend fun findExistingFingerprints(
-
-        fingerprints:
-            List<String>
-
+        fingerprints: List<String>
     ): Set<String> {
 
         if (
             fingerprints.isEmpty()
         ) {
-
             return emptySet()
         }
 
@@ -147,15 +136,19 @@ class TransactionRepositoryImpl @Inject constructor(
     }
 
     //--------------------------------------------------
-    // Generic transaction linking
-    //--------------------------------------------------
+    // Link transactions to Financial Event
     //
     // IMPORTANT:
-    // This operation only assigns the link ID.
     //
-    // It does NOT change the transaction role.
+    // TransactionDao now handles BOTH:
     //
-    // This preserves the existing manual-linking behaviour.
+    // EXPENSE -> LENT
+    // INCOME  -> REIMBURSEMENT
+    //
+    // Therefore this repository method deliberately
+    // uses only linkTransactions().
+    //
+    // There is NO linkReimbursements() call.
     //--------------------------------------------------
 
     override suspend fun linkTransactions(
@@ -171,7 +164,6 @@ class TransactionRepositoryImpl @Inject constructor(
         if (
             transactionIds.isEmpty()
         ) {
-
             return
         }
 
@@ -187,50 +179,12 @@ class TransactionRepositoryImpl @Inject constructor(
     }
 
     //--------------------------------------------------
-    // Link reimbursements
-    //--------------------------------------------------
+    // Unlink transaction from Financial Event
     //
-    // Financial Event specific operation.
+    // DAO clears:
     //
-    // Selected income transactions are:
-    //
-    // 1. Linked to the Financial Event.
-    // 2. Converted to REIMBURSEMENT role.
-    //
-    // This is intentionally separate from
-    // linkTransactions().
-    //--------------------------------------------------
-
-    override suspend fun linkReimbursements(
-
-        transactionIds:
-            List<Long>,
-
-        transactionLinkId:
-            String
-
-    ) {
-
-        if (
-            transactionIds.isEmpty()
-        ) {
-
-            return
-        }
-
-        transactionDao
-            .linkReimbursements(
-
-                transactionIds =
-                    transactionIds,
-
-                transactionLinkId =
-                    transactionLinkId
-            )
-    }
-
-    //--------------------------------------------------
-    // Unlink transaction
+    // transactionLinkId
+    // role -> NORMAL
     //--------------------------------------------------
 
     override suspend fun unlinkTransaction(
@@ -264,10 +218,14 @@ fun TransactionEntity.toDomain():
 
         type =
             if (
-                type == "INCOME"
+                type ==
+                    "INCOME"
             ) {
+
                 TransactionType.INCOME
+
             } else {
+
                 TransactionType.EXPENSE
             },
 
