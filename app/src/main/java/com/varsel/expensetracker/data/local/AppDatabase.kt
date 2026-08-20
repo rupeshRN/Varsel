@@ -12,6 +12,8 @@ import com.varsel.expensetracker.data.local.entity.CategoryEntity
 import com.varsel.expensetracker.data.local.entity.CustomRuleEntity
 import com.varsel.expensetracker.data.local.entity.StatementSnapshotEntity
 import com.varsel.expensetracker.data.local.entity.TransactionEntity
+import com.varsel.expensetracker.data.local.entity.TransactionLinkGroupEntity
+import com.varsel.expensetracker.data.local.dao.TransactionLinkGroupDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,9 +24,10 @@ import javax.inject.Provider
         TransactionEntity::class,
         CategoryEntity::class,
         CustomRuleEntity::class,
-        StatementSnapshotEntity::class
+        StatementSnapshotEntity::class,
+        TransactionLinkGroupEntity::class
     ],
-    version = 6,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -36,6 +39,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun customRuleDao(): CustomRuleDao
 
     abstract fun statementSnapshotDao(): StatementSnapshotDao
+
+    abstract fun transactionLinkGroupDao(): TransactionLinkGroupDao
 
     companion object {
 
@@ -96,6 +101,49 @@ abstract class AppDatabase : RoomDatabase() {
             )
         }
     }
+
+        /**
+     * Adds support for manually linking related transactions.
+     *
+     * The value is nullable because existing transactions are
+     * not linked automatically.
+     */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+
+        override fun migrate(
+            database: SupportSQLiteDatabase
+        ) {
+            database.execSQL(
+                """
+                ALTER TABLE transactions
+                ADD COLUMN transactionLinkId TEXT
+                """.trimIndent()
+            )
+        }
+    }
+
+    /**
+     * Adds support for manually group creation.
+     */
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+
+    override fun migrate(
+        database: SupportSQLiteDatabase
+    ) {
+
+        database.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS transaction_link_groups (
+                transactionLinkId TEXT NOT NULL,
+                groupName TEXT NOT NULL,
+                category TEXT NOT NULL,
+                createdAt INTEGER NOT NULL,
+                PRIMARY KEY(transactionLinkId)
+            )
+            """.trimIndent()
+        )
+    }
+}
 }
     class SeedCallback(
         private val categoryDaoProvider: Provider<CategoryDao>
