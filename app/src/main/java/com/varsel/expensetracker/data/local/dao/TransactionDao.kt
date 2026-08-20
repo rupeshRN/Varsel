@@ -106,13 +106,9 @@ interface TransactionDao {
 
     //--------------------------------------------------
     // Financial Event linking
-    //--------------------------------------------------
     //
-    // IMPORTANT:
-    //
-    // This continues to use transactionLinkId.
-    //
-    // Transfer relationships DO NOT use this method.
+    // Expense  -> LENT
+    // Income   -> REIMBURSEMENT
     //--------------------------------------------------
 
     @Query(
@@ -124,7 +120,6 @@ interface TransactionDao {
 
             role =
                 CASE
-
                     WHEN type = 'EXPENSE'
                         THEN 'LENT'
 
@@ -132,9 +127,7 @@ interface TransactionDao {
                         THEN 'REIMBURSEMENT'
 
                     ELSE role
-
                 END
-
         WHERE id IN (:transactionIds)
         """
     )
@@ -148,22 +141,20 @@ interface TransactionDao {
 
     //--------------------------------------------------
     // Transfer linking
-    //--------------------------------------------------
     //
-    // IMPORTANT:
+    // Transfer Out:
+    //     TRANSFER_OUT
     //
-    // Transfers now use transferLinkId.
+    // Transfer In:
+    //     TRANSFER_IN
     //
-    // They DO NOT use transactionLinkId.
-    //
-    // This keeps transfers completely independent from
-    // Financial Events.
+    // A transfer relationship is completely separate
+    // from Financial Events.
     //--------------------------------------------------
 
     @Query(
         """
         UPDATE transactions
-
         SET
             transferLinkId =
                 :transferLinkId,
@@ -173,7 +164,6 @@ interface TransactionDao {
 
             role =
                 CASE
-
                     WHEN id =
                         :transferOutTransactionId
                         THEN 'TRANSFER_OUT'
@@ -183,9 +173,7 @@ interface TransactionDao {
                         THEN 'TRANSFER_IN'
 
                     ELSE role
-
                 END
-
         WHERE id IN (
             :transferOutTransactionId,
             :transferInTransactionId
@@ -206,20 +194,20 @@ interface TransactionDao {
 
     //--------------------------------------------------
     // Remove Financial Event relationship
+    //
+    // IMPORTANT:
+    //
+    // This is for Financial Events only.
+    // Financial Event unlinking resets the role.
     //--------------------------------------------------
 
     @Query(
         """
         UPDATE transactions
         SET
-            transactionLinkId =
-                NULL,
-
-            role =
-                'NORMAL'
-
-        WHERE id =
-            :transactionId
+            transactionLinkId = NULL,
+            role = 'NORMAL'
+        WHERE id = :transactionId
         """
     )
     suspend fun unlinkTransaction(
@@ -232,21 +220,41 @@ interface TransactionDao {
     //
     // IMPORTANT:
     //
-    // This is separate from Financial Event unlinking.
+    // A transfer consists of TWO transactions sharing
+    // the same transferLinkId.
+    //
+    // When either side is unlinked, BOTH sides must
+    // lose the transferLinkId.
+    //
+    // We intentionally DO NOT change the roles.
+    //
+    // Example:
+    //
+    // Before:
+    //
+    // A -> TRANSFER_OUT + ABC
+    // B -> TRANSFER_IN  + ABC
+    //
+    // After:
+    //
+    // A -> TRANSFER_OUT + NULL
+    // B -> TRANSFER_IN  + NULL
+    //
+    // This allows the SAME pair to be linked again.
     //--------------------------------------------------
 
     @Query(
         """
         UPDATE transactions
         SET
-            transferLinkId =
-                NULL,
-
-            role =
-                'NORMAL'
-
-        WHERE id =
-            :transactionId
+            transferLinkId = NULL
+        WHERE transferLinkId = (
+            SELECT transferLinkId
+            FROM transactions
+            WHERE id = :transactionId
+              AND transferLinkId IS NOT NULL
+        )
+        AND transferLinkId IS NOT NULL
         """
     )
     suspend fun unlinkTransfer(
@@ -255,23 +263,22 @@ interface TransactionDao {
     )
 
     //--------------------------------------------------
-    // Get the other transaction in a transfer
+    // Get linked transfer
+    //
+    // Returns the opposite side of the transfer.
     //--------------------------------------------------
 
     @Query(
         """
         SELECT *
         FROM transactions
-        WHERE transferLinkId =
-            :transferLinkId
-
-        AND id !=
-            :currentTransactionId
-
+        WHERE transferLinkId = :transferLinkId
+        AND id != :currentTransactionId
         LIMIT 1
         """
     )
     suspend fun getLinkedTransfer(
+
         transferLinkId:
             String,
 
@@ -279,4 +286,45 @@ interface TransactionDao {
             Long
     ):
         TransactionEntity?
+
+    //--------------------------------------------------
+    // Get transactions belonging to a Financial Event
+    //--------------------------------------------------
+
+    @Query(
+        """
+        SELECT *
+        FROM transactions
+        WHERE transactionLinkId = :transactionLinkId
+        ORDER BY dateTimestamp ASC
+        """
+    )
+    suspend fun getLinkedTransactions(
+        transactionLinkId:
+            String
+    ):
+        List<TransactionEntity>
+
+    //--------------------------------------------------
+    // Get unlinked reimbursement transactions
+    //
+    // Kept for existing Financial Event functionality.
+    //--------------------------------------------------
+
+    @Query(
+        """
+        SELECT *
+        FROM transactions
+        WHERE type = 'INCOME'
+        AND role = 'REIMBURSEMENT'
+        AND transactionLinkId IS NULL
+        AND id != :currentTransactionId
+        ORDER BY dateTimestamp DESC
+        """
+    )
+    suspend fun getUnlinkedReimbursements(
+        currentTransactionId:
+            Long
+    ):
+        List<TransactionEntity>
 }
