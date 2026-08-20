@@ -11,7 +11,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -37,15 +36,6 @@ fun TransactionLinkSection(
     linkedTransactions:
         List<Transaction>,
 
-    linkableTransactions:
-        List<Transaction>,
-
-    selectedTransactionIds:
-        Set<Long>,
-
-    isLinking:
-        Boolean,
-
     transactionLinkGroup:
         TransactionLinkGroup?,
 
@@ -58,10 +48,10 @@ fun TransactionLinkSection(
     categories:
         List<String>,
 
-    onToggleCandidate:
-        (Long) -> Unit,
+    onManageFinancialEvent:
+        () -> Unit,
 
-    onLinkSelected:
+    onShowCreateFinancialEvent:
         () -> Unit,
 
     onUnlink:
@@ -90,13 +80,13 @@ fun TransactionLinkSection(
     ) {
 
         //--------------------------------------------------
-        // Section title
+        // Financial Event section
         //--------------------------------------------------
 
         Text(
 
             text =
-                "Transaction Linking",
+                "Financial Event",
 
             style =
                 MaterialTheme
@@ -105,12 +95,76 @@ fun TransactionLinkSection(
         )
 
         //--------------------------------------------------
+        // Existing financial event
+        //--------------------------------------------------
+
+        if (
+            transactionLinkGroup != null
+        ) {
+
+            ReportGroupCard(
+
+                group =
+                    transactionLinkGroup
+            )
+
+            Button(
+
+                onClick =
+                    onManageFinancialEvent,
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+
+                Text(
+                    "Manage Financial Event"
+                )
+            }
+
+        } else {
+
+            //--------------------------------------------------
+            // No financial event yet
+            //--------------------------------------------------
+
+            OutlinedButton(
+
+                onClick =
+                    onShowCreateFinancialEvent,
+
+                enabled =
+                    !isSavingGroup,
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+
+                Text(
+                    "Create Financial Event"
+                )
+            }
+        }
+
+        //--------------------------------------------------
         // Existing linked transactions
+        //
+        // This is intentionally kept.
+        //
+        // The "Possible Transactions to Link" section has
+        // been removed completely.
         //--------------------------------------------------
 
         if (
             linkedTransactions.isNotEmpty()
         ) {
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        4.dp
+                    )
+            )
 
             Text(
 
@@ -146,7 +200,7 @@ fun TransactionLinkSection(
                     onUnlink,
 
                 enabled =
-                    !isLinking,
+                    !isSavingGroup,
 
                 modifier =
                     Modifier.fillMaxWidth()
@@ -159,204 +213,7 @@ fun TransactionLinkSection(
         }
 
         //--------------------------------------------------
-        // Available transactions
-        //--------------------------------------------------
-
-        if (
-            linkableTransactions.isNotEmpty()
-        ) {
-
-            Spacer(
-                modifier =
-                    Modifier.height(
-                        4.dp
-                    )
-            )
-
-            Text(
-
-                text =
-                    "Possible Transactions to Link",
-
-                style =
-                    MaterialTheme
-                        .typography
-                        .titleSmall
-            )
-
-            Text(
-
-                text =
-                    "Select the transactions that " +
-                        "belong to this financial event.",
-
-                style =
-                    MaterialTheme
-                        .typography
-                        .bodySmall,
-
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant
-            )
-
-            //--------------------------------------------------
-            // Candidate selection
-            //--------------------------------------------------
-
-            linkableTransactions.forEach {
-                transaction ->
-
-                val selected =
-                    transaction.id in
-                        selectedTransactionIds
-
-                FilterChip(
-
-                    selected =
-                        selected,
-
-                    onClick = {
-
-                        onToggleCandidate(
-                            transaction.id
-                        )
-                    },
-
-                    label = {
-
-                        CandidateLabel(
-
-                            transaction =
-                                transaction
-                        )
-                    },
-
-                    modifier =
-                        Modifier.fillMaxWidth()
-                )
-            }
-
-            //--------------------------------------------------
-            // Selected total
-            //--------------------------------------------------
-
-            if (
-                selectedTransactionIds.isNotEmpty()
-            ) {
-
-                val selectedAmount =
-                    linkableTransactions
-                        .filter {
-
-                            it.id in
-                                selectedTransactionIds
-                        }
-                        .sumOf {
-
-                            it.amount
-                        }
-
-                Text(
-
-                    text =
-                        "Selected total: " +
-                            "₹%,.2f"
-                                .format(
-                                    selectedAmount
-                                ),
-
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodyMedium,
-
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .primary
-                )
-
-                //--------------------------------------------------
-                // Link button
-                //--------------------------------------------------
-
-                Button(
-
-                    onClick =
-                        onLinkSelected,
-
-                    enabled =
-                        !isLinking &&
-                        selectedTransactionIds
-                            .isNotEmpty(),
-
-                    modifier =
-                        Modifier.fillMaxWidth()
-                ) {
-
-                    Text(
-
-                        if (
-                            isLinking
-                        ) {
-
-                            "Linking..."
-
-                        } else {
-
-                            "Link Selected Transactions"
-                        }
-                    )
-                }
-            }
-        }
-
-        //--------------------------------------------------
-        // No linkable transactions
-        //--------------------------------------------------
-
-        if (
-            linkableTransactions.isEmpty() &&
-            linkedTransactions.isEmpty()
-        ) {
-
-            Text(
-
-                text =
-                    "No transactions available " +
-                        "for linking.",
-
-                style =
-                    MaterialTheme
-                        .typography
-                        .bodySmall,
-
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant
-            )
-        }
-
-        //--------------------------------------------------
-        // Existing report group
-        //--------------------------------------------------
-
-        if (
-            transactionLinkGroup != null
-        ) {
-
-            ReportGroupCard(
-
-                group =
-                    transactionLinkGroup
-            )
-        }
-
-        //--------------------------------------------------
-        // Create report group dialog
+        // Create Financial Event dialog
         //--------------------------------------------------
 
         if (
@@ -382,58 +239,6 @@ fun TransactionLinkSection(
 }
 
 @Composable
-private fun CandidateLabel(
-
-    transaction:
-        Transaction
-
-) {
-
-    val date =
-        SimpleDateFormat(
-            "dd MMM yyyy",
-            Locale.ENGLISH
-        ).format(
-            Date(
-                transaction.dateTimestamp
-            )
-        )
-
-    Column {
-
-        Text(
-
-            text =
-                "₹%,.2f"
-                    .format(
-                        transaction.amount
-                    ),
-
-            style =
-                MaterialTheme
-                    .typography
-                    .bodyMedium
-        )
-
-        Text(
-
-            text =
-                "${transaction.description} • $date",
-
-            style =
-                MaterialTheme
-                    .typography
-                    .bodySmall,
-
-            color =
-                MaterialTheme
-                    .colorScheme
-                    .onSurfaceVariant
-        )
-    }
-}
-
-@Composable
 private fun LinkedTransactionRow(
 
     transaction:
@@ -443,9 +248,13 @@ private fun LinkedTransactionRow(
 
     val date =
         SimpleDateFormat(
+
             "dd MMM yyyy",
+
             Locale.ENGLISH
+
         ).format(
+
             Date(
                 transaction.dateTimestamp
             )
@@ -535,7 +344,7 @@ private fun ReportGroupCard(
         Text(
 
             text =
-                "Report Group",
+                "Financial Event",
 
             style =
                 MaterialTheme
@@ -605,6 +414,7 @@ private fun CreateReportGroupDialog(
         remember(categories) {
 
             mutableStateOf(
+
                 categories.firstOrNull()
                     ?: ""
             )
@@ -651,10 +461,10 @@ private fun CreateReportGroupDialog(
                 Text(
 
                     text =
-                        "These transactions contain " +
-                            "multiple expenses. Give this " +
-                            "financial event a name and category " +
-                            "for reporting.",
+                        "Create a financial event for " +
+                            "this transaction. You can manage " +
+                            "the event and its linked transactions " +
+                            "after it is created.",
 
                     style =
                         MaterialTheme
@@ -695,12 +505,7 @@ private fun CreateReportGroupDialog(
                 )
 
                 //--------------------------------------------------
-                // Category dropdown
-                //
-                // Uses standard DropdownMenu instead of
-                // ExposedDropdownMenu because the current
-                // Material3 dependency does not resolve the
-                // ExposedDropdownMenu API.
+                // Category
                 //--------------------------------------------------
 
                 Column(
@@ -741,41 +546,87 @@ private fun CreateReportGroupDialog(
                             )
                     )
 
-                    BoxWithDropdown(
+                    OutlinedButton(
 
-                        expanded =
-                            categoryExpanded,
-
-                        enabled =
-                            !isSaving &&
-                            categories.isNotEmpty(),
-
-                        onToggle = {
+                        onClick = {
 
                             categoryExpanded =
                                 !categoryExpanded
                         },
 
-                        onDismiss = {
+                        enabled =
+                            !isSaving &&
+                            categories.isNotEmpty(),
 
-                            categoryExpanded =
-                                false
-                        },
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
 
-                        categories =
-                            categories,
+                        Row(
 
-                        onCategorySelected = {
+                            modifier =
+                                Modifier.fillMaxWidth(),
 
-                            selectedCategory ->
+                            horizontalArrangement =
+                                Arrangement.SpaceBetween
+                        ) {
 
-                            category =
-                                selectedCategory
+                            Text(
+                                "Choose category"
+                            )
+
+                            Text(
+
+                                if (
+                                    categoryExpanded
+                                ) {
+                                    "▲"
+                                } else {
+                                    "▼"
+                                }
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+
+                        expanded =
+                            categoryExpanded,
+
+                        onDismissRequest = {
 
                             categoryExpanded =
                                 false
                         }
-                    )
+                    ) {
+
+                        categories.forEach {
+
+                            availableCategory ->
+
+                            DropdownMenuItem(
+
+                                text = {
+
+                                    Text(
+                                        availableCategory
+                                    )
+                                },
+
+                                onClick = {
+
+                                    category =
+                                        availableCategory
+
+                                    categoryExpanded =
+                                        false
+                                },
+
+                                enabled =
+                                    !isSaving
+                            )
+                        }
+                    }
                 }
 
                 if (
@@ -824,7 +675,9 @@ private fun CreateReportGroupDialog(
 
                 Text(
 
-                    if (isSaving) {
+                    if (
+                        isSaving
+                    ) {
 
                         "Saving..."
 
@@ -853,105 +706,4 @@ private fun CreateReportGroupDialog(
             }
         }
     )
-}
-
-@Composable
-private fun BoxWithDropdown(
-
-    expanded:
-        Boolean,
-
-    enabled:
-        Boolean,
-
-    onToggle:
-        () -> Unit,
-
-    onDismiss:
-        () -> Unit,
-
-    categories:
-        List<String>,
-
-    onCategorySelected:
-        (String) -> Unit
-
-) {
-
-    Column(
-
-        modifier =
-            Modifier.fillMaxWidth()
-    ) {
-
-        OutlinedButton(
-
-            onClick =
-                onToggle,
-
-            enabled =
-                enabled,
-
-            modifier =
-                Modifier.fillMaxWidth()
-        ) {
-
-            Row(
-
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
-            ) {
-
-                Text(
-                    "Choose category"
-                )
-
-                Text(
-                    if (expanded) {
-                        "▲"
-                    } else {
-                        "▼"
-                    }
-                )
-            }
-        }
-
-        DropdownMenu(
-
-            expanded =
-                expanded,
-
-            onDismissRequest =
-                onDismiss
-        ) {
-
-            categories.forEach {
-
-                availableCategory ->
-
-                DropdownMenuItem(
-
-                    text = {
-
-                        Text(
-                            availableCategory
-                        )
-                    },
-
-                    onClick = {
-
-                        onCategorySelected(
-                            availableCategory
-                        )
-                    },
-
-                    enabled =
-                        enabled
-                )
-            }
-        }
-    }
 }
