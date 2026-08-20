@@ -54,13 +54,6 @@ class TransactionDetailViewModel @Inject constructor(
         _saveCompleted.asStateFlow()
 
     //--------------------------------------------------
-    // Current transaction
-    //--------------------------------------------------
-
-    private var currentTransactionId:
-        Long? = null
-
-    //--------------------------------------------------
     // Transaction observation job
     //--------------------------------------------------
 
@@ -74,9 +67,6 @@ class TransactionDetailViewModel @Inject constructor(
     fun loadTransaction(
         transactionId: Long
     ) {
-
-        currentTransactionId =
-            transactionId
 
         transactionObservationJob?.cancel()
 
