@@ -27,7 +27,7 @@ import javax.inject.Provider
         StatementSnapshotEntity::class,
         TransactionLinkGroupEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -144,6 +144,30 @@ abstract class AppDatabase : RoomDatabase() {
         )
     }
 }
+
+    /**
+ * Adds a dedicated relationship identifier for
+ * account transfers.
+ *
+ * This is intentionally separate from transactionLinkId,
+ * which belongs to Financial Events.
+ */
+val MIGRATION_8_9 =
+    object : Migration(8, 9) {
+
+        override fun migrate(
+            database:
+                SupportSQLiteDatabase
+        ) {
+
+            database.execSQL(
+                """
+                ALTER TABLE transactions
+                ADD COLUMN transferLinkId TEXT
+                """.trimIndent()
+            )
+        }
+    }
 }
     class SeedCallback(
         private val categoryDaoProvider: Provider<CategoryDao>
