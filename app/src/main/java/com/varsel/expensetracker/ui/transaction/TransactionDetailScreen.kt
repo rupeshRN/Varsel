@@ -26,6 +26,7 @@ import com.varsel.expensetracker.ui.transaction.components.CategorySection
 import com.varsel.expensetracker.ui.transaction.components.DescriptionSection
 import com.varsel.expensetracker.ui.transaction.components.TransactionInfoSection
 import com.varsel.expensetracker.ui.transaction.components.TransactionLinkSection
+import com.varsel.expensetracker.ui.transaction.components.TransferLinkSection
 import com.varsel.expensetracker.domain.model.TransactionRole
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -248,50 +249,36 @@ fun TransactionDetailScreen(
                             viewModel::updateRole
                     )
 
-                    //--------------------------------------------------
+//--------------------------------------------------
 // Financial Event
 //
-// Financial Events are only applicable to normal
-// financial transactions, expenses/lent transactions,
-// and reimbursement-related transactions.
-//
-// Transfer In / Transfer Out transactions are NOT
-// financial-event transactions.
-//
-// Therefore the Financial Event section is hidden
-// whenever the selected transaction role is a
-// transfer role.
+// Financial Events are NOT applicable to transfers.
 //--------------------------------------------------
 
 if (
     state.selectedRole !=
-        com.varsel.expensetracker.domain.model.TransactionRole.TRANSFER_IN &&
+        TransactionRole.TRANSFER_IN &&
 
     state.selectedRole !=
-        com.varsel.expensetracker.domain.model.TransactionRole.TRANSFER_OUT
+        TransactionRole.TRANSFER_OUT
 ) {
 
     TransactionLinkSection(
 
         linkedTransactions =
-            state
-                .linkedTransactions,
+            state.linkedTransactions,
 
         transactionLinkGroup =
-            state
-                .transactionLinkGroup,
+            state.transactionLinkGroup,
 
         showCreateGroupPrompt =
-            state
-                .showCreateGroupPrompt,
+            state.showCreateGroupPrompt,
 
         isSavingGroup =
-            state
-                .isSavingGroup,
+            state.isSavingGroup,
 
         categories =
-            state
-                .categories,
+            state.categories,
 
         onManageFinancialEvent = {
 
@@ -320,6 +307,66 @@ if (
 
         onCreateReportGroup =
             viewModel::createReportGroup
+    )
+}
+
+//--------------------------------------------------
+// Transfer In / Transfer Out
+//
+// Transfers have their own relationship and are
+// intentionally kept separate from Financial Events.
+//
+// TRANSFER_OUT:
+//     show possible TRANSFER_IN transactions.
+//
+// TRANSFER_IN:
+//     show possible TRANSFER_OUT transactions.
+//
+// Normal transactions:
+//     no transfer section.
+//--------------------------------------------------
+
+if (
+    state.selectedRole ==
+        TransactionRole.TRANSFER_IN ||
+
+    state.selectedRole ==
+        TransactionRole.TRANSFER_OUT
+) {
+
+    TransferLinkSection(
+
+        transaction =
+            transaction,
+
+        linkedTransfer =
+            state.linkedTransfer,
+
+        candidateTransactions =
+            state.transferCandidates,
+
+        isLinking =
+            state.isTransferLinking,
+
+        transferErrorMessage =
+            state.transferErrorMessage,
+
+        onLinkTransfer = { candidateId ->
+
+            viewModel.linkTransfer(
+                candidateId
+            )
+        },
+
+        onUnlinkTransfer = {
+
+            viewModel.unlinkTransfer()
+        },
+
+        onClearError = {
+
+            viewModel.clearTransferError()
+        }
     )
 }
 
