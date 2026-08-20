@@ -98,15 +98,8 @@ interface TransactionDao {
     //--------------------------------------------------
     // Link transactions to Financial Event
     //
-    // IMPORTANT:
-    //
-    // Linking also assigns the Financial Event role:
-    //
     // EXPENSE -> LENT
     // INCOME  -> REIMBURSEMENT
-    //
-    // This is deliberately done in the DAO so every
-    // caller gets identical behaviour.
     //--------------------------------------------------
 
     @Query(
@@ -117,8 +110,10 @@ interface TransactionDao {
             role = CASE
                 WHEN type = 'EXPENSE'
                     THEN 'LENT'
+
                 WHEN type = 'INCOME'
                     THEN 'REIMBURSEMENT'
+
                 ELSE role
             END
         WHERE id IN (:transactionIds)
@@ -130,12 +125,44 @@ interface TransactionDao {
     )
 
     //--------------------------------------------------
+    // Link two transactions as a Transfer
+    //
+    // The first transaction must be the outgoing side.
+    // The second transaction must be the incoming side.
+    //
+    // The caller supplies the IDs explicitly.
+    //--------------------------------------------------
+
+    @Query(
+        """
+        UPDATE transactions
+        SET
+            transactionLinkId = :transactionLinkId,
+            role = CASE
+                WHEN id = :transferOutTransactionId
+                    THEN 'TRANSFER_OUT'
+
+                WHEN id = :transferInTransactionId
+                    THEN 'TRANSFER_IN'
+
+                ELSE role
+            END
+        WHERE id IN (
+            :transferOutTransactionId,
+            :transferInTransactionId
+        )
+        """
+    )
+    suspend fun linkTransferTransactions(
+        transferOutTransactionId: Long,
+        transferInTransactionId: Long,
+        transactionLinkId: String
+    )
+
+    //--------------------------------------------------
     // Remove transaction from Financial Event
     //
-    // The transaction itself remains.
-    //
-    // Role is restored to NORMAL because the Financial
-    // Event classification no longer applies.
+    // This restores NORMAL.
     //--------------------------------------------------
 
     @Query(
