@@ -136,19 +136,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
 
     //--------------------------------------------------
-    // Link transactions to Financial Event
-    //
-    // IMPORTANT:
-    //
-    // TransactionDao now handles BOTH:
-    //
-    // EXPENSE -> LENT
-    // INCOME  -> REIMBURSEMENT
-    //
-    // Therefore this repository method deliberately
-    // uses only linkTransactions().
-    //
-    // There is NO linkReimbursements() call.
+    // Financial Event linking
     //--------------------------------------------------
 
     override suspend fun linkTransactions(
@@ -179,12 +167,45 @@ class TransactionRepositoryImpl @Inject constructor(
     }
 
     //--------------------------------------------------
-    // Unlink transaction from Financial Event
-    //
-    // DAO clears:
-    //
-    // transactionLinkId
-    // role -> NORMAL
+    // Transfer linking
+    //--------------------------------------------------
+
+    override suspend fun linkTransferTransactions(
+
+        transferOutTransactionId:
+            Long,
+
+        transferInTransactionId:
+            Long,
+
+        transactionLinkId:
+            String
+
+    ) {
+
+        if (
+            transferOutTransactionId ==
+                transferInTransactionId
+        ) {
+            return
+        }
+
+        transactionDao
+            .linkTransferTransactions(
+
+                transferOutTransactionId =
+                    transferOutTransactionId,
+
+                transferInTransactionId =
+                    transferInTransactionId,
+
+                transactionLinkId =
+                    transactionLinkId
+            )
+    }
+
+    //--------------------------------------------------
+    // Unlink relationship
     //--------------------------------------------------
 
     override suspend fun unlinkTransaction(
@@ -218,8 +239,7 @@ fun TransactionEntity.toDomain():
 
         type =
             if (
-                type ==
-                    "INCOME"
+                type == "INCOME"
             ) {
 
                 TransactionType.INCOME
@@ -286,8 +306,7 @@ fun Transaction.toEntity():
 
         type =
             if (
-                type ==
-                    TransactionType.INCOME
+                type == TransactionType.INCOME
             ) {
 
                 "INCOME"
@@ -324,4 +343,4 @@ fun Transaction.toEntity():
         role =
             role.name
     )
-    }
+}
