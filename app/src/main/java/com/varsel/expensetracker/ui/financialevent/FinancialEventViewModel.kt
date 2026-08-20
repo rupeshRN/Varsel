@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.varsel.expensetracker.data.local.dao.CategoryDao
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionLinkGroup
-import com.varsel.expensetracker.domain.model.TransactionRole
 import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.domain.repository.TransactionLinkGroupRepository
 import com.varsel.expensetracker.domain.repository.TransactionRepository
@@ -76,6 +75,7 @@ class FinancialEventViewModel @Inject constructor(
                     .collectLatest { transactions ->
 
                         rebuildState(
+
                             transactionLinkId =
                                 transactionLinkId,
 
@@ -104,7 +104,9 @@ class FinancialEventViewModel @Inject constructor(
                     transactionLinkId
                 )
 
-        if (group == null) {
+        if (
+            group == null
+        ) {
 
             _uiState.value =
                 FinancialEventUiState.Error(
@@ -115,12 +117,13 @@ class FinancialEventViewModel @Inject constructor(
         }
 
         //--------------------------------------------------
-        // Existing transactions in this financial event
+        // Existing transactions in this Financial Event
         //--------------------------------------------------
 
         val linkedTransactions =
             transactions
                 .filter {
+
                     it.transactionLinkId ==
                         transactionLinkId
                 }
@@ -132,45 +135,43 @@ class FinancialEventViewModel @Inject constructor(
         val expenses =
             linkedTransactions
                 .filter {
+
                     it.type ==
                         TransactionType.EXPENSE
                 }
                 .sortedByDescending {
+
                     it.dateTimestamp
                 }
 
         //--------------------------------------------------
         // Reimbursements
         //
-        // IMPORTANT:
+        // Any income linked to this Financial Event is
+        // treated as a reimbursement in the Financial
+        // Event UI.
         //
-        // Once an income transaction is linked to a
-        // Financial Event, the event itself determines
-        // that it belongs on the reimbursement side.
-        //
-        // Therefore we DO NOT require
-        // TransactionRole.REIMBURSEMENT here.
-        //
-        // This allows a normal income to be added through
-        // "Add Reimbursements" without first editing the
-        // individual transaction.
+        // The DAO also explicitly changes the role to
+        // REIMBURSEMENT when an income is added through
+        // Add Reimbursements.
         //--------------------------------------------------
 
         val reimbursements =
             linkedTransactions
                 .filter {
+
                     it.type ==
                         TransactionType.INCOME
                 }
                 .sortedByDescending {
+
                     it.dateTimestamp
                 }
 
         //--------------------------------------------------
         // Available expenses
         //
-        // An expense can be added to this event only when
-        // it is not already linked to another event.
+        // Only completely unlinked expenses are available.
         //--------------------------------------------------
 
         val availableExpenses =
@@ -184,6 +185,7 @@ class FinancialEventViewModel @Inject constructor(
                         null
                 }
                 .sortedByDescending {
+
                     it.dateTimestamp
                 }
 
@@ -192,15 +194,10 @@ class FinancialEventViewModel @Inject constructor(
         //
         // IMPORTANT:
         //
-        // "Add Reimbursements" intentionally shows ALL
-        // unlinked income transactions.
+        // ALL unlinked income transactions are shown.
         //
-        // The user does NOT need to first edit the income
-        // transaction and change its role to
-        // TransactionRole.REIMBURSEMENT.
-        //
-        // The Financial Event picker determines that the
-        // selected income is being used as reimbursement.
+        // The user does NOT need to manually change the
+        // income role before selecting it.
         //--------------------------------------------------
 
         val availableReimbursements =
@@ -214,23 +211,23 @@ class FinancialEventViewModel @Inject constructor(
                         null
                 }
                 .sortedByDescending {
+
                     it.dateTimestamp
                 }
 
         //--------------------------------------------------
         // Existing application categories
-        //
-        // Use the same category source as the rest of
-        // the application.
         //--------------------------------------------------
 
         val categories =
             categoryDao
                 .getAllCategoriesSnapshot()
                 .map {
+
                     it.name
                 }
                 .filter {
+
                     it.isNotBlank()
                 }
                 .distinct()
@@ -242,11 +239,13 @@ class FinancialEventViewModel @Inject constructor(
 
         val totalExpenses =
             expenses.sumOf {
+
                 it.amount
             }
 
         val totalReimbursements =
             reimbursements.sumOf {
+
                 it.amount
             }
 
@@ -258,11 +257,22 @@ class FinancialEventViewModel @Inject constructor(
             _uiState.value as?
                 FinancialEventUiState.Loaded
 
-        val isUpdating = false
-
         val isEditingGroup =
             current?.isEditingGroup
                 ?: false
+
+        //--------------------------------------------------
+        // IMPORTANT:
+        //
+        // isUpdating must be reset after Room emits the
+        // updated transaction list.
+        //
+        // This allows the user to make multiple changes
+        // without leaving and re-entering the screen.
+        //--------------------------------------------------
+
+        val isUpdating =
+            false
 
         _uiState.value =
             FinancialEventUiState.Loaded(
@@ -322,9 +332,12 @@ class FinancialEventViewModel @Inject constructor(
         val validIds =
             current.availableExpenses
                 .filter {
-                    it.id in transactionIds
+
+                    it.id in
+                        transactionIds
                 }
                 .map {
+
                     it.id
                 }
                 .distinct()
@@ -339,7 +352,9 @@ class FinancialEventViewModel @Inject constructor(
 
             _uiState.value =
                 current.copy(
-                    isUpdating = true
+
+                    isUpdating =
+                        true
                 )
 
             transactionRepository
@@ -366,7 +381,9 @@ class FinancialEventViewModel @Inject constructor(
     ) {
 
         addExpenses(
-            setOf(transactionId)
+            setOf(
+                transactionId
+            )
         )
     }
 
@@ -375,12 +392,20 @@ class FinancialEventViewModel @Inject constructor(
     //
     // IMPORTANT:
     //
-    // The button and function remain named
-    // "Add Reimbursements".
+    // The UI/button remains:
     //
-    // The selected transactions are income transactions.
-    // They no longer need to already have the
-    // REIMBURSEMENT role.
+    //     Add Reimbursements
+    //
+    // The picker contains ALL unlinked incomes.
+    //
+    // The repository operation used here is specifically
+    // linkReimbursements(), which causes the DAO to:
+    //
+    //     1. assign the Financial Event link ID
+    //     2. set role = REIMBURSEMENT
+    //
+    // Therefore the income becomes a proper reimbursement
+    // as part of the Financial Event operation.
     //--------------------------------------------------
 
     fun addReimbursements(
@@ -402,9 +427,12 @@ class FinancialEventViewModel @Inject constructor(
         val validIds =
             current.availableReimbursements
                 .filter {
-                    it.id in transactionIds
+
+                    it.id in
+                        transactionIds
                 }
                 .map {
+
                     it.id
                 }
                 .distinct()
@@ -419,11 +447,22 @@ class FinancialEventViewModel @Inject constructor(
 
             _uiState.value =
                 current.copy(
-                    isUpdating = true
+
+                    isUpdating =
+                        true
                 )
 
+            //--------------------------------------------------
+            // IMPORTANT CHANGE:
+            //
+            // Do NOT use linkTransactions() here.
+            //
+            // linkReimbursements() also changes the role
+            // of each selected income to REIMBURSEMENT.
+            //--------------------------------------------------
+
             transactionRepository
-                .linkTransactions(
+                .linkReimbursements(
 
                     transactionIds =
                         validIds,
@@ -446,7 +485,9 @@ class FinancialEventViewModel @Inject constructor(
     ) {
 
         addReimbursements(
-            setOf(transactionId)
+            setOf(
+                transactionId
+            )
         )
     }
 
@@ -471,10 +512,14 @@ class FinancialEventViewModel @Inject constructor(
 
         val belongsToEvent =
             current.expenses.any {
-                it.id == transactionId
+
+                it.id ==
+                    transactionId
             } ||
             current.reimbursements.any {
-                it.id == transactionId
+
+                it.id ==
+                    transactionId
             }
 
         if (
@@ -487,7 +532,9 @@ class FinancialEventViewModel @Inject constructor(
 
             _uiState.value =
                 current.copy(
-                    isUpdating = true
+
+                    isUpdating =
+                        true
                 )
 
             transactionRepository
@@ -510,7 +557,9 @@ class FinancialEventViewModel @Inject constructor(
 
         _uiState.value =
             current.copy(
-                isEditingGroup = true
+
+                isEditingGroup =
+                    true
             )
     }
 
@@ -527,7 +576,9 @@ class FinancialEventViewModel @Inject constructor(
 
         _uiState.value =
             current.copy(
-                isEditingGroup = false
+
+                isEditingGroup =
+                    false
             )
     }
 
@@ -537,9 +588,11 @@ class FinancialEventViewModel @Inject constructor(
 
     fun saveGroup(
 
-        groupName: String,
+        groupName:
+            String,
 
-        category: String
+        category:
+            String
 
     ) {
 
@@ -586,7 +639,7 @@ class FinancialEventViewModel @Inject constructor(
         }
 
         //--------------------------------------------------
-        // Use canonical spelling from the category list.
+        // Use canonical spelling from category list.
         //--------------------------------------------------
 
         val selectedCategory =
