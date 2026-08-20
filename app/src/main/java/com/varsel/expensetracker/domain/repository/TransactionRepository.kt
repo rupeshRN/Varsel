@@ -5,118 +5,131 @@ import kotlinx.coroutines.flow.Flow
 
 interface TransactionRepository {
 
-    //--------------------------------------------------
-    // Transactions
-    //--------------------------------------------------
-
-    fun getAllTransactions():
-        Flow<List<Transaction>>
+    fun getAllTransactions(): Flow<List<Transaction>>
 
     suspend fun insertTransactions(
-        transactions:
-            List<Transaction>
+        transactions: List<Transaction>
     )
 
     suspend fun insertTransaction(
-        transaction:
-            Transaction
+        transaction: Transaction
     )
 
     suspend fun updateTransaction(
-        transaction:
-            Transaction
+        transaction: Transaction
     )
 
     suspend fun deleteTransaction(
-        transaction:
-            Transaction
+        transaction: Transaction
     )
 
     suspend fun getTransactionById(
         id: Long
-    ):
-        Transaction?
+    ): Transaction?
 
     suspend fun findExistingFingerprints(
-        fingerprints:
-            List<String>
-    ):
-        Set<String>
+        fingerprints: List<String>
+    ): Set<String>
 
     //--------------------------------------------------
-    // Financial Event linking
+    // Financial Event
     //--------------------------------------------------
 
     /**
-     * Links transactions to a Financial Event.
+     * Assigns the same Financial Event link ID to
+     * multiple transactions.
      *
-     * Uses transactionLinkId.
+     * Used for:
+     * - LENT expenses
+     * - REIMBURSEMENT incomes
      */
     suspend fun linkTransactions(
+        transactionIds: List<Long>,
+        transactionLinkId: String
+    )
 
-        transactionIds:
-            List<Long>,
-
-        transactionLinkId:
-            String
+    /**
+     * Removes a transaction from its Financial Event.
+     *
+     * The transaction itself is not deleted.
+     */
+    suspend fun unlinkTransaction(
+        transactionId: Long
     )
 
     //--------------------------------------------------
-    // Transfer linking
+    // Transfer
     //--------------------------------------------------
 
     /**
-     * Links exactly two transactions as one transfer.
+     * Attempts to link exactly two transactions as
+     * one account transfer.
      *
-     * transferOutTransactionId:
-     *     outgoing side of the transfer
+     * A valid transfer must contain:
      *
-     * transferInTransactionId:
-     *     incoming side of the transfer
+     *     TRANSFER_OUT + TRANSFER_IN
      *
-     * transferLinkId:
-     *     shared internal transfer relationship ID
+     * and both transactions must have exactly the
+     * same amount.
+     *
+     * The implementation must validate the pair
+     * before persisting the transfer relationship.
      */
-    suspend fun linkTransferTransactions(
+    suspend fun linkTransfer(
+        transferOutTransactionId: Long,
+        transferInTransactionId: Long
+    ): TransferLinkResult
 
-        transferOutTransactionId:
-            Long,
-
-        transferInTransactionId:
-            Long,
-
-        transferLinkId:
-            String
-    )
-
-    //--------------------------------------------------
-    // Financial Event unlink
-    //--------------------------------------------------
-
-    suspend fun unlinkTransaction(
-        transactionId:
-            Long
-    )
-
-    //--------------------------------------------------
-    // Transfer unlink
-    //--------------------------------------------------
-
+    /**
+     * Removes a transaction from its transfer.
+     *
+     * The transaction itself is not deleted.
+     */
     suspend fun unlinkTransfer(
-        transactionId:
-            Long
+        transactionId: Long
     )
 
-    //--------------------------------------------------
-    // Get paired transfer
-    //--------------------------------------------------
+    /**
+     * Returns all transactions belonging to the same
+     * transfer relationship.
+     */
+    suspend fun getLinkedTransferTransactions(
+        transferLinkId: String
+    ): List<Transaction>
+}
 
-    suspend fun getLinkedTransfer(
-        transferLinkId:
-            String,
+/**
+ * Result of attempting to create a transfer relationship.
+ */
+sealed interface TransferLinkResult {
 
-        currentTransactionId:
-            Long
-    ):
-        Transaction?
+    /**
+     * Transfer was successfully created.
+     */
+    data object Success : TransferLinkResult
+
+    /**
+     * The selected transactions do not form a valid
+     * Transfer Out + Transfer In pair.
+     */
+    data object InvalidTransactionPair : TransferLinkResult
+
+    /**
+     * The Transfer Out and Transfer In amounts differ.
+     */
+    data class AmountMismatch(
+        val transferOutAmount: Double,
+        val transferInAmount: Double
+    ) : TransferLinkResult
+
+    /**
+     * One or both transactions could not be found.
+     */
+    data object TransactionNotFound : TransferLinkResult
+
+    /**
+     * One or both transactions already belong to
+     * another transfer.
+     */
+    data object AlreadyLinked : TransferLinkResult
 }
