@@ -166,29 +166,4 @@ interface TransactionDao {
     suspend fun getLinkedTransactions(
         transactionLinkId: String
     ): List<TransactionEntity>
-
-    //--------------------------------------------------
-    // Unlinked reimbursement incomes
-    //
-    // Kept for compatibility with existing callers.
-    //
-    // The Financial Event screen now intentionally
-    // supports ALL unlinked income transactions, so this
-    // query is not the source of the newer picker.
-    //--------------------------------------------------
-
-    @Query(
-        """
-        SELECT *
-        FROM transactions
-        WHERE type = 'INCOME'
-        AND role = 'REIMBURSEMENT'
-        AND transactionLinkId IS NULL
-        AND id != :currentTransactionId
-        ORDER BY dateTimestamp DESC
-        """
-    )
-    suspend fun getUnlinkedReimbursements(
-        currentTransactionId: Long
-    ): List<TransactionEntity>
 }
