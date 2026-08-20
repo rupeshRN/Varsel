@@ -29,31 +29,31 @@ import com.varsel.expensetracker.ui.transaction.components.TransactionLinkSectio
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.OutlinedButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionDetailScreen(
 
-    transactionId: Long,
+    transactionId:
+        Long,
 
-    viewModel: TransactionDetailViewModel,
+    viewModel:
+        TransactionDetailViewModel,
 
-    onBackClick: () -> Unit,
+    onBackClick:
+        () -> Unit,
 
-    onFinancialEventClick: (String) -> Unit
+    onFinancialEventClick:
+        (String) -> Unit
 
 ) {
 
     val uiState by
-        viewModel.uiState.collectAsStateWithLifecycle()
+        viewModel.uiState
+            .collectAsStateWithLifecycle()
 
     val saveCompleted by
-        viewModel.saveCompleted.collectAsStateWithLifecycle()
-
-    val selectedTransactionIds by
-        viewModel.selectedTransactionIds
+        viewModel.saveCompleted
             .collectAsStateWithLifecycle()
 
     val scrollState =
@@ -76,7 +76,9 @@ fun TransactionDetailScreen(
 
     LaunchedEffect(saveCompleted) {
 
-        if (saveCompleted) {
+        if (
+            saveCompleted
+        ) {
 
             viewModel.consumeSaveCompleted()
 
@@ -91,16 +93,22 @@ fun TransactionDetailScreen(
             CenterAlignedTopAppBar(
 
                 title = {
-                    Text("Transaction Details")
+
+                    Text(
+                        "Transaction Details"
+                    )
                 },
 
                 navigationIcon = {
 
                     IconButton(
-                        onClick = onBackClick
+
+                        onClick =
+                            onBackClick
                     ) {
 
                         Icon(
+
                             imageVector =
                                 Icons.Default.ArrowBack,
 
@@ -118,7 +126,9 @@ fun TransactionDetailScreen(
                 uiState as?
                     TransactionDetailUiState.Loaded
 
-            if (state != null) {
+            if (
+                state != null
+            ) {
 
                 BottomActionBar(
 
@@ -151,11 +161,15 @@ fun TransactionDetailScreen(
                     .padding(24.dp),
 
             verticalArrangement =
-                Arrangement.spacedBy(16.dp)
-
+                Arrangement.spacedBy(
+                    16.dp
+                )
         ) {
 
-            when (val state = uiState) {
+            when (
+                val state =
+                    uiState
+            ) {
 
                 //--------------------------------------------------
                 // Loading
@@ -163,7 +177,9 @@ fun TransactionDetailScreen(
 
                 TransactionDetailUiState.Loading -> {
 
-                    Text("Loading...")
+                    Text(
+                        "Loading..."
+                    )
                 }
 
                 //--------------------------------------------------
@@ -172,7 +188,9 @@ fun TransactionDetailScreen(
 
                 is TransactionDetailUiState.Error -> {
 
-                    Text(state.message)
+                    Text(
+                        state.message
+                    )
                 }
 
                 //--------------------------------------------------
@@ -191,7 +209,8 @@ fun TransactionDetailScreen(
                     DescriptionSection(
 
                         description =
-                            state.editableDescription,
+                            state
+                                .editableDescription,
 
                         onDescriptionChanged =
                             viewModel::updateDescription
@@ -204,7 +223,8 @@ fun TransactionDetailScreen(
                     CategorySection(
 
                         selectedCategory =
-                            state.selectedCategory,
+                            state
+                                .selectedCategory,
 
                         onCategorySelected =
                             viewModel::updateCategory
@@ -220,44 +240,66 @@ fun TransactionDetailScreen(
                             transaction.type,
 
                         selectedRole =
-                            state.selectedRole,
+                            state
+                                .selectedRole,
 
                         onRoleSelected =
                             viewModel::updateRole
                     )
 
                     //--------------------------------------------------
-                    // Transaction Linking
+                    // Financial Event
+                    //
+                    // IMPORTANT:
+                    //
+                    // There is no longer a "Possible Transactions
+                    // to Link" section here.
+                    //
+                    // Financial Event creation/management is now
+                    // the responsibility of the Financial Event
+                    // section.
                     //--------------------------------------------------
 
                     TransactionLinkSection(
 
                         linkedTransactions =
-                            state.linkedTransactions,
-
-                        linkableTransactions =
-                            state.linkableTransactions,
-
-                        selectedTransactionIds =
-                            selectedTransactionIds,
-
-                        isLinking =
-                            state.isLinking,
+                            state
+                                .linkedTransactions,
 
                         transactionLinkGroup =
-                            state.transactionLinkGroup,
+                            state
+                                .transactionLinkGroup,
 
                         showCreateGroupPrompt =
-                            state.showCreateGroupPrompt,
+                            state
+                                .showCreateGroupPrompt,
 
                         isSavingGroup =
-                            state.isSavingGroup,
+                            state
+                                .isSavingGroup,
 
-                        onToggleCandidate =
-                            viewModel::toggleReimbursementSelection,
+                        categories =
+                            state
+                                .categories,
 
-                        onLinkSelected =
-                            viewModel::linkSelectedTransactions,
+                        onManageFinancialEvent = {
+
+                            val linkId =
+                                transaction
+                                    .transactionLinkId
+
+                            if (
+                                linkId != null
+                            ) {
+
+                                onFinancialEventClick(
+                                    linkId
+                                )
+                            }
+                        },
+
+                        onShowCreateFinancialEvent =
+                            viewModel::showCreateGroupPrompt,
 
                         onUnlink =
                             viewModel::unlinkCurrentTransaction,
@@ -265,30 +307,10 @@ fun TransactionDetailScreen(
                         onDismissCreateGroupPrompt =
                             viewModel::dismissCreateGroupPrompt,
 
-                        categories =
-                            state.categories,
-
                         onCreateReportGroup =
                             viewModel::createReportGroup
                     )
 
-                    state.transaction.transactionLinkId?.let { linkId ->
-
-    androidx.compose.material3.OutlinedButton(
-
-        onClick = {
-            onFinancialEventClick(linkId)
-        },
-
-        modifier =
-            Modifier.fillMaxWidth()
-    ) {
-
-        Text(
-            text = "Manage Financial Event"
-        )
-    }
-}
                     //--------------------------------------------------
                     // Transaction Information
                     //--------------------------------------------------
@@ -296,15 +318,20 @@ fun TransactionDetailScreen(
                     TransactionInfoSection(
 
                         amount =
-                            "₹%.2f".format(
-                                transaction.amount
-                            ),
+                            "₹%.2f"
+                                .format(
+                                    transaction.amount
+                                ),
 
                         date =
                             SimpleDateFormat(
+
                                 "dd MMM yyyy",
+
                                 Locale.ENGLISH
+
                             ).format(
+
                                 Date(
                                     transaction.dateTimestamp
                                 )
@@ -319,6 +346,7 @@ fun TransactionDetailScreen(
                     //--------------------------------------------------
 
                     Spacer(
+
                         modifier =
                             Modifier.padding(
                                 bottom = 24.dp
