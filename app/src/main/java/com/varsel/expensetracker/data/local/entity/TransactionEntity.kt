@@ -4,9 +4,14 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.varsel.expensetracker.domain.model.TransactionRole
 
-@Entity(tableName = "transactions")
+@Entity(
+    tableName = "transactions"
+)
 data class TransactionEntity(
-    @PrimaryKey(autoGenerate = true)
+
+    @PrimaryKey(
+        autoGenerate = true
+    )
     val id: Long = 0L,
 
     val amount: Double,
@@ -26,8 +31,7 @@ data class TransactionEntity(
     /**
      * Stable internal account identifier.
      *
-     * Contains a SHA-256 hash of the full account number,
-     * never the actual account number.
+     * Contains a SHA-256 hash of the full account number.
      */
     val accountId: String? = null,
 
@@ -37,18 +41,29 @@ data class TransactionEntity(
     val accountLast4: String? = null,
 
     /**
-     * Internal relationship/group identifier.
+     * Financial Event relationship.
      *
-     * Multiple related transactions can share this value.
-     *
-     * Example:
-     * Lent ₹3,000
-     * Reimbursement ₹1,000
-     * Reimbursement ₹1,000
-     *
-     * All three can have the same transactionLinkId.
+     * Used for:
+     * Expense/Lent
+     * Income/Reimbursement
      */
     val transactionLinkId: String? = null,
 
-    val role: String = TransactionRole.NORMAL.name
+    /**
+     * Transfer relationship.
+     *
+     * Used ONLY for:
+     * Transfer Out <-> Transfer In
+     *
+     * This is deliberately separate from
+     * transactionLinkId.
+     */
+    val transferLinkId: String? = null,
+
+    /**
+     * Transaction role.
+     */
+    val role:
+        String =
+            TransactionRole.NORMAL.name
 )
