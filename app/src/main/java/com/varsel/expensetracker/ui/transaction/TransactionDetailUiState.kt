@@ -31,53 +31,54 @@ sealed interface TransactionDetailUiState {
          *
          * Used by the Financial Event / Report Group
          * creation dialog so the user selects a category
-         * from the application's existing category list
-         * instead of typing arbitrary text.
+         * from the application's existing category list.
          */
         val categories: List<String> =
             emptyList(),
 
         //--------------------------------------------------
-        // Manual transaction linking
+        // Financial Event
         //--------------------------------------------------
 
         /**
-         * All transactions currently belonging to the same
-         * financial event.
+         * All transactions currently belonging to the
+         * same Financial Event.
+         *
+         * This is display-only from Transaction Details.
+         *
+         * The old "Possible Transactions to Link" picker
+         * has been removed. Adding and removing transactions
+         * from a Financial Event is now handled by the
+         * Financial Event screen.
          */
         val linkedTransactions: List<Transaction> =
             emptyList(),
 
         /**
-         * Transactions that the user can manually select
-         * and add to the current financial event.
-         *
-         * When the current transaction is an EXPENSE:
-         *     unlinked REIMBURSEMENT incomes are shown.
-         *
-         * When the current transaction is a REIMBURSEMENT:
-         *     unlinked expenses are shown.
-         *
-         * No automatic linking is performed.
-         */
-        val linkableTransactions: List<Transaction> =
-            emptyList(),
-
-        /**
-         * True while a link/unlink operation is being
-         * persisted.
+         * True while the current transaction is being
+         * linked or unlinked from a Financial Event.
          */
         val isLinking: Boolean = false,
 
         //--------------------------------------------------
-        // Optional report group
+        // Financial Event group
         //--------------------------------------------------
 
+        /**
+         * Existing Financial Event / Report Group associated
+         * with this transaction.
+         */
         val transactionLinkGroup:
             TransactionLinkGroup? = null,
 
+        /**
+         * Controls the Create Financial Event dialog.
+         */
         val showCreateGroupPrompt: Boolean = false,
 
+        /**
+         * True while a Financial Event is being created.
+         */
         val isSavingGroup: Boolean = false
 
     ) : TransactionDetailUiState
