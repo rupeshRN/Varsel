@@ -26,6 +26,7 @@ import com.varsel.expensetracker.ui.transaction.components.CategorySection
 import com.varsel.expensetracker.ui.transaction.components.DescriptionSection
 import com.varsel.expensetracker.ui.transaction.components.TransactionInfoSection
 import com.varsel.expensetracker.ui.transaction.components.TransactionLinkSection
+import com.varsel.expensetracker.domain.model.TransactionRole
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -248,68 +249,79 @@ fun TransactionDetailScreen(
                     )
 
                     //--------------------------------------------------
-                    // Financial Event
-                    //
-                    // IMPORTANT:
-                    //
-                    // There is no longer a "Possible Transactions
-                    // to Link" section here.
-                    //
-                    // Financial Event creation/management is now
-                    // the responsibility of the Financial Event
-                    // section.
-                    //--------------------------------------------------
+// Financial Event
+//
+// Financial Events are only applicable to normal
+// financial transactions, expenses/lent transactions,
+// and reimbursement-related transactions.
+//
+// Transfer In / Transfer Out transactions are NOT
+// financial-event transactions.
+//
+// Therefore the Financial Event section is hidden
+// whenever the selected transaction role is a
+// transfer role.
+//--------------------------------------------------
 
-                    TransactionLinkSection(
+if (
+    state.selectedRole !=
+        com.varsel.expensetracker.domain.model.TransactionRole.TRANSFER_IN &&
 
-                        linkedTransactions =
-                            state
-                                .linkedTransactions,
+    state.selectedRole !=
+        com.varsel.expensetracker.domain.model.TransactionRole.TRANSFER_OUT
+) {
 
-                        transactionLinkGroup =
-                            state
-                                .transactionLinkGroup,
+    TransactionLinkSection(
 
-                        showCreateGroupPrompt =
-                            state
-                                .showCreateGroupPrompt,
+        linkedTransactions =
+            state
+                .linkedTransactions,
 
-                        isSavingGroup =
-                            state
-                                .isSavingGroup,
+        transactionLinkGroup =
+            state
+                .transactionLinkGroup,
 
-                        categories =
-                            state
-                                .categories,
+        showCreateGroupPrompt =
+            state
+                .showCreateGroupPrompt,
 
-                        onManageFinancialEvent = {
+        isSavingGroup =
+            state
+                .isSavingGroup,
 
-                            val linkId =
-                                transaction
-                                    .transactionLinkId
+        categories =
+            state
+                .categories,
 
-                            if (
-                                linkId != null
-                            ) {
+        onManageFinancialEvent = {
 
-                                onFinancialEventClick(
-                                    linkId
-                                )
-                            }
-                        },
+            val linkId =
+                transaction
+                    .transactionLinkId
 
-                        onShowCreateFinancialEvent =
-                            viewModel::showCreateGroupPrompt,
+            if (
+                linkId != null
+            ) {
 
-                        onUnlink =
-                            viewModel::unlinkCurrentTransaction,
+                onFinancialEventClick(
+                    linkId
+                )
+            }
+        },
 
-                        onDismissCreateGroupPrompt =
-                            viewModel::dismissCreateGroupPrompt,
+        onShowCreateFinancialEvent =
+            viewModel::showCreateGroupPrompt,
 
-                        onCreateReportGroup =
-                            viewModel::createReportGroup
-                    )
+        onUnlink =
+            viewModel::unlinkCurrentTransaction,
+
+        onDismissCreateGroupPrompt =
+            viewModel::dismissCreateGroupPrompt,
+
+        onCreateReportGroup =
+            viewModel::createReportGroup
+    )
+}
 
                     //--------------------------------------------------
                     // Transaction Information
