@@ -136,20 +136,20 @@ class TransactionDetailViewModel @Inject constructor(
 
                     isSavingGroup =
                         false,
-                    
+
                     //--------------------------------------------------
                     // Transfer state
                     //--------------------------------------------------
-                    
+
                     linkedTransfer =
                         null,
-                    
+
                     transferCandidates =
                         emptyList(),
-                    
+
                     isTransferLinking =
                         false,
-                    
+
                     transferErrorMessage =
                         null
                 )
@@ -187,318 +187,331 @@ class TransactionDetailViewModel @Inject constructor(
     // Observe transaction changes
     //--------------------------------------------------
 
-private fun observeTransactions(
-    transactionId: Long
-) {
+    private fun observeTransactions(
+        transactionId: Long
+    ) {
 
-    transactionObservationJob =
-        viewModelScope.launch {
+        transactionObservationJob =
+            viewModelScope.launch {
 
-            transactionRepository
-                .getAllTransactions()
-                .collectLatest { allTransactions ->
+                transactionRepository
+                    .getAllTransactions()
+                    .collectLatest { allTransactions ->
 
-                    updateTransactionDetailState(
+                        updateTransactionDetailState(
 
-                        transactionId =
-                            transactionId,
+                            transactionId =
+                                transactionId,
 
-                        allTransactions =
-                            allTransactions
-                    )
+                            allTransactions =
+                                allTransactions
+                        )
+                    }
+            }
+    }
+
+    //--------------------------------------------------
+    // Build Transaction Detail state
+    //--------------------------------------------------
+    //
+    // This builds BOTH:
+    //
+    // 1. Financial Event state
+    // 2. Transfer state
+    //
+    // They intentionally use separate IDs:
+    //
+    // transactionLinkId
+    //     -> Financial Event
+    //
+    // transferLinkId
+    //     -> Account Transfer
+    //
+    // They must never be mixed.
+    //--------------------------------------------------
+
+    private suspend fun updateTransactionDetailState(
+
+        transactionId:
+            Long,
+
+        allTransactions:
+            List<Transaction>
+
+    ) {
+
+        val currentState =
+            _uiState.value as?
+                TransactionDetailUiState.Loaded
+                ?: return
+
+        //--------------------------------------------------
+        // Latest current transaction
+        //--------------------------------------------------
+
+        val currentTransaction =
+            allTransactions
+                .firstOrNull {
+
+                    it.id ==
+                        transactionId
                 }
-        }
-}
+                ?: currentState.transaction
 
-    //--------------------------------------------------
-    // Build Financial Event state
-    //--------------------------------------------------
-    //
-    // Transaction Details no longer contains the old
-    // "Possible Transactions to Link" picker.
-    //
-    // The Financial Event screen is responsible for:
-    //
-    // - adding expenses
-    // - adding reimbursements
-    // - removing transactions
-    // - managing the event
-    //
-    // Transaction Details only displays transactions
-    // already belonging to the Financial Event.
-    //--------------------------------------------------
+        //--------------------------------------------------
+        // FINANCIAL EVENT
+        //--------------------------------------------------
 
-//--------------------------------------------------
-// Build Transaction Detail state
-//--------------------------------------------------
-//
-// This builds BOTH:
-//
-// 1. Financial Event state
-// 2. Transfer state
-//
-// They intentionally use separate IDs:
-//
-// transactionLinkId
-//     -> Financial Event
-//
-// transferLinkId
-//     -> Account Transfer
-//
-// They must never be mixed.
-//--------------------------------------------------
+        val transactionLinkId =
+            currentTransaction
+                .transactionLinkId
 
-private suspend fun updateTransactionDetailState(
+        //--------------------------------------------------
+        // Existing Financial Event transactions
+        //--------------------------------------------------
 
-    transactionId:
-        Long,
+        val linkedTransactions =
+            transactionLinkId
+                ?.let { linkId ->
 
-    allTransactions:
-        List<Transaction>
+                    allTransactions
+                        .filter {
 
-) {
+                            it.transactionLinkId ==
+                                linkId
+                        }
+                        .sortedByDescending {
 
-    val currentState =
-        _uiState.value as?
-            TransactionDetailUiState.Loaded
-            ?: return
+                            it.dateTimestamp
+                        }
+                }
+                .orEmpty()
 
-    //--------------------------------------------------
-    // Latest current transaction
-    //--------------------------------------------------
+        //--------------------------------------------------
+        // Existing Financial Event group
+        //--------------------------------------------------
 
-    val currentTransaction =
-        allTransactions
-            .firstOrNull {
+        val existingGroup =
+            transactionLinkId
+                ?.let { linkId ->
 
-                it.id ==
-                    transactionId
-            }
-            ?: currentState.transaction
-
-    //--------------------------------------------------
-    // FINANCIAL EVENT
-    //--------------------------------------------------
-
-    val transactionLinkId =
-        currentTransaction
-            .transactionLinkId
-
-    //--------------------------------------------------
-    // Existing Financial Event transactions
-    //--------------------------------------------------
-
-    val linkedTransactions =
-        transactionLinkId
-            ?.let { linkId ->
-
-                allTransactions
-                    .filter {
-
-                        it.transactionLinkId ==
+                    transactionLinkGroupRepository
+                        .getGroup(
                             linkId
-                    }
-                    .sortedByDescending {
+                        )
+                }
 
-                        it.dateTimestamp
-                    }
-            }
-            .orEmpty()
+        //--------------------------------------------------
+        // TRANSFER
+        //--------------------------------------------------
 
-    //--------------------------------------------------
-    // Existing Financial Event group
-    //--------------------------------------------------
+        val transferLinkId =
+            currentTransaction
+                .transferLinkId
 
-    val existingGroup =
-        transactionLinkId
-            ?.let { linkId ->
+        //--------------------------------------------------
+        // Existing linked transfer
+        //
+        // A transfer always contains exactly two
+        // transactions:
+        //
+        // TRANSFER_OUT
+        // TRANSFER_IN
+        //--------------------------------------------------
 
-                transactionLinkGroupRepository
-                    .getGroup(
-                        linkId
-                    )
-            }
+        val linkedTransfer =
+            transferLinkId
+                ?.let { linkId ->
 
-    //--------------------------------------------------
-    // TRANSFER
-    //--------------------------------------------------
+                    allTransactions
+                        .firstOrNull {
 
-    val transferLinkId =
-        currentTransaction
-            .transferLinkId
+                            it.id !=
+                                currentTransaction.id &&
 
-    //--------------------------------------------------
-    // Existing linked transfer
-    //
-    // A transfer always contains exactly two
-    // transactions:
-    //
-    // TRANSFER_OUT
-    // TRANSFER_IN
-    //--------------------------------------------------
+                            it.transferLinkId ==
+                                linkId
+                        }
+                }
 
-    val linkedTransfer =
-        transferLinkId
-            ?.let { linkId ->
+        //--------------------------------------------------
+        // Transfer candidates
+        //
+        // Only show candidates when the current transaction
+        // is already classified as a transfer.
+        //
+        // TRANSFER_OUT -> look for TRANSFER_IN
+        // TRANSFER_IN  -> look for TRANSFER_OUT
+        //
+        // Already-linked transfers are excluded.
+        //
+        // Amount is intentionally NOT filtered here.
+        //--------------------------------------------------
 
-                allTransactions
-                    .firstOrNull {
-
-                        it.id !=
-                            currentTransaction.id &&
-
-                        it.transferLinkId ==
-                            linkId
-                    }
-            }
-
-    //--------------------------------------------------
-    // Transfer candidates
-    //
-    // Only show candidates when the current transaction
-    // is already classified as a transfer.
-    //
-    // TRANSFER_OUT -> look for TRANSFER_IN
-    // TRANSFER_IN  -> look for TRANSFER_OUT
-    //
-    // Already-linked transfers are excluded.
-    //
-    // Amount is intentionally NOT filtered here.
-    //
-    // Why?
-    //
-    // The user should be able to see a possible opposite
-    // transaction and receive the friendly amount mismatch
-    // validation when they select the wrong one.
-    //--------------------------------------------------
-
-    val transferCandidates =
-        if (
-            transferLinkId == null
-        ) {
-
-            when (
-                currentTransaction.role
+        val transferCandidates =
+            if (
+                transferLinkId == null
             ) {
 
-                TransactionRole.TRANSFER_OUT -> {
+                when (
+                    currentTransaction.role
+                ) {
 
-                    allTransactions
-                        .filter { candidate ->
+                    TransactionRole.TRANSFER_OUT -> {
 
-                            candidate.id !=
-                                currentTransaction.id &&
+                        allTransactions
+                            .filter { candidate ->
 
-                            candidate.type ==
-                                TransactionType.INCOME &&
+                                candidate.id !=
+                                    currentTransaction.id &&
 
-                            candidate.role ==
-                                TransactionRole.TRANSFER_IN &&
+                                candidate.type ==
+                                    TransactionType.INCOME &&
 
-                            candidate.transferLinkId ==
-                                null
-                        }
-                        .sortedByDescending {
+                                candidate.role ==
+                                    TransactionRole.TRANSFER_IN &&
 
-                            it.dateTimestamp
-                        }
+                                candidate.transferLinkId ==
+                                    null
+                            }
+                            .sortedByDescending {
+
+                                it.dateTimestamp
+                            }
+                    }
+
+                    TransactionRole.TRANSFER_IN -> {
+
+                        allTransactions
+                            .filter { candidate ->
+
+                                candidate.id !=
+                                    currentTransaction.id &&
+
+                                candidate.type ==
+                                    TransactionType.EXPENSE &&
+
+                                candidate.role ==
+                                    TransactionRole.TRANSFER_OUT &&
+
+                                candidate.transferLinkId ==
+                                    null
+                            }
+                            .sortedByDescending {
+
+                                it.dateTimestamp
+                            }
+                    }
+
+                    else -> {
+
+                        emptyList()
+                    }
                 }
 
-                TransactionRole.TRANSFER_IN -> {
+            } else {
 
-                    allTransactions
-                        .filter { candidate ->
+                //--------------------------------------------------
+                // Already linked.
+                //
+                // Do not show additional candidates.
+                //--------------------------------------------------
 
-                            candidate.id !=
-                                currentTransaction.id &&
-
-                            candidate.type ==
-                                TransactionType.EXPENSE &&
-
-                            candidate.role ==
-                                TransactionRole.TRANSFER_OUT &&
-
-                            candidate.transferLinkId ==
-                                null
-                        }
-                        .sortedByDescending {
-
-                            it.dateTimestamp
-                        }
-                }
-
-                else -> {
-
-                    emptyList()
-                }
+                emptyList()
             }
 
-        } else {
+        //--------------------------------------------------
+        // Preserve transient UI state
+        //--------------------------------------------------
 
-            //--------------------------------------------------
-            // Already linked.
-            //
-            // Do not show additional candidates.
-            //--------------------------------------------------
+        _uiState.value =
+            currentState.copy(
 
-            emptyList()
-        }
+                //--------------------------------------------------
+                // Current transaction
+                //--------------------------------------------------
 
-    //--------------------------------------------------
-    // Preserve transient UI state
-    //--------------------------------------------------
+                transaction =
+                    currentTransaction,
 
-    _uiState.value =
-        currentState.copy(
+                //--------------------------------------------------
+                // Financial Event
+                //--------------------------------------------------
 
-            //--------------------------------------------------
-            // Current transaction
-            //--------------------------------------------------
+                categories =
+                    currentState.categories,
 
-            transaction =
-                currentTransaction,
+                linkedTransactions =
+                    linkedTransactions,
 
-            //--------------------------------------------------
-            // Financial Event
-            //--------------------------------------------------
+                transactionLinkGroup =
+                    existingGroup,
 
-            categories =
-                currentState.categories,
+                //--------------------------------------------------
+                // IMPORTANT FIX
+                //
+                // Once the Financial Event group exists,
+                // the creation dialog must stay dismissed.
+                //
+                // Previously the Room transaction observer
+                // could rebuild the state while the group
+                // was being saved and preserve:
+                //
+                // showCreateGroupPrompt = true
+                // isSavingGroup = true
+                //
+                // That caused the dialog to remain visible
+                // with "Saving..." until the app was force
+                // closed.
+                //--------------------------------------------------
 
-            linkedTransactions =
-                linkedTransactions,
+                showCreateGroupPrompt =
+                    if (
+                        existingGroup != null
+                    ) {
 
-            transactionLinkGroup =
-                existingGroup,
+                        false
 
-            showCreateGroupPrompt =
-                currentState
-                    .showCreateGroupPrompt,
+                    } else {
 
-            //--------------------------------------------------
-            // Transfer
-            //--------------------------------------------------
+                        currentState
+                            .showCreateGroupPrompt
+                    },
 
-            linkedTransfer =
-                linkedTransfer,
+                isSavingGroup =
+                    if (
+                        existingGroup != null
+                    ) {
 
-            transferCandidates =
-                transferCandidates,
+                        false
 
-            //--------------------------------------------------
-            // Operation state
-            //
-            // Room Flow has delivered the latest state,
-            // therefore the operation is no longer pending.
-            //--------------------------------------------------
+                    } else {
 
-            isLinking =
-                false,
+                        currentState
+                            .isSavingGroup
+                    },
 
-            isTransferLinking =
-                false
-        )
-}
+                //--------------------------------------------------
+                // Transfer
+                //--------------------------------------------------
+
+                linkedTransfer =
+                    linkedTransfer,
+
+                transferCandidates =
+                    transferCandidates,
+
+                //--------------------------------------------------
+                // Operation state
+                //--------------------------------------------------
+
+                isLinking =
+                    false,
+
+                isTransferLinking =
+                    false
+            )
+    }
 
     //--------------------------------------------------
     // Show Create Financial Event dialog
@@ -639,17 +652,6 @@ private suspend fun updateTransactionDetailState(
 
     //--------------------------------------------------
     // Transfer linking
-    //--------------------------------------------------
-    //
-    // The current transaction is one side of the transfer.
-    //
-    // The supplied transaction is the other side.
-    //
-    // The repository performs the authoritative validation:
-    //
-    // TRANSFER_OUT + TRANSFER_IN
-    // AND
-    // exact same amount.
     //--------------------------------------------------
 
     fun linkTransfer(
@@ -1150,8 +1152,7 @@ private suspend fun updateTransactionDetailState(
                     TransactionType.CREDIT ->
                         TransactionRole.REIMBURSEMENT
                 }
-
-            //--------------------------------------------------
+                //--------------------------------------------------
             // Update current transaction.
             //--------------------------------------------------
 
@@ -1393,3 +1394,4 @@ private suspend fun updateTransactionDetailState(
             false
     }
 }
+                        
