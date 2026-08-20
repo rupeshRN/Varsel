@@ -136,7 +136,20 @@ class TransactionDetailViewModel @Inject constructor(
 
                     isSavingGroup =
                         false,
-
+                    
+                    //--------------------------------------------------
+                    // Transfer state
+                    //--------------------------------------------------
+                    
+                    linkedTransfer =
+                        null,
+                    
+                    transferCandidates =
+                        emptyList(),
+                    
+                    isTransferLinking =
+                        false,
+                    
                     transferErrorMessage =
                         null
                 )
@@ -174,28 +187,28 @@ class TransactionDetailViewModel @Inject constructor(
     // Observe transaction changes
     //--------------------------------------------------
 
-    private fun observeTransactions(
-        transactionId: Long
-    ) {
+private fun observeTransactions(
+    transactionId: Long
+) {
 
-        transactionObservationJob =
-            viewModelScope.launch {
+    transactionObservationJob =
+        viewModelScope.launch {
 
-                transactionRepository
-                    .getAllTransactions()
-                    .collectLatest { allTransactions ->
+            transactionRepository
+                .getAllTransactions()
+                .collectLatest { allTransactions ->
 
-                        updateFinancialEventState(
+                    updateTransactionDetailState(
 
-                            transactionId =
-                                transactionId,
+                        transactionId =
+                            transactionId,
 
-                            allTransactions =
-                                allTransactions
-                        )
-                    }
-            }
-    }
+                        allTransactions =
+                            allTransactions
+                    )
+                }
+        }
+}
 
     //--------------------------------------------------
     // Build Financial Event state
@@ -215,105 +228,277 @@ class TransactionDetailViewModel @Inject constructor(
     // already belonging to the Financial Event.
     //--------------------------------------------------
 
-    private suspend fun updateFinancialEventState(
+//--------------------------------------------------
+// Build Transaction Detail state
+//--------------------------------------------------
+//
+// This builds BOTH:
+//
+// 1. Financial Event state
+// 2. Transfer state
+//
+// They intentionally use separate IDs:
+//
+// transactionLinkId
+//     -> Financial Event
+//
+// transferLinkId
+//     -> Account Transfer
+//
+// They must never be mixed.
+//--------------------------------------------------
 
-        transactionId:
-            Long,
+private suspend fun updateTransactionDetailState(
 
-        allTransactions:
-            List<Transaction>
+    transactionId:
+        Long,
 
-    ) {
+    allTransactions:
+        List<Transaction>
 
-        val currentState =
-            _uiState.value as?
-                TransactionDetailUiState.Loaded
-                ?: return
+) {
 
-        //--------------------------------------------------
-        // Get latest current transaction.
-        //--------------------------------------------------
+    val currentState =
+        _uiState.value as?
+            TransactionDetailUiState.Loaded
+            ?: return
 
-        val currentTransaction =
-            allTransactions
-                .firstOrNull {
+    //--------------------------------------------------
+    // Latest current transaction
+    //--------------------------------------------------
 
-                    it.id ==
-                        transactionId
-                }
-                ?: currentState.transaction
+    val currentTransaction =
+        allTransactions
+            .firstOrNull {
 
-        //--------------------------------------------------
-        // Existing Financial Event link
-        //--------------------------------------------------
+                it.id ==
+                    transactionId
+            }
+            ?: currentState.transaction
 
-        val transactionLinkId =
-            currentTransaction
-                .transactionLinkId
+    //--------------------------------------------------
+    // FINANCIAL EVENT
+    //--------------------------------------------------
 
-        //--------------------------------------------------
-        // Existing transactions belonging to the same
-        // Financial Event.
-        //--------------------------------------------------
+    val transactionLinkId =
+        currentTransaction
+            .transactionLinkId
 
-        val linkedTransactions =
-            transactionLinkId
-                ?.let { linkId ->
+    //--------------------------------------------------
+    // Existing Financial Event transactions
+    //--------------------------------------------------
+
+    val linkedTransactions =
+        transactionLinkId
+            ?.let { linkId ->
+
+                allTransactions
+                    .filter {
+
+                        it.transactionLinkId ==
+                            linkId
+                    }
+                    .sortedByDescending {
+
+                        it.dateTimestamp
+                    }
+            }
+            .orEmpty()
+
+    //--------------------------------------------------
+    // Existing Financial Event group
+    //--------------------------------------------------
+
+    val existingGroup =
+        transactionLinkId
+            ?.let { linkId ->
+
+                transactionLinkGroupRepository
+                    .getGroup(
+                        linkId
+                    )
+            }
+
+    //--------------------------------------------------
+    // TRANSFER
+    //--------------------------------------------------
+
+    val transferLinkId =
+        currentTransaction
+            .transferLinkId
+
+    //--------------------------------------------------
+    // Existing linked transfer
+    //
+    // A transfer always contains exactly two
+    // transactions:
+    //
+    // TRANSFER_OUT
+    // TRANSFER_IN
+    //--------------------------------------------------
+
+    val linkedTransfer =
+        transferLinkId
+            ?.let { linkId ->
+
+                allTransactions
+                    .firstOrNull {
+
+                        it.id !=
+                            currentTransaction.id &&
+
+                        it.transferLinkId ==
+                            linkId
+                    }
+            }
+
+    //--------------------------------------------------
+    // Transfer candidates
+    //
+    // Only show candidates when the current transaction
+    // is already classified as a transfer.
+    //
+    // TRANSFER_OUT -> look for TRANSFER_IN
+    // TRANSFER_IN  -> look for TRANSFER_OUT
+    //
+    // Already-linked transfers are excluded.
+    //
+    // Amount is intentionally NOT filtered here.
+    //
+    // Why?
+    //
+    // The user should be able to see a possible opposite
+    // transaction and receive the friendly amount mismatch
+    // validation when they select the wrong one.
+    //--------------------------------------------------
+
+    val transferCandidates =
+        if (
+            transferLinkId == null
+        ) {
+
+            when (
+                currentTransaction.role
+            ) {
+
+                TransactionRole.TRANSFER_OUT -> {
 
                     allTransactions
-                        .filter {
+                        .filter { candidate ->
 
-                            it.transactionLinkId ==
-                                linkId
+                            candidate.id !=
+                                currentTransaction.id &&
+
+                            candidate.type ==
+                                TransactionType.INCOME &&
+
+                            candidate.role ==
+                                TransactionRole.TRANSFER_IN &&
+
+                            candidate.transferLinkId ==
+                                null
                         }
                         .sortedByDescending {
 
                             it.dateTimestamp
                         }
                 }
-                .orEmpty()
 
-        //--------------------------------------------------
-        // Existing Financial Event group.
-        //--------------------------------------------------
+                TransactionRole.TRANSFER_IN -> {
 
-        val existingGroup =
-            transactionLinkId
-                ?.let { linkId ->
+                    allTransactions
+                        .filter { candidate ->
 
-                    transactionLinkGroupRepository
-                        .getGroup(
-                            linkId
-                        )
+                            candidate.id !=
+                                currentTransaction.id &&
+
+                            candidate.type ==
+                                TransactionType.EXPENSE &&
+
+                            candidate.role ==
+                                TransactionRole.TRANSFER_OUT &&
+
+                            candidate.transferLinkId ==
+                                null
+                        }
+                        .sortedByDescending {
+
+                            it.dateTimestamp
+                        }
                 }
 
-        //--------------------------------------------------
-        // Do NOT automatically open Create Financial Event.
-        //--------------------------------------------------
+                else -> {
 
-        _uiState.value =
-            currentState.copy(
+                    emptyList()
+                }
+            }
 
-                transaction =
-                    currentTransaction,
+        } else {
 
-                categories =
-                    currentState.categories,
+            //--------------------------------------------------
+            // Already linked.
+            //
+            // Do not show additional candidates.
+            //--------------------------------------------------
 
-                linkedTransactions =
-                    linkedTransactions,
+            emptyList()
+        }
 
-                transactionLinkGroup =
-                    existingGroup,
+    //--------------------------------------------------
+    // Preserve transient UI state
+    //--------------------------------------------------
 
-                showCreateGroupPrompt =
-                    currentState
-                        .showCreateGroupPrompt,
+    _uiState.value =
+        currentState.copy(
 
-                isLinking =
-                    false
-            )
-    }
+            //--------------------------------------------------
+            // Current transaction
+            //--------------------------------------------------
+
+            transaction =
+                currentTransaction,
+
+            //--------------------------------------------------
+            // Financial Event
+            //--------------------------------------------------
+
+            categories =
+                currentState.categories,
+
+            linkedTransactions =
+                linkedTransactions,
+
+            transactionLinkGroup =
+                existingGroup,
+
+            showCreateGroupPrompt =
+                currentState
+                    .showCreateGroupPrompt,
+
+            //--------------------------------------------------
+            // Transfer
+            //--------------------------------------------------
+
+            linkedTransfer =
+                linkedTransfer,
+
+            transferCandidates =
+                transferCandidates,
+
+            //--------------------------------------------------
+            // Operation state
+            //
+            // Room Flow has delivered the latest state,
+            // therefore the operation is no longer pending.
+            //--------------------------------------------------
+
+            isLinking =
+                false,
+
+            isTransferLinking =
+                false
+        )
+}
 
     //--------------------------------------------------
     // Show Create Financial Event dialog
@@ -481,7 +666,7 @@ class TransactionDetailViewModel @Inject constructor(
         //--------------------------------------------------
 
         if (
-            current.isLinking
+            current.isTransferLinking
         ) {
             return
         }
@@ -515,7 +700,7 @@ class TransactionDetailViewModel @Inject constructor(
             _uiState.value =
                 current.copy(
 
-                    isLinking =
+                    isTransferLinking =
                         true,
 
                     transferErrorMessage =
@@ -535,7 +720,7 @@ class TransactionDetailViewModel @Inject constructor(
                 _uiState.value =
                     current.copy(
 
-                        isLinking =
+                        isTransferLinking =
                             false,
 
                         transferErrorMessage =
@@ -588,7 +773,7 @@ class TransactionDetailViewModel @Inject constructor(
                     _uiState.value =
                         current.copy(
 
-                            isLinking =
+                            isTransferLinking =
                                 false,
 
                             transferErrorMessage =
@@ -625,7 +810,7 @@ class TransactionDetailViewModel @Inject constructor(
                     _uiState.value =
                         current.copy(
 
-                            isLinking =
+                            isTransferLinking =
                                 false,
 
                             transferErrorMessage =
@@ -650,7 +835,7 @@ class TransactionDetailViewModel @Inject constructor(
                     _uiState.value =
                         current.copy(
 
-                            isLinking =
+                            isTransferLinking =
                                 false,
 
                             transferErrorMessage =
@@ -670,7 +855,7 @@ class TransactionDetailViewModel @Inject constructor(
                     _uiState.value =
                         current.copy(
 
-                            isLinking =
+                            isTransferLinking =
                                 false,
 
                             transferErrorMessage =
@@ -687,7 +872,7 @@ class TransactionDetailViewModel @Inject constructor(
                     _uiState.value =
                         current.copy(
 
-                            isLinking =
+                            isTransferLinking =
                                 false,
 
                             transferErrorMessage =
@@ -704,7 +889,7 @@ class TransactionDetailViewModel @Inject constructor(
                     _uiState.value =
                         current.copy(
 
-                            isLinking =
+                            isTransferLinking =
                                 false,
 
                             transferErrorMessage =
