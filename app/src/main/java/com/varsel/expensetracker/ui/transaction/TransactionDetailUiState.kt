@@ -18,103 +18,108 @@ sealed interface TransactionDetailUiState {
 
     data class Loaded(
 
-        val transaction:
-            Transaction,
+        //--------------------------------------------------
+        // Current transaction
+        //--------------------------------------------------
 
-        val editableDescription:
-            String,
+        val transaction: Transaction,
 
-        val selectedCategory:
-            String,
+        val editableDescription: String,
 
-        val selectedRole:
-            TransactionRole,
+        val selectedCategory: String,
 
-        val hasChanges:
-            Boolean,
+        val selectedRole: TransactionRole,
 
-        val isSaving:
-            Boolean = false,
+        val hasChanges: Boolean,
+
+        val isSaving: Boolean = false,
 
         //--------------------------------------------------
-        // Categories
+        // Application categories
+        //--------------------------------------------------
+
+        val categories: List<String> =
+            emptyList(),
+
+        //--------------------------------------------------
+        // Financial Event / transaction grouping
         //--------------------------------------------------
 
         /**
-         * Existing application categories.
+         * All transactions currently belonging to the
+         * same Financial Event.
+         */
+        val linkedTransactions: List<Transaction> =
+            emptyList(),
+
+        /**
+         * Transactions that can potentially be added
+         * to the current Financial Event.
          *
-         * Used by the Financial Event / Report Group
-         * creation and editing dialogs.
+         * This is retained for Financial Event handling.
          */
-        val categories:
-            List<String> = emptyList(),
-
-        //--------------------------------------------------
-        // Financial Event
-        //--------------------------------------------------
+        val linkableTransactions: List<Transaction> =
+            emptyList(),
 
         /**
-         * All transactions currently belonging to
-         * the same Financial Event.
-         *
-         * The old "Possible Transactions to Link"
-         * picker has been removed from Transaction Details.
-         *
-         * Adding/removing transactions is handled from
-         * the Financial Event screen.
+         * True while a Financial Event link/unlink
+         * operation is being persisted.
          */
-        val linkedTransactions:
-            List<Transaction> = emptyList(),
-
-        /**
-         * True while the current transaction is being
-         * linked or unlinked from a Financial Event.
-         */
-        val isLinking:
-            Boolean = false,
+        val isLinking: Boolean = false,
 
         //--------------------------------------------------
-        // Financial Event group
+        // Financial Event / Report Group
         //--------------------------------------------------
 
-        /**
-         * Existing Financial Event / Report Group
-         * associated with this transaction.
-         */
         val transactionLinkGroup:
             TransactionLinkGroup? = null,
 
-        /**
-         * Controls the Create Financial Event dialog.
-         */
-        val showCreateGroupPrompt:
-            Boolean = false,
+        val showCreateGroupPrompt: Boolean = false,
 
-        /**
-         * True while a Financial Event is being created.
-         */
-        val isSavingGroup:
-            Boolean = false,
+        val isSavingGroup: Boolean = false,
 
         //--------------------------------------------------
-        // Transfer linking
+        // Transfer In / Transfer Out
         //--------------------------------------------------
 
         /**
-         * Temporary error shown when the user attempts
-         * to link an invalid Transfer In / Transfer Out
-         * pair.
+         * The opposite-side transaction currently linked
+         * to this transfer.
          *
-         * This is intentionally part of Loaded state rather
-         * than changing the whole screen to Error.
+         * For TRANSFER_OUT:
+         *     this is the TRANSFER_IN transaction.
+         *
+         * For TRANSFER_IN:
+         *     this is the TRANSFER_OUT transaction.
+         */
+        val linkedTransfer:
+            Transaction? = null,
+
+        /**
+         * Transactions that may be selected as the
+         * opposite side of this transfer.
+         *
+         * The ViewModel is responsible for determining
+         * whether a candidate is valid.
+         */
+        val transferCandidates:
+            List<Transaction> =
+                emptyList(),
+
+        /**
+         * True while a transfer link/unlink operation
+         * is being persisted.
+         */
+        val isTransferLinking:
+            Boolean = false,
+
+        /**
+         * User-facing validation error from a transfer
+         * linking attempt.
          *
          * Example:
-         *
-         * "Transfer amounts don't match. Please make sure
-         * you selected the correct Transfer In / Transfer Out."
-         *
-         * The value is cleared after the user dismisses it
-         * or after a successful transfer operation.
+         * the selected Transfer In and Transfer Out
+         * amounts do not match.
          */
         val transferErrorMessage:
             String? = null
@@ -122,13 +127,12 @@ sealed interface TransactionDetailUiState {
     ) : TransactionDetailUiState
 
     //--------------------------------------------------
-    // Fatal screen error
+    // Error
     //--------------------------------------------------
 
     data class Error(
 
-        val message:
-            String
+        val message: String
 
     ) : TransactionDetailUiState
 }
