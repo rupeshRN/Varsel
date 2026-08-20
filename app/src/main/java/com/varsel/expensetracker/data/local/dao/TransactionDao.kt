@@ -13,41 +13,104 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TransactionDao {
 
-    @Query("SELECT * FROM transactions ORDER BY dateTimestamp DESC")
-    fun getAllTransactions(): Flow<List<TransactionEntity>>
-
-    @Transaction
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTransactions(transactions: List<TransactionEntity>)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTransaction(transaction: TransactionEntity)
-
-    @Update
-    suspend fun updateTransaction(transaction: TransactionEntity)
-
-    @Delete
-    suspend fun deleteTransaction(transaction: TransactionEntity)
-
-    @Query("SELECT * FROM transactions WHERE id = :id")
-    suspend fun getTransactionById(id: Long): TransactionEntity?
+    //--------------------------------------------------
+    // Observe all transactions
+    //--------------------------------------------------
 
     @Query(
-    """
-    SELECT transactionFingerprint
-    FROM transactions
-    WHERE transactionFingerprint IN (:fingerprints)
-    AND transactionFingerprint IS NOT NULL
-    """
-)
-suspend fun findExistingFingerprints(
-    fingerprints: List<String>
-): List<String>
+        "SELECT * FROM transactions ORDER BY dateTimestamp DESC"
+    )
+    fun getAllTransactions():
+        Flow<List<TransactionEntity>>
 
-/**
-     * Assign the same internal financial-event link
-     * to multiple transactions.
-     */
+    //--------------------------------------------------
+    // Insert multiple transactions
+    //--------------------------------------------------
+
+    @Transaction
+    @Insert(
+        onConflict =
+            OnConflictStrategy.REPLACE
+    )
+    suspend fun insertTransactions(
+        transactions:
+            List<TransactionEntity>
+    )
+
+    //--------------------------------------------------
+    // Insert single transaction
+    //--------------------------------------------------
+
+    @Insert(
+        onConflict =
+            OnConflictStrategy.REPLACE
+    )
+    suspend fun insertTransaction(
+        transaction:
+            TransactionEntity
+    )
+
+    //--------------------------------------------------
+    // Update transaction
+    //--------------------------------------------------
+
+    @Update
+    suspend fun updateTransaction(
+        transaction:
+            TransactionEntity
+    )
+
+    //--------------------------------------------------
+    // Delete transaction
+    //--------------------------------------------------
+
+    @Delete
+    suspend fun deleteTransaction(
+        transaction:
+            TransactionEntity
+    )
+
+    //--------------------------------------------------
+    // Get transaction by ID
+    //--------------------------------------------------
+
+    @Query(
+        "SELECT * FROM transactions WHERE id = :id"
+    )
+    suspend fun getTransactionById(
+        id: Long
+    ): TransactionEntity?
+
+    //--------------------------------------------------
+    // Find existing fingerprints
+    //--------------------------------------------------
+
+    @Query(
+        """
+        SELECT transactionFingerprint
+        FROM transactions
+        WHERE transactionFingerprint IN (:fingerprints)
+        AND transactionFingerprint IS NOT NULL
+        """
+    )
+    suspend fun findExistingFingerprints(
+        fingerprints:
+            List<String>
+    ): List<String>
+
+    //--------------------------------------------------
+    // Generic transaction linking
+    //--------------------------------------------------
+    //
+    // IMPORTANT:
+    // This only assigns transactionLinkId.
+    //
+    // It does NOT change the transaction role.
+    //
+    // Existing transaction-detail linking continues
+    // to use this operation.
+    //--------------------------------------------------
+
     @Query(
         """
         UPDATE transactions
@@ -56,12 +119,52 @@ suspend fun findExistingFingerprints(
         """
     )
     suspend fun linkTransactions(
-        transactionIds: List<Long>,
-        transactionLinkId: String
+        transactionIds:
+            List<Long>,
+
+        transactionLinkId:
+            String
     )
-    /**
-     * Remove a transaction from its linked financial event.
-     */
+
+    //--------------------------------------------------
+    // Financial Event reimbursement linking
+    //--------------------------------------------------
+    //
+    // This is intentionally separate from
+    // linkTransactions().
+    //
+    // Selected income transactions become:
+    //
+    //     transactionLinkId = Financial Event ID
+    //     role = REIMBURSEMENT
+    //
+    // This allows the Financial Event screen to select
+    // ordinary income transactions and explicitly convert
+    // them into reimbursements.
+    //--------------------------------------------------
+
+    @Query(
+        """
+        UPDATE transactions
+        SET
+            transactionLinkId = :transactionLinkId,
+            role = 'REIMBURSEMENT'
+        WHERE id IN (:transactionIds)
+        AND type = 'INCOME'
+        """
+    )
+    suspend fun linkReimbursements(
+        transactionIds:
+            List<Long>,
+
+        transactionLinkId:
+            String
+    )
+
+    //--------------------------------------------------
+    // Remove transaction from Financial Event
+    //--------------------------------------------------
+
     @Query(
         """
         UPDATE transactions
@@ -70,12 +173,14 @@ suspend fun findExistingFingerprints(
         """
     )
     suspend fun unlinkTransaction(
-        transactionId: Long
+        transactionId:
+            Long
     )
 
-        /**
-     * Return all transactions belonging to a link group.
-     */
+    //--------------------------------------------------
+    // Get all transactions belonging to a Financial Event
+    //--------------------------------------------------
+
     @Query(
         """
         SELECT *
@@ -85,15 +190,25 @@ suspend fun findExistingFingerprints(
         """
     )
     suspend fun getLinkedTransactions(
-        transactionLinkId: String
+        transactionLinkId:
+            String
     ): List<TransactionEntity>
-    
-    /**
-     * Return reimbursement transactions that have not
-     * already been manually linked.
-     *
-     * The current transaction is excluded.
-     */
+
+    //--------------------------------------------------
+    // Get unlinked reimbursement transactions
+    //--------------------------------------------------
+    //
+    // Kept for the existing transaction-detail linking
+    // functionality.
+    //
+    // This query intentionally returns only incomes that
+    // are ALREADY marked as REIMBURSEMENT.
+    //
+    // FinancialEventScreen uses the broader income list
+    // and linkReimbursements() for its Add Reimbursements
+    // workflow.
+    //--------------------------------------------------
+
     @Query(
         """
         SELECT *
@@ -106,6 +221,7 @@ suspend fun findExistingFingerprints(
         """
     )
     suspend fun getUnlinkedReimbursements(
-        currentTransactionId: Long
+        currentTransactionId:
+            Long
     ): List<TransactionEntity>
 }
