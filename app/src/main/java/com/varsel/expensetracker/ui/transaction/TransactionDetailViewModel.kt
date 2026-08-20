@@ -634,16 +634,18 @@ class TransactionDetailViewModel @Inject constructor(
             //--------------------------------------------------
 
             val financialEventRole =
-                when (
-                    current.transaction.type
-                ) {
+    when (
+        current.transaction.type
+    ) {
 
-                    TransactionType.EXPENSE ->
-                        TransactionRole.LENT
+        TransactionType.EXPENSE,
+        TransactionType.DEBIT ->
+            TransactionRole.LENT
 
-                    TransactionType.INCOME ->
-                        TransactionRole.REIMBURSEMENT
-                }
+        TransactionType.INCOME,
+        TransactionType.CREDIT ->
+            TransactionRole.REIMBURSEMENT
+    }
 
             //--------------------------------------------------
             // Update current transaction
