@@ -38,16 +38,6 @@ interface TransactionRepository {
 
     //--------------------------------------------------
     // Financial Event linking
-    //
-    // IMPORTANT:
-    //
-    // One centralized linking operation is used for
-    // BOTH expenses and incomes.
-    //
-    // The DAO determines the role:
-    //
-    // EXPENSE -> LENT
-    // INCOME  -> REIMBURSEMENT
     //--------------------------------------------------
 
     suspend fun linkTransactions(
@@ -60,7 +50,31 @@ interface TransactionRepository {
     )
 
     //--------------------------------------------------
-    // Remove transaction from Financial Event
+    // Transfer linking
+    //--------------------------------------------------
+
+    /**
+     * Links one outgoing transaction with one incoming
+     * transaction as an internal account transfer.
+     *
+     * The outgoing transaction becomes TRANSFER_OUT.
+     *
+     * The incoming transaction becomes TRANSFER_IN.
+     */
+    suspend fun linkTransferTransactions(
+
+        transferOutTransactionId:
+            Long,
+
+        transferInTransactionId:
+            Long,
+
+        transactionLinkId:
+            String
+    )
+
+    //--------------------------------------------------
+    // Remove relationship
     //--------------------------------------------------
 
     suspend fun unlinkTransaction(
