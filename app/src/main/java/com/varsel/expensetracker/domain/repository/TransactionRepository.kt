@@ -5,7 +5,12 @@ import kotlinx.coroutines.flow.Flow
 
 interface TransactionRepository {
 
-    fun getAllTransactions(): Flow<List<Transaction>>
+    //--------------------------------------------------
+    // Transactions
+    //--------------------------------------------------
+
+    fun getAllTransactions():
+        Flow<List<Transaction>>
 
     suspend fun insertTransactions(
         transactions: List<Transaction>
@@ -31,36 +36,36 @@ interface TransactionRepository {
         fingerprints: List<String>
     ): Set<String>
 
-    /**
-     * Assigns the same internal link ID to multiple transactions.
-     *
-     * Used for generic/manual transaction linking.
-     *
-     * This operation does NOT change the transaction role.
-     */
+    //--------------------------------------------------
+    // Financial Event linking
+    //
+    // IMPORTANT:
+    //
+    // One centralized linking operation is used for
+    // BOTH expenses and incomes.
+    //
+    // The DAO determines the role:
+    //
+    // EXPENSE -> LENT
+    // INCOME  -> REIMBURSEMENT
+    //--------------------------------------------------
+
     suspend fun linkTransactions(
-        transactionIds: List<Long>,
-        transactionLinkId: String
+
+        transactionIds:
+            List<Long>,
+
+        transactionLinkId:
+            String
     )
 
-    /**
-     * Links transactions to a Financial Event as reimbursements.
-     *
-     * The selected transactions must be income transactions.
-     * Their role is changed to REIMBURSEMENT while they are
-     * linked to the supplied Financial Event.
-     */
-    suspend fun linkReimbursements(
-        transactionIds: List<Long>,
-        transactionLinkId: String
-    )
+    //--------------------------------------------------
+    // Remove transaction from Financial Event
+    //--------------------------------------------------
 
-    /**
-     * Removes the relationship from a transaction.
-     *
-     * The transaction itself is not deleted.
-     */
     suspend fun unlinkTransaction(
-        transactionId: Long
+
+        transactionId:
+            Long
     )
 }
