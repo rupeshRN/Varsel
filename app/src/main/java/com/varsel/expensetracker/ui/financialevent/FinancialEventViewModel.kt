@@ -462,15 +462,15 @@ class FinancialEventViewModel @Inject constructor(
             //--------------------------------------------------
 
             transactionRepository
-                .linkReimbursements(
+    .linkTransactions(
 
-                    transactionIds =
-                        validIds,
+        transactionIds =
+            validIds,
 
-                    transactionLinkId =
-                        current.group
-                            .transactionLinkId
-                )
+        transactionLinkId =
+            current.group
+                .transactionLinkId
+    )
         }
     }
 
