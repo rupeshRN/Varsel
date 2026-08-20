@@ -18,36 +18,32 @@ interface TransactionDao {
     //--------------------------------------------------
 
     @Query(
-        "SELECT * FROM transactions ORDER BY dateTimestamp DESC"
+        """
+        SELECT *
+        FROM transactions
+        ORDER BY dateTimestamp DESC
+        """
     )
     fun getAllTransactions():
         Flow<List<TransactionEntity>>
 
     //--------------------------------------------------
-    // Insert multiple transactions
+    // Insert transactions
     //--------------------------------------------------
 
     @Transaction
     @Insert(
-        onConflict =
-            OnConflictStrategy.REPLACE
+        onConflict = OnConflictStrategy.REPLACE
     )
     suspend fun insertTransactions(
-        transactions:
-            List<TransactionEntity>
+        transactions: List<TransactionEntity>
     )
-
-    //--------------------------------------------------
-    // Insert single transaction
-    //--------------------------------------------------
 
     @Insert(
-        onConflict =
-            OnConflictStrategy.REPLACE
+        onConflict = OnConflictStrategy.REPLACE
     )
     suspend fun insertTransaction(
-        transaction:
-            TransactionEntity
+        transaction: TransactionEntity
     )
 
     //--------------------------------------------------
@@ -56,8 +52,7 @@ interface TransactionDao {
 
     @Update
     suspend fun updateTransaction(
-        transaction:
-            TransactionEntity
+        transaction: TransactionEntity
     )
 
     //--------------------------------------------------
@@ -66,23 +61,26 @@ interface TransactionDao {
 
     @Delete
     suspend fun deleteTransaction(
-        transaction:
-            TransactionEntity
+        transaction: TransactionEntity
     )
 
     //--------------------------------------------------
-    // Get transaction by ID
+    // Get transaction
     //--------------------------------------------------
 
     @Query(
-        "SELECT * FROM transactions WHERE id = :id"
+        """
+        SELECT *
+        FROM transactions
+        WHERE id = :id
+        """
     )
     suspend fun getTransactionById(
         id: Long
     ): TransactionEntity?
 
     //--------------------------------------------------
-    // Find existing fingerprints
+    // Existing fingerprints
     //--------------------------------------------------
 
     @Query(
@@ -94,53 +92,21 @@ interface TransactionDao {
         """
     )
     suspend fun findExistingFingerprints(
-        fingerprints:
-            List<String>
+        fingerprints: List<String>
     ): List<String>
 
     //--------------------------------------------------
-    // Generic transaction linking
-    //--------------------------------------------------
+    // Link transactions to Financial Event
     //
     // IMPORTANT:
-    // This only assigns transactionLinkId.
     //
-    // It does NOT change the transaction role.
+    // Linking also assigns the Financial Event role:
     //
-    // Existing transaction-detail linking continues
-    // to use this operation.
-    //--------------------------------------------------
-
-    @Query(
-        """
-        UPDATE transactions
-        SET transactionLinkId = :transactionLinkId
-        WHERE id IN (:transactionIds)
-        """
-    )
-    suspend fun linkTransactions(
-        transactionIds:
-            List<Long>,
-
-        transactionLinkId:
-            String
-    )
-
-    //--------------------------------------------------
-    // Financial Event reimbursement linking
-    //--------------------------------------------------
+    // EXPENSE -> LENT
+    // INCOME  -> REIMBURSEMENT
     //
-    // This is intentionally separate from
-    // linkTransactions().
-    //
-    // Selected income transactions become:
-    //
-    //     transactionLinkId = Financial Event ID
-    //     role = REIMBURSEMENT
-    //
-    // This allows the Financial Event screen to select
-    // ordinary income transactions and explicitly convert
-    // them into reimbursements.
+    // This is deliberately done in the DAO so every
+    // caller gets identical behaviour.
     //--------------------------------------------------
 
     @Query(
@@ -148,37 +114,45 @@ interface TransactionDao {
         UPDATE transactions
         SET
             transactionLinkId = :transactionLinkId,
-            role = 'REIMBURSEMENT'
+            role = CASE
+                WHEN type = 'EXPENSE'
+                    THEN 'LENT'
+                WHEN type = 'INCOME'
+                    THEN 'REIMBURSEMENT'
+                ELSE role
+            END
         WHERE id IN (:transactionIds)
-        AND type = 'INCOME'
         """
     )
-    suspend fun linkReimbursements(
-        transactionIds:
-            List<Long>,
-
-        transactionLinkId:
-            String
+    suspend fun linkTransactions(
+        transactionIds: List<Long>,
+        transactionLinkId: String
     )
 
     //--------------------------------------------------
     // Remove transaction from Financial Event
+    //
+    // The transaction itself remains.
+    //
+    // Role is restored to NORMAL because the Financial
+    // Event classification no longer applies.
     //--------------------------------------------------
 
     @Query(
         """
         UPDATE transactions
-        SET transactionLinkId = NULL
+        SET
+            transactionLinkId = NULL,
+            role = 'NORMAL'
         WHERE id = :transactionId
         """
     )
     suspend fun unlinkTransaction(
-        transactionId:
-            Long
+        transactionId: Long
     )
 
     //--------------------------------------------------
-    // Get all transactions belonging to a Financial Event
+    // Get transactions belonging to a Financial Event
     //--------------------------------------------------
 
     @Query(
@@ -190,23 +164,17 @@ interface TransactionDao {
         """
     )
     suspend fun getLinkedTransactions(
-        transactionLinkId:
-            String
+        transactionLinkId: String
     ): List<TransactionEntity>
 
     //--------------------------------------------------
-    // Get unlinked reimbursement transactions
-    //--------------------------------------------------
+    // Unlinked reimbursement incomes
     //
-    // Kept for the existing transaction-detail linking
-    // functionality.
+    // Kept for compatibility with existing callers.
     //
-    // This query intentionally returns only incomes that
-    // are ALREADY marked as REIMBURSEMENT.
-    //
-    // FinancialEventScreen uses the broader income list
-    // and linkReimbursements() for its Add Reimbursements
-    // workflow.
+    // The Financial Event screen now intentionally
+    // supports ALL unlinked income transactions, so this
+    // query is not the source of the newer picker.
     //--------------------------------------------------
 
     @Query(
@@ -221,7 +189,6 @@ interface TransactionDao {
         """
     )
     suspend fun getUnlinkedReimbursements(
-        currentTransactionId:
-            Long
+        currentTransactionId: Long
     ): List<TransactionEntity>
 }
