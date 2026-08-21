@@ -33,17 +33,21 @@ interface TransactionDao {
 
     @Transaction
     @Insert(
-        onConflict = OnConflictStrategy.REPLACE
+        onConflict =
+            OnConflictStrategy.REPLACE
     )
     suspend fun insertTransactions(
-        transactions: List<TransactionEntity>
+        transactions:
+            List<TransactionEntity>
     )
 
     @Insert(
-        onConflict = OnConflictStrategy.REPLACE
+        onConflict =
+            OnConflictStrategy.REPLACE
     )
     suspend fun insertTransaction(
-        transaction: TransactionEntity
+        transaction:
+            TransactionEntity
     )
 
     //--------------------------------------------------
@@ -52,7 +56,8 @@ interface TransactionDao {
 
     @Update
     suspend fun updateTransaction(
-        transaction: TransactionEntity
+        transaction:
+            TransactionEntity
     )
 
     //--------------------------------------------------
@@ -61,7 +66,8 @@ interface TransactionDao {
 
     @Delete
     suspend fun deleteTransaction(
-        transaction: TransactionEntity
+        transaction:
+            TransactionEntity
     )
 
     //--------------------------------------------------
@@ -77,7 +83,8 @@ interface TransactionDao {
     )
     suspend fun getTransactionById(
         id: Long
-    ): TransactionEntity?
+    ):
+        TransactionEntity?
 
     //--------------------------------------------------
     // Existing fingerprints
@@ -92,50 +99,106 @@ interface TransactionDao {
         """
     )
     suspend fun findExistingFingerprints(
-        fingerprints: List<String>
-    ): List<String>
+        fingerprints:
+            List<String>
+    ):
+        List<String>
 
     //--------------------------------------------------
-    // Link transactions to Financial Event
+    // Financial Event linking
     //
-    // IMPORTANT:
-    //
-    // Linking also assigns the Financial Event role:
-    //
-    // EXPENSE -> LENT
-    // INCOME  -> REIMBURSEMENT
-    //
-    // This is deliberately done in the DAO so every
-    // caller gets identical behaviour.
+    // Expense  -> LENT
+    // Income   -> REIMBURSEMENT
     //--------------------------------------------------
 
     @Query(
         """
         UPDATE transactions
         SET
-            transactionLinkId = :transactionLinkId,
-            role = CASE
-                WHEN type = 'EXPENSE'
-                    THEN 'LENT'
-                WHEN type = 'INCOME'
-                    THEN 'REIMBURSEMENT'
-                ELSE role
-            END
+            transactionLinkId =
+                :transactionLinkId,
+
+            role =
+                CASE
+                    WHEN type = 'EXPENSE'
+                        THEN 'LENT'
+
+                    WHEN type = 'INCOME'
+                        THEN 'REIMBURSEMENT'
+
+                    ELSE role
+                END
         WHERE id IN (:transactionIds)
         """
     )
     suspend fun linkTransactions(
-        transactionIds: List<Long>,
-        transactionLinkId: String
+        transactionIds:
+            List<Long>,
+
+        transactionLinkId:
+            String
     )
 
     //--------------------------------------------------
-    // Remove transaction from Financial Event
+    // Transfer linking
     //
-    // The transaction itself remains.
+    // Transfer Out:
+    //     TRANSFER_OUT
     //
-    // Role is restored to NORMAL because the Financial
-    // Event classification no longer applies.
+    // Transfer In:
+    //     TRANSFER_IN
+    //
+    // A transfer relationship is completely separate
+    // from Financial Events.
+    //--------------------------------------------------
+
+    @Query(
+        """
+        UPDATE transactions
+        SET
+            transferLinkId =
+                :transferLinkId,
+
+            transactionLinkId =
+                NULL,
+
+            role =
+                CASE
+                    WHEN id =
+                        :transferOutTransactionId
+                        THEN 'TRANSFER_OUT'
+
+                    WHEN id =
+                        :transferInTransactionId
+                        THEN 'TRANSFER_IN'
+
+                    ELSE role
+                END
+        WHERE id IN (
+            :transferOutTransactionId,
+            :transferInTransactionId
+        )
+        """
+    )
+    suspend fun linkTransferTransactions(
+
+        transferOutTransactionId:
+            Long,
+
+        transferInTransactionId:
+            Long,
+
+        transferLinkId:
+            String
+    )
+
+    //--------------------------------------------------
+    // Remove Financial Event relationship
+    //
+    // IMPORTANT:
+    //
+    // This is for Financial Events only.
+    // Financial Event unlinking resets the role.
     //--------------------------------------------------
 
     @Query(
@@ -148,6 +211,120 @@ interface TransactionDao {
         """
     )
     suspend fun unlinkTransaction(
-        transactionId: Long
+        transactionId:
+            Long
     )
+
+    //--------------------------------------------------
+    // Remove transfer relationship
+    //
+    // IMPORTANT:
+    //
+    // A transfer consists of TWO transactions sharing
+    // the same transferLinkId.
+    //
+    // When either side is unlinked, BOTH sides must
+    // lose the transferLinkId.
+    //
+    // We intentionally DO NOT change the roles.
+    //
+    // Example:
+    //
+    // Before:
+    //
+    // A -> TRANSFER_OUT + ABC
+    // B -> TRANSFER_IN  + ABC
+    //
+    // After:
+    //
+    // A -> TRANSFER_OUT + NULL
+    // B -> TRANSFER_IN  + NULL
+    //
+    // This allows the SAME pair to be linked again.
+    //--------------------------------------------------
+
+    @Query(
+        """
+        UPDATE transactions
+        SET
+            transferLinkId = NULL
+        WHERE transferLinkId = (
+            SELECT transferLinkId
+            FROM transactions
+            WHERE id = :transactionId
+              AND transferLinkId IS NOT NULL
+        )
+        AND transferLinkId IS NOT NULL
+        """
+    )
+    suspend fun unlinkTransfer(
+        transactionId:
+            Long
+    )
+
+    //--------------------------------------------------
+    // Get linked transfer
+    //
+    // Returns the opposite side of the transfer.
+    //--------------------------------------------------
+
+    @Query(
+        """
+        SELECT *
+        FROM transactions
+        WHERE transferLinkId = :transferLinkId
+        AND id != :currentTransactionId
+        LIMIT 1
+        """
+    )
+    suspend fun getLinkedTransfer(
+
+        transferLinkId:
+            String,
+
+        currentTransactionId:
+            Long
+    ):
+        TransactionEntity?
+
+    //--------------------------------------------------
+    // Get transactions belonging to a Financial Event
+    //--------------------------------------------------
+
+    @Query(
+        """
+        SELECT *
+        FROM transactions
+        WHERE transactionLinkId = :transactionLinkId
+        ORDER BY dateTimestamp ASC
+        """
+    )
+    suspend fun getLinkedTransactions(
+        transactionLinkId:
+            String
+    ):
+        List<TransactionEntity>
+
+    //--------------------------------------------------
+    // Get unlinked reimbursement transactions
+    //
+    // Kept for existing Financial Event functionality.
+    //--------------------------------------------------
+
+    @Query(
+        """
+        SELECT *
+        FROM transactions
+        WHERE type = 'INCOME'
+        AND role = 'REIMBURSEMENT'
+        AND transactionLinkId IS NULL
+        AND id != :currentTransactionId
+        ORDER BY dateTimestamp DESC
+        """
+    )
+    suspend fun getUnlinkedReimbursements(
+        currentTransactionId:
+            Long
+    ):
+        List<TransactionEntity>
 }

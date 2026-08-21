@@ -9,17 +9,29 @@ enum class TransactionRole {
 
     /**
      * Expense paid on behalf of another person.
-     *
-     * Example:
-     * ₹1,000 restaurant bill paid for a group.
      */
     LENT,
 
     /**
      * Money received to recover a previous LENT expense.
      *
-     * This is still an INCOME transaction at the bank-account level,
-     * but it is not counted as actual income in financial analysis.
+     * This remains an INCOME transaction at the
+     * bank-account level, but is excluded from
+     * actual-income reporting.
      */
-    REIMBURSEMENT
+    REIMBURSEMENT,
+
+    /**
+     * Money moved out of one of the user's own accounts.
+     *
+     * This is NOT an expense.
+     */
+    TRANSFER_OUT,
+
+    /**
+     * Money moved into one of the user's own accounts.
+     *
+     * This is NOT income.
+     */
+    TRANSFER_IN
 }

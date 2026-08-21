@@ -15,10 +15,34 @@ import com.varsel.expensetracker.domain.model.TransactionType
 
 @Composable
 fun TransactionRoleSection(
+
     transactionType: TransactionType,
+
     selectedRole: TransactionRole,
-    onRoleSelected: (TransactionRole) -> Unit
+
+    onRoleSelected:
+        (TransactionRole) -> Unit
+
 ) {
+
+    //--------------------------------------------------
+    // Determine roles available for this transaction.
+    //
+    // EXPENSE / DEBIT
+    // ----------------
+    // Normal
+    // Lent
+    // Transfer Out
+    //
+    // INCOME / CREDIT
+    // ----------------
+    // Normal
+    // Reimbursement
+    // Transfer In
+    //
+    // Transfer roles are intentionally tied to the
+    // direction of the transaction.
+    //--------------------------------------------------
 
     val availableRoles =
         when (transactionType) {
@@ -27,8 +51,12 @@ fun TransactionRoleSection(
             TransactionType.DEBIT -> {
 
                 listOf(
+
                     TransactionRole.NORMAL,
-                    TransactionRole.LENT
+
+                    TransactionRole.LENT,
+
+                    TransactionRole.TRANSFER_OUT
                 )
             }
 
@@ -36,39 +64,70 @@ fun TransactionRoleSection(
             TransactionType.CREDIT -> {
 
                 listOf(
+
                     TransactionRole.NORMAL,
-                    TransactionRole.REIMBURSEMENT
+
+                    TransactionRole.REIMBURSEMENT,
+
+                    TransactionRole.TRANSFER_IN
                 )
             }
         }
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+
+        modifier =
+            Modifier.fillMaxWidth(),
+
+        verticalArrangement =
+            Arrangement.spacedBy(
+                8.dp
+            )
+
     ) {
 
         Text(
-            text = "Transaction Role",
-            style = MaterialTheme.typography.titleSmall
+
+            text =
+                "Transaction Role",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .titleSmall
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    8.dp
+                )
+
         ) {
 
             availableRoles.forEach { role ->
 
                 FilterChip(
-                    selected = selectedRole == role,
+
+                    selected =
+                        selectedRole ==
+                            role,
 
                     onClick = {
-                        onRoleSelected(role)
+
+                        onRoleSelected(
+                            role
+                        )
                     },
 
                     label = {
 
                         Text(
+
                             when (role) {
 
                                 TransactionRole.NORMAL ->
@@ -79,6 +138,12 @@ fun TransactionRoleSection(
 
                                 TransactionRole.REIMBURSEMENT ->
                                     "Reimbursement"
+
+                                TransactionRole.TRANSFER_IN ->
+                                    "Transfer In"
+
+                                TransactionRole.TRANSFER_OUT ->
+                                    "Transfer Out"
                             }
                         )
                     }

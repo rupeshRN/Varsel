@@ -6,9 +6,21 @@ import com.varsel.expensetracker.domain.model.TransactionRole
 
 sealed interface TransactionDetailUiState {
 
+    //--------------------------------------------------
+    // Loading
+    //--------------------------------------------------
+
     object Loading : TransactionDetailUiState
 
+    //--------------------------------------------------
+    // Loaded
+    //--------------------------------------------------
+
     data class Loaded(
+
+        //--------------------------------------------------
+        // Current transaction
+        //--------------------------------------------------
 
         val transaction: Transaction,
 
@@ -23,65 +35,100 @@ sealed interface TransactionDetailUiState {
         val isSaving: Boolean = false,
 
         //--------------------------------------------------
-        // Categories
+        // Application categories
         //--------------------------------------------------
 
-        /**
-         * Existing application categories.
-         *
-         * Used by the Financial Event / Report Group
-         * creation dialog so the user selects a category
-         * from the application's existing category list.
-         */
         val categories: List<String> =
             emptyList(),
 
         //--------------------------------------------------
-        // Financial Event
+        // Financial Event / transaction grouping
         //--------------------------------------------------
 
         /**
          * All transactions currently belonging to the
          * same Financial Event.
-         *
-         * This is display-only from Transaction Details.
-         *
-         * The old "Possible Transactions to Link" picker
-         * has been removed. Adding and removing transactions
-         * from a Financial Event is now handled by the
-         * Financial Event screen.
          */
         val linkedTransactions: List<Transaction> =
             emptyList(),
 
         /**
-         * True while the current transaction is being
-         * linked or unlinked from a Financial Event.
+         * Transactions that can potentially be added
+         * to the current Financial Event.
+         *
+         * This is retained for Financial Event handling.
+         */
+        val linkableTransactions: List<Transaction> =
+            emptyList(),
+
+        /**
+         * True while a Financial Event link/unlink
+         * operation is being persisted.
          */
         val isLinking: Boolean = false,
 
         //--------------------------------------------------
-        // Financial Event group
+        // Financial Event / Report Group
         //--------------------------------------------------
 
-        /**
-         * Existing Financial Event / Report Group associated
-         * with this transaction.
-         */
         val transactionLinkGroup:
             TransactionLinkGroup? = null,
 
-        /**
-         * Controls the Create Financial Event dialog.
-         */
         val showCreateGroupPrompt: Boolean = false,
 
+        val isSavingGroup: Boolean = false,
+
+        //--------------------------------------------------
+        // Transfer In / Transfer Out
+        //--------------------------------------------------
+
         /**
-         * True while a Financial Event is being created.
+         * The opposite-side transaction currently linked
+         * to this transfer.
+         *
+         * For TRANSFER_OUT:
+         *     this is the TRANSFER_IN transaction.
+         *
+         * For TRANSFER_IN:
+         *     this is the TRANSFER_OUT transaction.
          */
-        val isSavingGroup: Boolean = false
+        val linkedTransfer:
+            Transaction? = null,
+
+        /**
+         * Transactions that may be selected as the
+         * opposite side of this transfer.
+         *
+         * The ViewModel is responsible for determining
+         * whether a candidate is valid.
+         */
+        val transferCandidates:
+            List<Transaction> =
+                emptyList(),
+
+        /**
+         * True while a transfer link/unlink operation
+         * is being persisted.
+         */
+        val isTransferLinking:
+            Boolean = false,
+
+        /**
+         * User-facing validation error from a transfer
+         * linking attempt.
+         *
+         * Example:
+         * the selected Transfer In and Transfer Out
+         * amounts do not match.
+         */
+        val transferErrorMessage:
+            String? = null
 
     ) : TransactionDetailUiState
+
+    //--------------------------------------------------
+    // Error
+    //--------------------------------------------------
 
     data class Error(
 

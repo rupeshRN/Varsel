@@ -1,15 +1,21 @@
 package com.varsel.expensetracker.domain.model
 
-import com.varsel.expensetracker.domain.model.TransactionRole
-
 data class Transaction(
+
     val id: Long = 0L,
+
     val amount: Double,
+
     val type: TransactionType,
+
     val description: String,
+
     val category: String,
+
     val dateTimestamp: Long,
+
     val referenceNumber: String? = null,
+
     val transactionFingerprint: String? = null,
 
     /**
@@ -22,20 +28,42 @@ data class Transaction(
 
     /**
      * Last four digits of the account number.
+     *
      * Used only for safe user-facing display.
      */
     val accountLast4: String? = null,
 
     /**
-     * Logical financial-event link shared by related transactions.
+     * Logical Financial Event link.
      *
-     * Examples:
-     * - Lent expense + one or more reimbursements
-     * - Transfer out + transfer in between own accounts
+     * Used for:
+     * - Lent expenses
+     * - Reimbursements
      *
-     * This value is internal and is never entered by the user.
+     * This MUST NOT be used for account transfers.
      */
     val transactionLinkId: String? = null,
-    
-    val role: TransactionRole = TransactionRole.NORMAL
+
+    /**
+     * Logical transfer relationship.
+     *
+     * A transfer consists of exactly two transactions:
+     *
+     *     TRANSFER_OUT
+     *          +
+     *     TRANSFER_IN
+     *
+     * Both transactions share the same transferLinkId.
+     *
+     * This is intentionally separate from transactionLinkId
+     * so transfers never become Financial Events.
+     */
+    val transferLinkId: String? = null,
+
+    /**
+     * Transaction classification.
+     */
+    val role:
+        TransactionRole =
+            TransactionRole.NORMAL
 )

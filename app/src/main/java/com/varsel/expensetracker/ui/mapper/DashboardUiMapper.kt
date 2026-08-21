@@ -207,24 +207,27 @@ class DashboardUiMapper @Inject constructor(
     // Actual income
     //--------------------------------------------------
 
-    private fun calculateActualIncome(
-        transactions: List<Transaction>
-    ): Double {
+private fun calculateActualIncome(
+    transactions: List<Transaction>
+): Double {
 
-        return transactions
-            .filter {
+    return transactions
+        .filter {
 
-                it.type ==
-                    TransactionType.INCOME &&
+            it.type ==
+                TransactionType.INCOME &&
 
-                it.role !=
-                    TransactionRole.REIMBURSEMENT
+            it.role !=
+                TransactionRole.REIMBURSEMENT &&
 
-            }
-            .sumOf {
-                it.amount
-            }
-    }
+            it.role !=
+                TransactionRole.TRANSFER_IN
+
+        }
+        .sumOf {
+            it.amount
+        }
+}
 
     //--------------------------------------------------
     // Effective expense
@@ -247,38 +250,45 @@ class DashboardUiMapper @Inject constructor(
     // Effective expense = ₹200
     //--------------------------------------------------
 
-    private fun calculateEffectiveExpense(
-        transactions: List<Transaction>
-    ): Double {
+private fun calculateEffectiveExpense(
+    transactions: List<Transaction>
+): Double {
 
-        val expenses =
-            transactions
-                .filter {
-                    it.type ==
-                        TransactionType.EXPENSE
-                }
-                .sumOf {
-                    it.amount
-                }
+    val expenses =
+        transactions
+            .filter {
 
-        val reimbursements =
-            transactions
-                .filter {
-                    it.type ==
-                        TransactionType.INCOME &&
+                it.type ==
+                    TransactionType.EXPENSE &&
 
-                    it.role ==
-                        TransactionRole.REIMBURSEMENT
-                }
-                .sumOf {
-                    it.amount
-                }
+                it.role !=
+                    TransactionRole.TRANSFER_OUT
 
-        return maxOf(
-            expenses - reimbursements,
-            0.0
-        )
-    }
+            }
+            .sumOf {
+                it.amount
+            }
+
+    val reimbursements =
+        transactions
+            .filter {
+
+                it.type ==
+                    TransactionType.INCOME &&
+
+                it.role ==
+                    TransactionRole.REIMBURSEMENT
+
+            }
+            .sumOf {
+                it.amount
+            }
+
+    return maxOf(
+        expenses - reimbursements,
+        0.0
+    )
+}
 
     //--------------------------------------------------
     // Percentage change
