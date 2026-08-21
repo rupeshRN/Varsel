@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       # --------------------------------------------------
       # Checkout
       # --------------------------------------------------
@@ -55,14 +56,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       # --------------------------------------------------
-      # Compose AI preview renderer
+      # Compose Preview
       #
       # IMPORTANT:
-      # continue-on-error is intentional.
       #
-      # The renderer may create diagnostic files even when
-      # one of its internal pipelines fails. We need those
-      # diagnostics before the job is allowed to fail.
+      # We intentionally SKIP the Android resource
+      # renderer.
+      #
+      # Compose previews remain enabled.
+      # Accessibility remains enabled.
+      # Notifications remains enabled.
+      #
+      # The resource renderer was the pipeline producing
+      # the failing resource capture results.
       # --------------------------------------------------
 
       - name: Render Compose previews
@@ -71,26 +77,20 @@ jobs:
         uses: yschimke/compose-ai-tools/.github/actions/apply@v0.11.6
         with:
           cli-version: '0.11.6'
+
           mode: ${{ github.event_name == 'workflow_dispatch' && 'baseline' || 'auto' }}
+
           timeout: '600'
+
+          # ------------------------------------------------
+          # Run only the useful pipelines.
+          #
+          # resources is intentionally excluded.
+          # ------------------------------------------------
+          only: compose,a11y,notifications
 
       # --------------------------------------------------
       # Diagnostic dump
-      #
-      # Do NOT remove this step.
-      #
-      # The compose-ai-tools action creates several temporary
-      # files such as:
-      #
-      #   _compose_render_rc
-      #   _resources_render_rc
-      #   _a11y_render_rc
-      #   _notifications_render_rc
-      #
-      # and generated JSON / markdown / report files.
-      #
-      # We print all of them so the next failure tells us
-      # exactly which renderer failed.
       # --------------------------------------------------
 
       - name: Dump Compose Preview Diagnostics
@@ -189,28 +189,7 @@ jobs:
 
           echo
           echo "--------------------------------------------------"
-          echo "Renderer output directories"
-          echo "--------------------------------------------------"
-
-          for directory in \
-            .compose-ai \
-            compose-preview \
-            compose-previews \
-            previews \
-            reports \
-            build/compose-preview \
-            build/reports
-          do
-            if [ -d "$directory" ]; then
-              echo
-              echo "### $directory"
-              find "$directory" -maxdepth 5 -type f -print 2>/dev/null | sort
-            fi
-          done
-
-          echo
-          echo "--------------------------------------------------"
-          echo "PNG files generated"
+          echo "PNG / WEBP files"
           echo "--------------------------------------------------"
 
           PNG_COUNT=$(find . \
@@ -234,10 +213,7 @@ jobs:
           echo "=================================================="
 
       # --------------------------------------------------
-      # Upload ALL diagnostics
-      #
-      # This is the important change for the next run.
-      # Even if the renderer fails, we retain its reports.
+      # Upload diagnostics and rendered previews
       # --------------------------------------------------
 
       - name: Upload Compose Preview Diagnostics
@@ -263,8 +239,11 @@ jobs:
       # --------------------------------------------------
       # Final status
       #
-      # First prefer the renderer's own *_render_rc files.
-      # If none exist, fall back to the action result.
+      # Only pipelines that were actually requested should
+      # determine the final result.
+      #
+      # resources is intentionally ignored because it is
+      # disabled above.
       # --------------------------------------------------
 
       - name: Surface pipeline failures
@@ -278,10 +257,13 @@ jobs:
           rc=0
           found_rc=false
 
-          for p in compose resources a11y notifications; do
+          # resources deliberately excluded.
+          for p in compose a11y notifications; do
+
             file="_${p}_render_rc"
 
             if [ -f "$file" ]; then
+
               found_rc=true
 
               extra=$(cat "$file" 2>/dev/null || echo 0)
@@ -291,20 +273,27 @@ jobs:
               if [ "$extra" -ne 0 ] && [ "$rc" -eq 0 ]; then
                 rc="$extra"
               fi
+
             fi
+
           done
 
           echo "Renderer action outcome: ${ACTION_OUTCOME}"
 
           if [ "$found_rc" = "false" ]; then
+
             if [ "$ACTION_OUTCOME" = "failure" ]; then
               rc=1
             fi
+
           fi
 
           if [ "$rc" -ne 0 ]; then
+
             echo "::error::Compose Preview pipeline failed (rc=${rc}). Full diagnostics were uploaded as the compose-preview-diagnostics artifact."
+
             exit "$rc"
+
           fi
 
           echo "Compose Preview pipelines completed successfully."
