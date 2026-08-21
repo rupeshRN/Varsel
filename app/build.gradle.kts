@@ -56,11 +56,6 @@ android {
     }
 }
 
-composePreview {
-    variant.set("debug")
-    sdkVersion.set(35)
-    enabled.set(true)
-}
 
 dependencies {
     // AndroidX Core & Lifecycle
