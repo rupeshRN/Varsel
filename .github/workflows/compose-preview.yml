@@ -1,4 +1,6 @@
 name: Compose Preview
+on:
+  workflow_dispatch
 
 on:
   pull_request:
