@@ -3,7 +3,6 @@
 agp = "8.11.1"
 kotlin = "2.0.20"
 ksp = "2.0.20-1.0.25"
-composePreview = "0.11.6"
 
 # AndroidX Core & UI
 coreKtx = "1.13.1"
@@ -76,4 +75,3 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-compose-preview = { id = "ee.schimke.composeai.preview", version.ref = "composePreview" }
