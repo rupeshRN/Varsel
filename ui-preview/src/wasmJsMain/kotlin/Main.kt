@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.window.ComposeViewport
 
 fun main() {
-    ComposeViewport {
+    ComposeViewport(
+        viewportContainerId = "ComposeTarget"
+    ) {
         PreviewApp()
     }
 }
