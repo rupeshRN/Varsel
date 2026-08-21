@@ -1,6 +1,10 @@
 name: Compose Preview
 
 on:
+  push:
+    branches:
+      - main
+
   pull_request:
     branches:
       - main
@@ -9,8 +13,10 @@ on:
       - synchronize
       - reopened
 
+  workflow_dispatch:
+
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 concurrency:
@@ -23,20 +29,22 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Render Compose previews
         uses: yschimke/compose-ai-tools/.github/actions/apply@v0.11.6
         with:
           cli-version: '0.11.6'
-          mode: comment
+          mode: ${{ github.event_name == 'workflow_dispatch' && 'baseline' || 'auto' }}
           timeout: '600'
