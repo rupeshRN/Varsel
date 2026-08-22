@@ -1,7 +1,8 @@
 package com.varsel.expensetracker.category
 
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Category as CategoryIcon
 import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.LocalGroceryStore
@@ -144,10 +145,10 @@ object CategoryIconCatalog {
                 Category.UNCATEGORIZED,
                 ignoreCase = true
             ) ->
-                Icons.Filled.Category
+                CategoryIcon
 
             else ->
-                Icons.Filled.Category
+                CategoryIcon
         }
     }
 }
