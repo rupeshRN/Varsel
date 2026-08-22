@@ -127,74 +127,108 @@ private val financialEvents = listOf(
 
 @Composable
 fun ReportsPreview() {
-    var selectedFlow by remember { mutableIntStateOf(0) }
 
-    // -1 = Overall
-    // >= 0 = selected category
-    var selectedCategory by remember { mutableIntStateOf(-1) }
+    var selectedFlow by remember {
+        mutableIntStateOf(0)
+    }
 
-    var normalExpanded by remember { mutableStateOf(false) }
-    var financialEventsExpanded by remember { mutableStateOf(false) }
+    /*
+     * -1 = Overall
+     *  0+ = selected category
+     */
+    var selectedCategory by remember {
+        mutableIntStateOf(-1)
+    }
 
+    var normalExpanded by remember {
+        mutableStateOf(false)
+    }
+
+    var financialEventsExpanded by remember {
+        mutableStateOf(false)
+    }
+
+    /*
+     * Browser desktop background.
+     */
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFDCDDD8)),
-        contentAlignment = Alignment.TopCenter
+        contentAlignment = Alignment.Center
     ) {
+
         /*
-         * Responsive phone-sized canvas.
+         * Actual phone viewport.
          *
-         * We deliberately use widthIn instead of a fixed width so the preview
-         * behaves better when the GitHub Pages viewport is narrower/wider.
+         * 9:19.5 is close to a modern Android phone aspect ratio.
+         *
+         * The report content scrolls INSIDE this viewport rather than
+         * making the browser page itself excessively wide.
          */
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth()
-                .widthIn(max = 390.dp)
-                .background(Background)
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    horizontal = 18.dp,
-                    vertical = 22.dp
-                ),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .fillMaxHeight(0.94f)
+                .aspectRatio(9f / 19.5f)
+                .background(
+                    color = Background,
+                    shape = RoundedCornerShape(30.dp)
+                )
         ) {
 
-            ReportsHeader()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(
+                        rememberScrollState()
+                    )
+                    .padding(
+                        horizontal = 18.dp,
+                        vertical = 22.dp
+                    ),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
 
-            NetCashFlowCard()
+                ReportsHeader()
 
-            MoneyFlowCard(
-                selectedFlow = selectedFlow,
-                onFlowSelected = { flow ->
-                    selectedFlow = flow
-                    selectedCategory = -1
-                    normalExpanded = false
-                    financialEventsExpanded = false
-                },
-                selectedCategory = selectedCategory,
-                onCategorySelected = { category ->
-                    selectedCategory = category
-                    normalExpanded = false
-                    financialEventsExpanded = false
-                },
-                normalExpanded = normalExpanded,
-                financialEventsExpanded = financialEventsExpanded,
-                onNormalClicked = {
-                    normalExpanded = !normalExpanded
-                    financialEventsExpanded = false
-                },
-                onFinancialEventsClicked = {
-                    financialEventsExpanded = !financialEventsExpanded
-                    normalExpanded = false
-                }
-            )
+                NetCashFlowCard()
 
-            FinancialEventsSection()
+                MoneyFlowCard(
+                    selectedFlow = selectedFlow,
+                    onFlowSelected = { flow ->
 
-            Spacer(modifier = Modifier.height(24.dp))
+                        selectedFlow = flow
+                        selectedCategory = -1
+                        normalExpanded = false
+                        financialEventsExpanded = false
+                    },
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = { category ->
+
+                        selectedCategory = category
+                        normalExpanded = false
+                        financialEventsExpanded = false
+                    },
+                    normalExpanded = normalExpanded,
+                    financialEventsExpanded = financialEventsExpanded,
+                    onNormalClicked = {
+
+                        normalExpanded = !normalExpanded
+                        financialEventsExpanded = false
+                    },
+                    onFinancialEventsClicked = {
+
+                        financialEventsExpanded = !financialEventsExpanded
+                        normalExpanded = false
+                    }
+                )
+
+                FinancialEventsSection()
+
+                Spacer(
+                    modifier = Modifier.height(24.dp)
+                )
+            }
         }
     }
 }
@@ -205,6 +239,7 @@ fun ReportsPreview() {
 
 @Composable
 private fun ReportsHeader() {
+
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -228,6 +263,7 @@ private fun ReportsHeader() {
                 color = Surface,
                 shadowElevation = 1.dp
             ) {
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -235,6 +271,7 @@ private fun ReportsHeader() {
                     TextButton(
                         onClick = {}
                     ) {
+
                         Text(
                             text = "‹",
                             fontSize = 22.sp,
@@ -253,6 +290,7 @@ private fun ReportsHeader() {
                     TextButton(
                         onClick = {}
                     ) {
+
                         Text(
                             text = "›",
                             fontSize = 22.sp,
@@ -278,6 +316,7 @@ private fun ReportsHeader() {
 
 @Composable
 private fun NetCashFlowCard() {
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -300,8 +339,13 @@ private fun NetCashFlowCard() {
                 color = Color(0xFFB8BCB8)
             )
 
+            /*
+             * IMPORTANT:
+             * Actual amount here.
+             * No K/L abbreviation.
+             */
             Text(
-                text = "₹12.5K",
+                text = "₹12,500",
                 style = MaterialTheme.typography.displaySmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -325,13 +369,13 @@ private fun NetCashFlowCard() {
 
                 NetAmount(
                     label = "Income",
-                    value = "₹35K",
+                    value = "₹35,000",
                     color = Color(0xFF72C49D)
                 )
 
                 NetAmount(
                     label = "Expense",
-                    value = "₹22.5K",
+                    value = "₹22,500",
                     color = Color(0xFFE98987)
                 )
             }
@@ -345,6 +389,7 @@ private fun NetAmount(
     value: String,
     color: Color
 ) {
+
     Column(
         verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
@@ -380,6 +425,7 @@ private fun MoneyFlowCard(
     onNormalClicked: () -> Unit,
     onFinancialEventsClicked: () -> Unit
 ) {
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -460,9 +506,11 @@ private fun FlowSelector(
     onClick: () -> Unit,
     modifier: Modifier
 ) {
+
     Surface(
-        modifier = modifier
-            .clickable(onClick = onClick),
+        modifier = modifier.clickable(
+            onClick = onClick
+        ),
         shape = RoundedCornerShape(14.dp),
         color = if (selected) {
             color.copy(alpha = 0.14f)
@@ -510,36 +558,48 @@ private fun ExpenseMoneyFlow(
     onNormalClicked: () -> Unit,
     onFinancialEventsClicked: () -> Unit
 ) {
-    val total = expenseCategories.sumOf { it.amount }
 
-    val category =
+    val total =
+        expenseCategories.sumOf {
+            it.amount
+        }
+
+    val selected =
         if (selectedCategory >= 0) {
-            expenseCategories.getOrNull(selectedCategory)
+            expenseCategories.getOrNull(
+                selectedCategory
+            )
         } else {
             null
         }
 
     /*
-     * Overall is selected by default.
+     * COMPACT NUMBER IS USED ONLY HERE.
      *
-     * The donut therefore opens showing the complete expense picture,
-     * rather than opening on Food.
+     * The rest of the UI uses actualCurrency().
      */
     ExpenseDonutChart(
-        values = expenseCategories.map { it.amount },
-        colors = expenseCategories.map { it.color },
-        selectedIndex = selectedCategory,
-        centerValue = if (category == null) {
-            shortCurrency(total)
-        } else {
-            shortCurrency(category.amount)
+        values = expenseCategories.map {
+            it.amount
         },
-        centerLabel = category?.name ?: "Overall",
+        colors = expenseCategories.map {
+            it.color
+        },
+        selectedIndex = selectedCategory,
+        centerValue = if (selected == null) {
+            donutCurrency(total)
+        } else {
+            donutCurrency(selected.amount)
+        },
+        centerLabel = selected?.name ?: "Overall",
         modifier = Modifier
             .fillMaxWidth()
             .height(250.dp)
     )
 
+    /*
+     * ACTUAL AMOUNTS.
+     */
     CategoryListRow(
         name = "Overall",
         amount = total,
@@ -551,13 +611,13 @@ private fun ExpenseMoneyFlow(
         }
     )
 
-    expenseCategories.forEachIndexed { index, categoryItem ->
+    expenseCategories.forEachIndexed { index, category ->
 
         CategoryListRow(
-            name = categoryItem.name,
-            amount = categoryItem.amount,
+            name = category.name,
+            amount = category.amount,
             total = total,
-            color = categoryItem.color,
+            color = category.color,
             selected = selectedCategory == index,
             onClick = {
                 onCategorySelected(index)
@@ -565,13 +625,10 @@ private fun ExpenseMoneyFlow(
         )
     }
 
-    /*
-     * Only display the drill-down when a real category has been selected.
-     */
-    if (category != null) {
+    if (selected != null) {
 
         CategoryBreakdownCard(
-            category = category,
+            category = selected,
             normalExpanded = normalExpanded,
             financialEventsExpanded = financialEventsExpanded,
             onNormalClicked = onNormalClicked,
@@ -586,13 +643,21 @@ private fun ExpenseMoneyFlow(
 
 @Composable
 private fun IncomeMoneyFlow() {
-    val total = incomeCategories.sumOf { it.amount }
+
+    val total =
+        incomeCategories.sumOf {
+            it.amount
+        }
 
     ExpenseDonutChart(
-        values = incomeCategories.map { it.amount },
-        colors = incomeCategories.map { it.color },
+        values = incomeCategories.map {
+            it.amount
+        },
+        colors = incomeCategories.map {
+            it.color
+        },
         selectedIndex = -1,
-        centerValue = shortCurrency(total),
+        centerValue = donutCurrency(total),
         centerLabel = "Overall",
         modifier = Modifier
             .fillMaxWidth()
@@ -625,7 +690,9 @@ private fun ExpenseDonutChart(
     centerLabel: String,
     modifier: Modifier
 ) {
-    val total = values.sum()
+
+    val total =
+        values.sum()
 
     Box(
         modifier = modifier,
@@ -640,45 +707,57 @@ private fun ExpenseDonutChart(
 
                 var startAngle = -90f
 
-                val baseStroke = 32.dp.toPx()
+                val baseStroke =
+                    32.dp.toPx()
 
                 values.forEachIndexed { index, value ->
 
                     val sweepAngle =
-                        value.toFloat() / total.toFloat() * 360f
+                        value.toFloat() /
+                            total.toFloat() *
+                            360f
 
-                    val isSelected =
+                    val selected =
                         selectedIndex == index
 
-                    val isOverall =
+                    val overall =
                         selectedIndex == -1
 
                     val alpha =
-                        if (isOverall || isSelected) {
+                        if (overall || selected) {
                             1f
                         } else {
                             0.20f
                         }
 
                     val strokeWidth =
-                        if (isSelected) {
-                            baseStroke + 5.dp.toPx()
+                        if (selected) {
+                            baseStroke +
+                                5.dp.toPx()
                         } else {
                             baseStroke
                         }
 
                     drawArc(
-                        color = colors[index].copy(alpha = alpha),
+                        color = colors[index].copy(
+                            alpha = alpha
+                        ),
                         startAngle = startAngle,
-                        sweepAngle = (sweepAngle - 2f).coerceAtLeast(0f),
+                        sweepAngle = (
+                            sweepAngle - 2f
+                        ).coerceAtLeast(0f),
                         useCenter = false,
                         topLeft = Offset(
                             baseStroke / 2f,
                             baseStroke / 2f
                         ),
                         size = Size(
-                            width = size.width - baseStroke,
-                            height = size.height - baseStroke
+                            width =
+                                size.width -
+                                    baseStroke,
+                            height =
+                                size.height -
+                                    baseStroke
                         ),
                         style = Stroke(
                             width = strokeWidth,
@@ -726,18 +805,24 @@ private fun CategoryListRow(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+
     val percentage =
         if (total == 0) {
             0
         } else {
-            (amount.toFloat() / total.toFloat() * 100f)
-                .roundToInt()
+            (
+                amount.toFloat() /
+                    total.toFloat() *
+                    100f
+                ).roundToInt()
         }
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(
+                onClick = onClick
+            ),
         shape = RoundedCornerShape(14.dp),
         color = if (selected) {
             color.copy(alpha = 0.10f)
@@ -763,7 +848,9 @@ private fun CategoryListRow(
                     )
             )
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(
+                modifier = Modifier.width(10.dp)
+            )
 
             Text(
                 text = name,
@@ -784,10 +871,15 @@ private fun CategoryListRow(
                 color = Muted
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(
+                modifier = Modifier.width(12.dp)
+            )
 
+            /*
+             * ACTUAL AMOUNT.
+             */
             Text(
-                text = shortCurrency(amount),
+                text = actualCurrency(amount),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
@@ -809,6 +901,7 @@ private fun CategoryBreakdownCard(
     onNormalClicked: () -> Unit,
     onFinancialEventsClicked: () -> Unit
 ) {
+
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = Color(0xFFF4F4F0)
@@ -827,11 +920,15 @@ private fun CategoryBreakdownCard(
                 color = Ink
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
 
             DrillDownRow(
                 label = "Normal transactions",
-                amount = shortCurrency(category.normal),
+                amount = actualCurrency(
+                    category.normal
+                ),
                 expanded = normalExpanded,
                 onClick = onNormalClicked
             )
@@ -849,7 +946,9 @@ private fun CategoryBreakdownCard(
 
             DrillDownRow(
                 label = "Financial events",
-                amount = shortCurrency(category.financialEvent),
+                amount = actualCurrency(
+                    category.financialEvent
+                ),
                 expanded = financialEventsExpanded,
                 onClick = onFinancialEventsClicked
             )
@@ -875,10 +974,13 @@ private fun DrillDownRow(
     expanded: Boolean,
     onClick: () -> Unit
 ) {
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(
+                onClick = onClick
+            )
             .padding(vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -892,6 +994,9 @@ private fun DrillDownRow(
             color = Ink
         )
 
+        /*
+         * ACTUAL AMOUNT.
+         */
         Text(
             text = amount,
             style = MaterialTheme.typography.bodyMedium.copy(
@@ -900,10 +1005,16 @@ private fun DrillDownRow(
             color = Ink
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(
+            modifier = Modifier.width(8.dp)
+        )
 
         Text(
-            text = if (expanded) "⌃" else "›",
+            text = if (expanded) {
+                "⌃"
+            } else {
+                "›"
+            },
             style = MaterialTheme.typography.titleMedium,
             color = Muted
         )
@@ -918,6 +1029,7 @@ private fun DrillDownRow(
 private fun TransactionPreview(
     category: String
 ) {
+
     Column(
         modifier = Modifier.padding(
             start = 8.dp,
@@ -935,19 +1047,22 @@ private fun TransactionPreview(
         TransactionLine(
             date = "21 Aug",
             description = "Restaurant",
-            amount = "₹850"
+            amount = 850
         )
 
         TransactionLine(
             date = "19 Aug",
             description = "Groceries",
-            amount = "₹1.45K"
+            amount = 1_450
         )
 
         TextButton(
             onClick = {}
         ) {
-            Text("View all transactions →")
+
+            Text(
+                text = "View all transactions →"
+            )
         }
     }
 }
@@ -956,8 +1071,9 @@ private fun TransactionPreview(
 private fun TransactionLine(
     date: String,
     description: String,
-    amount: String
+    amount: Int
 ) {
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -977,8 +1093,11 @@ private fun TransactionLine(
             color = Ink
         )
 
+        /*
+         * ACTUAL AMOUNT.
+         */
         Text(
-            text = amount,
+            text = actualCurrency(amount),
             style = MaterialTheme.typography.bodySmall.copy(
                 fontWeight = FontWeight.SemiBold
             ),
@@ -995,6 +1114,7 @@ private fun TransactionLine(
 private fun FinancialEventPreviewList(
     category: String
 ) {
+
     val matchingEvents =
         financialEvents.filter {
             it.category == category
@@ -1038,11 +1158,14 @@ private fun FinancialEventPreviewList(
                         color = Ink
                     )
 
+                    /*
+                     * ACTUAL AMOUNTS.
+                     */
                     Text(
                         text =
-                            "${shortCurrency(event.expense)} expense → " +
-                                "${shortCurrency(event.reimbursed)} reimbursed → " +
-                                "${shortCurrency(event.finalCost)} final",
+                            "${actualCurrency(event.expense)} expense → " +
+                                "${actualCurrency(event.reimbursed)} reimbursed → " +
+                                "${actualCurrency(event.finalCost)} final",
                         style = MaterialTheme.typography.labelSmall,
                         color = Muted
                     )
@@ -1053,7 +1176,10 @@ private fun FinancialEventPreviewList(
         TextButton(
             onClick = {}
         ) {
-            Text("View all financial events →")
+
+            Text(
+                text = "View all financial events →"
+            )
         }
     }
 }
@@ -1109,21 +1235,27 @@ private fun FinancialEventsSection() {
         }
 
         /*
-         * Deliberately limit the dashboard to two events.
-         * The full event history belongs on the dedicated event report.
+         * Only two events on the dashboard.
          */
         financialEvents
             .take(2)
             .forEach { event ->
 
-                FinancialEventCard(event)
+                FinancialEventCard(
+                    event = event
+                )
             }
 
         TextButton(
-            modifier = Modifier.align(Alignment.End),
+            modifier = Modifier.align(
+                Alignment.End
+            ),
             onClick = {}
         ) {
-            Text("View all financial events →")
+
+            Text(
+                text = "View all financial events →"
+            )
         }
     }
 }
@@ -1132,6 +1264,7 @@ private fun FinancialEventsSection() {
 private fun FinancialEventCard(
     event: FinancialEventPreview
 ) {
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -1169,8 +1302,13 @@ private fun FinancialEventCard(
                     )
                 }
 
+                /*
+                 * ACTUAL FINAL COST.
+                 */
                 Text(
-                    text = shortCurrency(event.finalCost),
+                    text = actualCurrency(
+                        event.finalCost
+                    ),
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -1178,10 +1316,13 @@ private fun FinancialEventCard(
                 )
             }
 
+            /*
+             * ACTUAL AMOUNTS.
+             */
             Text(
                 text =
-                    "${shortCurrency(event.expense)} expense  →  " +
-                        "${shortCurrency(event.reimbursed)} reimbursed",
+                    "${actualCurrency(event.expense)} expense → " +
+                        "${actualCurrency(event.reimbursed)} reimbursed",
                 style = MaterialTheme.typography.bodySmall,
                 color = Muted
             )
@@ -1190,53 +1331,143 @@ private fun FinancialEventCard(
 }
 
 /* -------------------------------------------------------------------------- */
-/* Currency Formatting                                                        */
+/* Actual Currency Formatting                                                 */
 /* -------------------------------------------------------------------------- */
 
-private fun shortCurrency(
+/*
+ * Used everywhere in the report EXCEPT the donut center.
+ *
+ * Examples:
+ *
+ * 850     -> ₹850
+ * 1,450   -> ₹1,450
+ * 2,500   -> ₹2,500
+ * 7,000   -> ₹7,000
+ * 30,000  -> ₹30,000
+ * 100,000 -> ₹1,00,000
+ *
+ * Indian comma grouping is used.
+ */
+private fun actualCurrency(
     value: Int
 ): String {
 
-    return when {
+    val negative = value < 0
+    val absolute = kotlin.math.abs(value)
 
-        value >= 1_00_00_000 -> {
+    val digits = absolute.toString()
 
-            val amount =
-                value / 1_00_00_000f
-
-            "₹${formatCompact(amount)}Cr"
+    if (digits.length <= 3) {
+        return if (negative) {
+            "-₹$digits"
+        } else {
+            "₹$digits"
         }
+    }
 
-        value >= 1_00_000 -> {
+    val lastThree =
+        digits.takeLast(3)
 
-            val amount =
-                value / 1_00_000f
+    var remaining =
+        digits.dropLast(3)
 
-            "₹${formatCompact(amount)}L"
-        }
+    val groups =
+        mutableListOf<String>()
 
-        value >= 1_000 -> {
+    while (remaining.length > 2) {
 
-            val amount =
-                value / 1_000f
+        groups.add(
+            remaining.takeLast(2)
+        )
 
-            "₹${formatCompact(amount)}K"
-        }
+        remaining =
+            remaining.dropLast(2)
+    }
 
-        else -> {
-            "₹$value"
-        }
+    if (remaining.isNotEmpty()) {
+        groups.add(remaining)
+    }
+
+    val formatted =
+        groups
+            .asReversed()
+            .joinToString(",") +
+            ",$lastThree"
+
+    return if (negative) {
+        "-₹$formatted"
+    } else {
+        "₹$formatted"
     }
 }
 
-private fun formatCompact(
-    value: Float
-): String {
-    val rounded = (value * 10f).roundToInt() / 10f
+/* -------------------------------------------------------------------------- */
+/* Donut-only Compact Currency                                                */
+/* -------------------------------------------------------------------------- */
 
-    return if (rounded % 1f == 0f) {
-        rounded.toInt().toString()
+/*
+ * IMPORTANT:
+ *
+ * This function is ONLY used in the donut center.
+ *
+ * It deliberately uses whole numbers.
+ *
+ * Examples:
+ *
+ * 7,000   -> ₹7K
+ * 10,000  -> ₹10K
+ * 12,500  -> ₹13K
+ * 15,000  -> ₹15K
+ * 57,000  -> ₹57K
+ * 100,000 -> ₹1L
+ * 1,500,000 -> ₹15L
+ * 10,000,000 -> ₹1Cr
+ */
+private fun donutCurrency(
+    value: Int
+): String {
+
+    val absolute =
+        kotlin.math.abs(value)
+
+    val result =
+        when {
+
+            absolute >= 1_00_00_000 -> {
+
+                val rounded =
+                    (absolute / 1_00_00_000f)
+                        .roundToInt()
+
+                "₹${rounded}Cr"
+            }
+
+            absolute >= 1_00_000 -> {
+
+                val rounded =
+                    (absolute / 1_00_000f)
+                        .roundToInt()
+
+                "₹${rounded}L"
+            }
+
+            absolute >= 1_000 -> {
+
+                val rounded =
+                    (absolute / 1_000f)
+                        .roundToInt()
+
+                "₹${rounded}K"
+            }
+
+            else -> {
+                "₹$absolute"
+            }
+        }
+
+    return if (value < 0) {
+        "-$result"
     } else {
-        rounded.toString()
+        result
     }
 }
