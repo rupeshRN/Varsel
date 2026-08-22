@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -47,23 +45,37 @@ fun FinancialEventsCard(
     Surface(
         modifier =
             modifier.fillMaxWidth(),
+
         shape =
-            RoundedCornerShape(20.dp),
+            RoundedCornerShape(
+                20.dp
+            ),
+
         color =
-            MaterialTheme.colorScheme.surface
+            MaterialTheme.colorScheme
+                .surface
     ) {
 
         Column(
             modifier =
-                Modifier.padding(20.dp),
+                Modifier.padding(
+                    20.dp
+                ),
+
             verticalArrangement =
-                Arrangement.spacedBy(16.dp)
+                Arrangement.spacedBy(
+                    16.dp
+                )
         ) {
 
             Text(
-                text = "Financial Events",
+                text =
+                    "Financial Events",
+
                 style =
-                    MaterialTheme.typography.titleLarge,
+                    MaterialTheme.typography
+                        .titleLarge,
+
                 fontWeight =
                     FontWeight.Bold
             )
@@ -79,10 +91,13 @@ fun FinancialEventsCard(
                 ) {
 
                     Text(
-                        text = "Events",
+                        text =
+                            "Events",
+
                         style =
                             MaterialTheme.typography
                                 .labelMedium,
+
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
@@ -90,10 +105,13 @@ fun FinancialEventsCard(
 
                     Text(
                         text =
-                            financialEvents.size.toString(),
+                            financialEvents.size
+                                .toString(),
+
                         style =
                             MaterialTheme.typography
                                 .titleMedium,
+
                         fontWeight =
                             FontWeight.SemiBold
                     )
@@ -105,10 +123,13 @@ fun FinancialEventsCard(
                 ) {
 
                     Text(
-                        text = "Effective Cost",
+                        text =
+                            "Effective Cost",
+
                         style =
                             MaterialTheme.typography
                                 .labelMedium,
+
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
@@ -119,11 +140,14 @@ fun FinancialEventsCard(
                             formatter.format(
                                 totalEffectiveCost
                             ),
+
                         style =
                             MaterialTheme.typography
                                 .titleMedium,
+
                         fontWeight =
                             FontWeight.SemiBold,
+
                         color =
                             AppColors.Expense
                     )
@@ -135,12 +159,14 @@ fun FinancialEventsCard(
                 Text(
                     text =
                         "No Financial Events for this period.",
+
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .padding(
                                 vertical = 12.dp
                             ),
+
                     color =
                         MaterialTheme.colorScheme
                             .onSurfaceVariant
@@ -148,26 +174,25 @@ fun FinancialEventsCard(
 
             } else {
 
-                LazyColumn(
+                Column(
                     modifier =
                         Modifier.fillMaxWidth(),
+
                     verticalArrangement =
-                        Arrangement.spacedBy(4.dp)
+                        Arrangement.spacedBy(
+                            4.dp
+                        )
                 ) {
 
-                    items(
-                        items =
-                            financialEvents,
-                        key = {
-                            it.transactionLinkId
-                        }
-                    ) { event ->
+                    financialEvents.forEach { event ->
 
                         FinancialEventRow(
                             event =
                                 event,
+
                             formatter =
                                 formatter,
+
                             onClick = {
                                 onFinancialEventClick(
                                     event.transactionLinkId
@@ -197,13 +222,17 @@ private fun FinancialEventRow(
                 .padding(
                     vertical = 10.dp
                 ),
+
         verticalArrangement =
-            Arrangement.spacedBy(6.dp)
+            Arrangement.spacedBy(
+                6.dp
+            )
     ) {
 
         Row(
             modifier =
                 Modifier.fillMaxWidth(),
+
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
@@ -216,9 +245,11 @@ private fun FinancialEventRow(
                 Text(
                     text =
                         event.groupName,
+
                     style =
                         MaterialTheme.typography
                             .bodyLarge,
+
                     fontWeight =
                         FontWeight.Medium
                 )
@@ -230,9 +261,11 @@ private fun FinancialEventRow(
                     Text(
                         text =
                             event.category,
+
                         style =
                             MaterialTheme.typography
                                 .labelMedium,
+
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
@@ -250,11 +283,14 @@ private fun FinancialEventRow(
                     formatter.format(
                         event.effectiveCost
                     ),
+
                 style =
                     MaterialTheme.typography
                         .bodyLarge,
+
                 fontWeight =
                     FontWeight.Bold,
+
                 color =
                     AppColors.Expense
             )
@@ -268,8 +304,10 @@ private fun FinancialEventRow(
                 imageVector =
                     Icons.AutoMirrored.Filled
                         .ArrowForward,
+
                 contentDescription =
                     "Open Financial Event",
+
                 tint =
                     MaterialTheme.colorScheme
                         .onSurfaceVariant
@@ -278,7 +316,9 @@ private fun FinancialEventRow(
 
         Row(
             horizontalArrangement =
-                Arrangement.spacedBy(16.dp)
+                Arrangement.spacedBy(
+                    16.dp
+                )
         ) {
 
             Text(
@@ -286,11 +326,14 @@ private fun FinancialEventRow(
                     "${formatter.format(
                         event.expenseAmount
                     )} expense",
+
                 style =
                     MaterialTheme.typography
                         .labelMedium,
+
                 color =
                     AppColors.Expense,
+
                 fontWeight =
                     FontWeight.Medium
             )
@@ -304,11 +347,14 @@ private fun FinancialEventRow(
                         "${formatter.format(
                             event.reimbursedAmount
                         )} reimbursed",
+
                     style =
                         MaterialTheme.typography
                             .labelMedium,
+
                     color =
                         AppColors.Income,
+
                     fontWeight =
                         FontWeight.Medium
                 )
