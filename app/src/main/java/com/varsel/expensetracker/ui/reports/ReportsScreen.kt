@@ -29,7 +29,6 @@ import kotlinx.coroutines.launch
 import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryList
 import com.varsel.expensetracker.ui.reports.components.IncomeCategoryList
 import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryChart
-import com.varsel.expensetracker.ui.reports.components.FinancialEventsCard
 
 /**
  * Production Reports screen.
@@ -222,13 +221,6 @@ ReportsFlow.EXPENSES -> {
         }
     }
 }
-                    FinancialEventsCard(
-    financialEventCount =
-        uiState.financialEventCount,
-
-    financialEventAmount =
-        uiState.financialEventAmount
-)
 
                     /*
                      * Remaining report sections will be
