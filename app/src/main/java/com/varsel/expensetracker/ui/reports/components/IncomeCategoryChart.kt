@@ -25,21 +25,26 @@ import kotlin.math.max
 @Composable
 fun IncomeCategoryChart(
     categories: List<ReportsIncomeCategory>,
+    selectedCategory: String?,
     modifier: Modifier = Modifier
 ) {
     if (categories.isEmpty()) {
         Text(
-            text = "No income data for this period.",
+            text =
+                "No income data for this period.",
+
             modifier =
                 modifier
                     .fillMaxWidth()
                     .padding(
                         vertical = 20.dp
                     ),
+
             color =
                 MaterialTheme.colorScheme
                     .onSurfaceVariant
         )
+
         return
     }
 
@@ -50,7 +55,10 @@ fun IncomeCategoryChart(
 
     val total =
         validCategories.sumOf {
-            max(it.totalAmount, 0.0)
+            max(
+                it.totalAmount,
+                0.0
+            )
         }
 
     if (total <= 0.0) {
@@ -62,11 +70,28 @@ fun IncomeCategoryChart(
             Locale("en", "IN")
         )
 
+    val selectedModel =
+        selectedCategory?.let { selected ->
+            validCategories.firstOrNull {
+                it.category == selected
+            }
+        }
+
+    val centerLabel =
+        selectedModel?.category
+            ?: "Overall"
+
+    val centerAmount =
+        selectedModel?.totalAmount
+            ?: total
+
     Column(
         modifier =
             modifier.fillMaxWidth(),
+
         horizontalAlignment =
             Alignment.CenterHorizontally,
+
         verticalArrangement =
             Arrangement.spacedBy(16.dp)
     ) {
@@ -76,6 +101,7 @@ fun IncomeCategoryChart(
                 Modifier
                     .fillMaxWidth()
                     .height(220.dp),
+
             contentAlignment =
                 Alignment.Center
         ) {
@@ -87,22 +113,33 @@ fun IncomeCategoryChart(
                         .fillMaxWidth()
             ) {
 
-                val strokeWidth =
-                    34.dp.toPx()
+                val defaultStrokeWidth =
+                    32.dp.toPx()
+
+                val selectedStrokeWidth =
+                    42.dp.toPx()
 
                 val diameter =
                     minOf(
                         size.width,
                         size.height
-                    ) - strokeWidth
+                    ) -
+                        selectedStrokeWidth
 
                 val left =
-                    (size.width - diameter) / 2f
+                    (
+                        size.width -
+                            diameter
+                        ) / 2f
 
                 val top =
-                    (size.height - diameter) / 2f
+                    (
+                        size.height -
+                            diameter
+                        ) / 2f
 
-                var startAngle = -90f
+                var startAngle =
+                    -90f
 
                 validCategories.forEach { category ->
 
@@ -110,34 +147,66 @@ fun IncomeCategoryChart(
                         (
                             category.totalAmount /
                                 total
-                            ).toFloat() * 360f
+                            ).toFloat() *
+                            360f
+
+                    val isSelected =
+                        selectedCategory ==
+                            category.category
+
+                    val hasSelection =
+                        selectedCategory != null
+
+                    val alpha =
+                        if (
+                            hasSelection &&
+                            !isSelected
+                        ) {
+                            0.28f
+                        } else {
+                            1f
+                        }
 
                     drawArc(
                         color =
                             incomeCategoryColor(
                                 category.category
+                            ).copy(
+                                alpha = alpha
                             ),
+
                         startAngle =
                             startAngle,
+
                         sweepAngle =
                             sweep,
-                        useCenter = false,
+
+                        useCenter =
+                            false,
+
                         topLeft =
                             androidx.compose.ui.geometry
                                 .Offset(
                                     left,
                                     top
                                 ),
+
                         size =
                             androidx.compose.ui.geometry
                                 .Size(
                                     diameter,
                                     diameter
                                 ),
+
                         style =
                             Stroke(
                                 width =
-                                    strokeWidth,
+                                    if (isSelected) {
+                                        selectedStrokeWidth
+                                    } else {
+                                        defaultStrokeWidth
+                                    },
+
                                 cap =
                                     StrokeCap.Butt
                             )
@@ -153,10 +222,13 @@ fun IncomeCategoryChart(
             ) {
 
                 Text(
-                    text = "Overall",
+                    text =
+                        centerLabel,
+
                     style =
                         MaterialTheme.typography
                             .labelMedium,
+
                     color =
                         MaterialTheme.colorScheme
                             .onSurfaceVariant
@@ -164,7 +236,10 @@ fun IncomeCategoryChart(
 
                 Text(
                     text =
-                        formatter.format(total),
+                        formatter.format(
+                            centerAmount
+                        ),
+
                     style =
                         MaterialTheme.typography
                             .titleLarge
@@ -178,25 +253,30 @@ private fun incomeCategoryColor(
     category: String
 ) =
     when {
+
         category.equals(
             "Salary",
             ignoreCase = true
-        ) -> CategoryPalette.Salary
+        ) ->
+            CategoryPalette.Salary
 
         category.equals(
             "Investment",
             ignoreCase = true
-        ) -> CategoryPalette.Investment
+        ) ->
+            CategoryPalette.Investment
 
         category.equals(
             "Transfer",
             ignoreCase = true
-        ) -> CategoryPalette.Transfer
+        ) ->
+            CategoryPalette.Transfer
 
         category.equals(
             "Uncategorized",
             ignoreCase = true
-        ) -> CategoryPalette.Uncategorized
+        ) ->
+            CategoryPalette.Uncategorized
 
         else ->
             AppColors.Income
