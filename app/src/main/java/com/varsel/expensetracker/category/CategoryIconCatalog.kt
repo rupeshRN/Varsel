@@ -1,16 +1,8 @@
 package com.varsel.expensetracker.category
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.CardGiftcard
-import androidx.compose.material.icons.filled.Coffee
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.Education
 import androidx.compose.material.icons.filled.FlightTakeoff
-import androidx.compose.material.icons.filled.FoodBank
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.LocalGroceryStore
 import androidx.compose.material.icons.filled.LocalHospital
@@ -21,11 +13,9 @@ import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
-import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
  * Central category icon catalog for Varsel.
