@@ -144,6 +144,12 @@ private fun ReportsScreenContent(
                             onFilterClick
                     )
 
+                    NetCashFlowCard(
+    actualIncome = uiState.cashFlow.actualIncome,
+    effectiveExpense = uiState.cashFlow.effectiveExpense,
+    netCashFlow = uiState.cashFlow.netCashFlow
+)
+
                     /*
                      * Remaining report sections will be
                      * added progressively.
