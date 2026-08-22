@@ -194,109 +194,96 @@ fun ReportsPreview() {
     }
 
     /*
-     * Browser desktop background.
+     * IMPORTANT:
+     *
+     * The browser itself is the phone viewport.
+     *
+     * Do NOT create an artificial 360dp x 780dp phone
+     * inside the browser. Doing that causes the mobile
+     * browser preview to have the wrong ratio and sizing.
+     *
+     * The report now fills the actual browser viewport.
      */
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Color(0xFFDCDDD8)
-            ),
-        contentAlignment = Alignment.Center
+            .background(Background)
     ) {
 
-        /*
-         * Phone viewport.
-         *
-         * Approximate modern Android phone ratio.
-         *
-         * The report scrolls INSIDE this viewport.
-         */
-      Box(
-    modifier = Modifier
-        .width(360.dp)
-        .height(780.dp)
-        .background(
-            color = Background,
-            shape = RoundedCornerShape(30.dp)
-        )
-) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(
+                    rememberScrollState()
+                )
+                .padding(
+                    horizontal = 18.dp,
+                    vertical = 22.dp
+                ),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(
-                        rememberScrollState()
-                    )
-                    .padding(
-                        horizontal = 18.dp,
-                        vertical = 22.dp
-                    ),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
-            ) {
+            ReportsHeader()
 
-                ReportsHeader()
+            NetCashFlowCard()
 
-                NetCashFlowCard()
+            MoneyFlowCard(
+                selectedFlow = selectedFlow,
 
-                MoneyFlowCard(
-                    selectedFlow = selectedFlow,
+                onFlowSelected = { flow ->
+                    selectedFlow = flow
 
-                    onFlowSelected = { flow ->
-                        selectedFlow = flow
+                    normalExpanded = false
+                    financialEventsExpanded = false
+                },
 
-                        normalExpanded = false
-                        financialEventsExpanded = false
-                    },
+                selectedExpenseCategory =
+                    selectedExpenseCategory,
 
-                    selectedExpenseCategory =
-                        selectedExpenseCategory,
+                onExpenseCategorySelected = { category ->
+                    selectedExpenseCategory = category
 
-                    onExpenseCategorySelected = { category ->
-                        selectedExpenseCategory = category
+                    normalExpanded = false
+                    financialEventsExpanded = false
+                },
 
-                        normalExpanded = false
-                        financialEventsExpanded = false
-                    },
+                selectedIncomeCategory =
+                    selectedIncomeCategory,
 
-                    selectedIncomeCategory =
-                        selectedIncomeCategory,
+                onIncomeCategorySelected = { category ->
+                    selectedIncomeCategory = category
 
-                    onIncomeCategorySelected = { category ->
-                        selectedIncomeCategory = category
+                    normalExpanded = false
+                    financialEventsExpanded = false
+                },
 
-                        normalExpanded = false
-                        financialEventsExpanded = false
-                    },
+                normalExpanded = normalExpanded,
 
-                    normalExpanded = normalExpanded,
+                financialEventsExpanded =
+                    financialEventsExpanded,
+
+                onNormalClicked = {
+                    normalExpanded =
+                        !normalExpanded
 
                     financialEventsExpanded =
-                        financialEventsExpanded,
+                        false
+                },
 
-                    onNormalClicked = {
-                        normalExpanded =
-                            !normalExpanded
+                onFinancialEventsClicked = {
+                    financialEventsExpanded =
+                        !financialEventsExpanded
 
-                        financialEventsExpanded =
-                            false
-                    },
+                    normalExpanded =
+                        false
+                }
+            )
 
-                    onFinancialEventsClicked = {
-                        financialEventsExpanded =
-                            !financialEventsExpanded
+            FinancialEventsSection()
 
-                        normalExpanded =
-                            false
-                    }
-                )
-
-                FinancialEventsSection()
-
-                Spacer(
-                    modifier = Modifier.height(24.dp)
-                )
-            }
+            Spacer(
+                modifier = Modifier.height(24.dp)
+            )
         }
     }
 }
@@ -405,9 +392,6 @@ private fun NetCashFlowCard() {
                 color = Color(0xFFB8BCB8)
             )
 
-            /*
-             * Actual amount.
-             */
             Text(
                 text = "₹12,500",
                 style = MaterialTheme.typography.displaySmall.copy(
@@ -620,13 +604,6 @@ private fun FlowSelector(
             contentAlignment = Alignment.Center
         ) {
 
-            /*
-             * Selected state:
-             *
-             * - filled background
-             * - matching color
-             * - BOLD text
-             */
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelLarge.copy(
@@ -678,13 +655,6 @@ private fun ExpenseMoneyFlow(
             null
         }
 
-    /*
-     * Donut center:
-     *
-     * Overall -> total expense
-     *
-     * Category -> selected category amount
-     */
     ExpenseDonutChart(
         values = expenseCategories.map {
             it.amount
@@ -706,9 +676,6 @@ private fun ExpenseMoneyFlow(
             .height(250.dp)
     )
 
-    /*
-     * Overall.
-     */
     CategoryListRow(
         name = "Overall",
         amount = total,
@@ -720,9 +687,6 @@ private fun ExpenseMoneyFlow(
         }
     )
 
-    /*
-     * Individual expense categories.
-     */
     expenseCategories.forEachIndexed { index, category ->
 
         CategoryListRow(
@@ -737,10 +701,6 @@ private fun ExpenseMoneyFlow(
         )
     }
 
-    /*
-     * Only show breakdown when a specific category
-     * is selected.
-     */
     if (selected != null) {
 
         CategoryBreakdownCard(
@@ -785,14 +745,6 @@ private fun IncomeMoneyFlow(
             null
         }
 
-    /*
-     * IMPORTANT FIX:
-     *
-     * selectedIndex is now selectedCategory.
-     *
-     * Previously this was hard-coded to -1, which meant
-     * the income donut could never highlight a category.
-     */
     ExpenseDonutChart(
         values = incomeCategories.map {
             it.amount
@@ -804,11 +756,6 @@ private fun IncomeMoneyFlow(
 
         selectedIndex = selectedCategory,
 
-        /*
-         * IMPORTANT FIX:
-         *
-         * The center amount now changes with selection.
-         */
         centerValue =
             if (selected == null) {
                 donutCurrency(total)
@@ -816,12 +763,6 @@ private fun IncomeMoneyFlow(
                 donutCurrency(selected.amount)
             },
 
-        /*
-         * IMPORTANT FIX:
-         *
-         * The center label changes from Overall
-         * to Salary / Other income.
-         */
         centerLabel =
             selected?.name ?: "Overall",
 
@@ -830,9 +771,6 @@ private fun IncomeMoneyFlow(
             .height(250.dp)
     )
 
-    /*
-     * Overall income.
-     */
     CategoryListRow(
         name = "Overall",
         amount = total,
@@ -844,9 +782,6 @@ private fun IncomeMoneyFlow(
         }
     )
 
-    /*
-     * Individual income categories.
-     */
     incomeCategories.forEachIndexed { index, category ->
 
         CategoryListRow(
@@ -905,10 +840,6 @@ private fun ExpenseDonutChart(
                     val selected =
                         selectedIndex == index
 
-                    /*
-                     * Overall means every segment remains
-                     * fully visible.
-                     */
                     val overall =
                         selectedIndex == -1
 
@@ -919,9 +850,6 @@ private fun ExpenseDonutChart(
                             0.20f
                         }
 
-                    /*
-                     * Selected slice gets slightly thicker.
-                     */
                     val strokeWidth =
                         if (selected) {
                             baseStroke +
@@ -978,12 +906,6 @@ private fun ExpenseDonutChart(
             }
         }
 
-        /*
-         * Donut center.
-         *
-         * This is the ONLY place where compact
-         * K/L/Cr amounts are used.
-         */
         Column(
             horizontalAlignment =
                 Alignment.CenterHorizontally,
@@ -1100,11 +1022,6 @@ private fun CategoryListRow(
                 modifier = Modifier.width(12.dp)
             )
 
-            /*
-             * ACTUAL amount.
-             *
-             * Never K/L/Cr here.
-             */
             Text(
                 text = actualCurrency(amount),
                 style =
@@ -1248,9 +1165,6 @@ private fun DrillDownRow(
             color = Ink
         )
 
-        /*
-         * Actual amount.
-         */
         Text(
             text = amount,
             style =
@@ -1362,9 +1276,6 @@ private fun TransactionLine(
             color = Ink
         )
 
-        /*
-         * Actual amount.
-         */
         Text(
             text =
                 actualCurrency(amount),
@@ -1446,9 +1357,6 @@ private fun FinancialEventPreviewList(
                         color = Ink
                     )
 
-                    /*
-                     * Actual amounts.
-                     */
                     Text(
                         text =
                             "${actualCurrency(event.expense)} expense → " +
@@ -1545,9 +1453,6 @@ private fun FinancialEventsSection() {
             }
         }
 
-        /*
-         * Don't flood the report with every event.
-         */
         financialEvents
             .take(2)
             .forEach { event ->
@@ -1631,9 +1536,6 @@ private fun FinancialEventCard(
                     )
                 }
 
-                /*
-                 * Actual final cost.
-                 */
                 Text(
                     text =
                         actualCurrency(
@@ -1650,9 +1552,6 @@ private fun FinancialEventCard(
                 )
             }
 
-            /*
-             * Actual amounts.
-             */
             Text(
                 text =
                     "${actualCurrency(event.expense)} expense → " +
