@@ -6,35 +6,82 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.varsel.expensetracker.ui.reports.components.ReportFilterSheet
 import com.varsel.expensetracker.ui.reports.components.ReportsHeader
+import kotlinx.coroutines.launch
 
 /**
  * Production Reports screen.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsScreen(
     viewModel: ReportsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    var filterSheetVisible by remember {
+        mutableStateOf(false)
+    }
+
+    val sheetState =
+        rememberModalBottomSheetState(
+            skipPartiallyExpanded = true
+        )
+
+    val scope =
+        rememberCoroutineScope()
+
     ReportsScreenContent(
         uiState = uiState,
-        onPreviousMonth = viewModel::previousMonth,
-        onNextMonth = viewModel::nextMonth,
+        onPreviousMonth =
+            viewModel::previousMonth,
+        onNextMonth =
+            viewModel::nextMonth,
         onFilterClick = {
-            /*
-             * The filter sheet will be connected in the next step.
-             */
+            filterSheetVisible = true
         }
     )
+
+    if (filterSheetVisible) {
+
+        ReportFilterSheet(
+            accounts =
+                uiState.accounts,
+            selectedAccountIds =
+                uiState.selectedAccountIds,
+            sheetState =
+                sheetState,
+            onDismiss = {
+                filterSheetVisible = false
+            },
+            onApply = { selectedAccounts ->
+
+                viewModel.setSelectedAccounts(
+                    selectedAccounts
+                )
+
+                scope.launch {
+                    sheetState.hide()
+                    filterSheetVisible = false
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -53,19 +100,22 @@ private fun ReportsScreenContent(
             uiState.isLoading -> {
 
                 CircularProgressIndicator(
-                    modifier = Modifier.align(
-                        Alignment.Center
-                    )
+                    modifier =
+                        Modifier.align(
+                            Alignment.Center
+                        )
                 )
             }
 
             uiState.errorMessage != null -> {
 
                 Text(
-                    text = uiState.errorMessage,
-                    modifier = Modifier.align(
-                        Alignment.Center
-                    )
+                    text =
+                        uiState.errorMessage,
+                    modifier =
+                        Modifier.align(
+                            Alignment.Center
+                        )
                 )
             }
 
@@ -96,7 +146,7 @@ private fun ReportsScreenContent(
 
                     /*
                      * Remaining report sections will be
-                     * added here progressively.
+                     * added progressively.
                      */
                 }
             }
