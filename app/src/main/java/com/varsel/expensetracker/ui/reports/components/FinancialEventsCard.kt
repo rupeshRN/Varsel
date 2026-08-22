@@ -18,20 +18,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.varsel.expensetracker.ui.reports.ReportsFinancialEvent
 import java.text.NumberFormat
 import java.util.Locale
 
 /**
  * Financial Events section for the Reports screen.
  *
- * This component is presentation-only.
- * The actual Financial Event calculations remain in
- * the ReportsViewModel / repository layer.
+ * Presentation-only component.
+ *
+ * Financial Event calculations are performed by
+ * ReportsViewModel and exposed through
+ * ReportsUiState.financialEvents.
  */
 @Composable
 fun FinancialEventsCard(
-    financialEventCount: Int,
-    financialEventAmount: Double,
+    financialEvents: List<ReportsFinancialEvent>,
     modifier: Modifier = Modifier
 ) {
     val currencyFormatter =
@@ -39,11 +41,17 @@ fun FinancialEventsCard(
             Locale("en", "IN")
         )
 
+    val totalEffectiveCost =
+        financialEvents.sumOf {
+            it.effectiveCost
+        }
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface
     ) {
+
         Column(
             modifier = Modifier.padding(20.dp),
             verticalArrangement =
@@ -58,6 +66,9 @@ fun FinancialEventsCard(
                     FontWeight.Bold
             )
 
+            /*
+             * Summary row.
+             */
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment =
@@ -72,8 +83,7 @@ fun FinancialEventsCard(
                     Text(
                         text = "Events",
                         style =
-                            MaterialTheme.typography
-                                .labelMedium,
+                            MaterialTheme.typography.labelMedium,
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
@@ -81,17 +91,17 @@ fun FinancialEventsCard(
 
                     Text(
                         text =
-                            financialEventCount.toString(),
+                            financialEvents.size.toString(),
                         style =
-                            MaterialTheme.typography
-                                .titleMedium,
+                            MaterialTheme.typography.titleMedium,
                         fontWeight =
                             FontWeight.SemiBold
                     )
                 }
 
                 Spacer(
-                    modifier = Modifier.width(20.dp)
+                    modifier =
+                        Modifier.width(20.dp)
                 )
 
                 Column(
@@ -100,10 +110,9 @@ fun FinancialEventsCard(
                 ) {
 
                     Text(
-                        text = "Amount",
+                        text = "Effective Cost",
                         style =
-                            MaterialTheme.typography
-                                .labelMedium,
+                            MaterialTheme.typography.labelMedium,
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
@@ -112,16 +121,156 @@ fun FinancialEventsCard(
                     Text(
                         text =
                             currencyFormatter.format(
-                                financialEventAmount
+                                totalEffectiveCost
                             ),
                         style =
-                            MaterialTheme.typography
-                                .titleMedium,
+                            MaterialTheme.typography.titleMedium,
                         fontWeight =
                             FontWeight.SemiBold
                     )
                 }
             }
+
+            /*
+             * No Financial Events.
+             */
+            if (financialEvents.isEmpty()) {
+
+                Text(
+                    text =
+                        "No Financial Events for this period.",
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                vertical = 12.dp
+                            ),
+                    style =
+                        MaterialTheme.typography.bodyMedium,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
+                )
+
+            } else {
+
+                /*
+                 * Event list.
+                 */
+                LazyColumn(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    verticalArrangement =
+                        Arrangement.spacedBy(4.dp)
+                ) {
+
+                    items(
+                        items = financialEvents,
+                        key = {
+                            it.transactionLinkId
+                        }
+                    ) { event ->
+
+                        FinancialEventRow(
+                            event = event,
+                            currencyFormatter =
+                                currencyFormatter
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Individual Financial Event row.
+ */
+@Composable
+private fun FinancialEventRow(
+    event: ReportsFinancialEvent,
+    currencyFormatter: NumberFormat
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                vertical = 10.dp
+            ),
+        verticalArrangement =
+            Arrangement.spacedBy(4.dp)
+    ) {
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Column(
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+
+                Text(
+                    text = event.groupName,
+                    style =
+                        MaterialTheme.typography.bodyLarge,
+                    fontWeight =
+                        FontWeight.Medium
+                )
+
+                if (
+                    event.category.isNotBlank()
+                ) {
+
+                    Text(
+                        text = event.category,
+                        style =
+                            MaterialTheme.typography.labelMedium,
+                        color =
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.width(12.dp)
+            )
+
+            Text(
+                text =
+                    currencyFormatter.format(
+                        event.effectiveCost
+                    ),
+                style =
+                    MaterialTheme.typography.bodyLarge,
+                fontWeight =
+                    FontWeight.SemiBold
+            )
+        }
+
+        /*
+         * Show reimbursement information only when
+         * the event actually has a reimbursement.
+         */
+        if (event.reimbursedAmount > 0.0) {
+
+            Text(
+                text =
+                    "Reimbursed: ${
+                        currencyFormatter.format(
+                            event.reimbursedAmount
+                        )
+                    }",
+                style =
+                    MaterialTheme.typography.labelSmall,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
+            )
         }
     }
 }
