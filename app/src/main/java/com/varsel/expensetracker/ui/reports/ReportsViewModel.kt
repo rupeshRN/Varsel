@@ -24,15 +24,18 @@ import kotlinx.coroutines.launch
  * ViewModel for the production Reports feature.
  *
  * Responsibilities:
- * - Observe the existing Varsel transaction data.
- * - Observe existing Financial Event groups.
- * - Filter data by the selected month.
- * - Calculate report totals.
- * - Build category summaries.
- * - Build Financial Event summaries.
- * - Manage month and section selection.
  *
- * The ViewModel does NOT contain Compose/UI code.
+ * - Observe transactions.
+ * - Observe Financial Event groups.
+ * - Build the available account list.
+ * - Apply period filtering.
+ * - Apply account filtering.
+ * - Calculate cash flow.
+ * - Calculate categories.
+ * - Calculate Financial Events.
+ * - Manage report selections.
+ *
+ * UI rendering remains outside this class.
  */
 @HiltViewModel
 class ReportsViewModel @Inject constructor(
@@ -50,171 +53,44 @@ class ReportsViewModel @Inject constructor(
     val uiState: StateFlow<ReportsUiState> =
         _uiState.asStateFlow()
 
-    /**
-     * Device timezone is used consistently with the rest of Varsel
-     * when converting transaction timestamps into calendar dates.
-     */
-    private val zoneId: ZoneId = ZoneId.systemDefault()
+    private val zoneId: ZoneId =
+        ZoneId.systemDefault()
 
-    /**
-     * Latest source data.
-     *
-     * Keeping the latest repository result in memory means month navigation
-     * does not require another database query.
-     */
-    private var latestTransactions: List<Transaction> = emptyList()
+    private var latestTransactions: List<Transaction> =
+        emptyList()
 
-    private var latestGroups: List<TransactionLinkGroup> = emptyList()
+    private var latestGroups: List<TransactionLinkGroup> =
+        emptyList()
 
     init {
         observeReportData()
     }
 
     // ------------------------------------------------------------------------
-    // User actions
+    // Period actions
     // ------------------------------------------------------------------------
 
-    /**
-     * Move the report one month backwards.
-     */
     fun previousMonth() {
         updateSelectedMonth(
             _uiState.value.selectedMonth.minusMonths(1)
         )
     }
 
-    /**
-     * Move the report one month forwards.
-     */
     fun nextMonth() {
         updateSelectedMonth(
             _uiState.value.selectedMonth.plusMonths(1)
         )
     }
 
-    /**
-     * Move directly to a specific month.
-     */
     fun selectMonth(month: YearMonth) {
         updateSelectedMonth(month)
     }
 
-    /**
-     * Select Expenses or Income.
-     */
-    fun selectFlow(flow: ReportsFlow) {
+    private fun updateSelectedMonth(
+        month: YearMonth
+    ) {
         _uiState.value = _uiState.value.copy(
-            selectedFlow = flow,
-            selectedExpenseCategory = null,
-            selectedIncomeCategory = null
-        )
-    }
-
-    /**
-     * Select an expense category.
-     *
-     * null means Overall.
-     */
-    fun selectExpenseCategory(category: String?) {
-        _uiState.value = _uiState.value.copy(
-            selectedExpenseCategory = category
-        )
-    }
-
-    /**
-     * Select an income category.
-     *
-     * null means Overall.
-     */
-    fun selectIncomeCategory(category: String?) {
-        _uiState.value = _uiState.value.copy(
-            selectedIncomeCategory = category
-        )
-    }
-
-    /**
-     * Clear the current category selection.
-     */
-    fun clearCategorySelection() {
-        _uiState.value = _uiState.value.copy(
-            selectedExpenseCategory = null,
-            selectedIncomeCategory = null
-        )
-    }
-
-    /**
-     * Retry report generation after an error.
-     *
-     * The repository flows are continuously observed, so rebuilding from
-     * the latest cached source data is enough here.
-     */
-    fun retry() {
-        rebuildReport()
-    }
-
-    // ------------------------------------------------------------------------
-    // Repository observation
-    // ------------------------------------------------------------------------
-
-    /**
-     * Observe the real Varsel transaction and Financial Event streams.
-     */
-    private fun observeReportData() {
-
-        viewModelScope.launch(Dispatchers.IO) {
-
-            combine(
-                transactionRepository.getAllTransactions(),
-                transactionLinkGroupRepository.getAllGroups()
-            ) { transactions, groups ->
-                ReportSourceData(
-                    transactions = transactions,
-                    groups = groups
-                )
-            }.collect { sourceData ->
-
-                latestTransactions = sourceData.transactions
-                latestGroups = sourceData.groups
-
-                rebuildReport()
-            }
-        }
-    }
-
-    /**
-     * Rebuild the current report using the latest repository data.
-     */
-    private fun rebuildReport() {
-
-        try {
-
-            val currentState = _uiState.value
-
-            val newState = buildUiState(
-                transactions = latestTransactions,
-                groups = latestGroups,
-                selectedMonth = currentState.selectedMonth,
-                previousState = currentState
-            )
-
-            _uiState.value = newState
-
-        } catch (exception: Exception) {
-
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = exception.message
-                    ?: "Unable to prepare report"
-            )
-        }
-    }
-
-    /**
-     * Change the selected month and immediately rebuild from cached data.
-     */
-    private fun updateSelectedMonth(month: YearMonth) {
-
-        _uiState.value = _uiState.value.copy(
+            period = ReportPeriod.MONTH,
             selectedMonth = month,
             selectedExpenseCategory = null,
             selectedIncomeCategory = null,
@@ -226,228 +102,478 @@ class ReportsViewModel @Inject constructor(
     }
 
     // ------------------------------------------------------------------------
-    // State construction
-    // ------------------------------------------------------------------------
-
-    private fun buildUiState(
-        transactions: List<Transaction>,
-        groups: List<TransactionLinkGroup>,
-        selectedMonth: YearMonth,
-        previousState: ReportsUiState
-    ): ReportsUiState {
-
-        val monthTransactions = transactions.filter { transaction ->
-            transaction.belongsToMonth(selectedMonth)
-        }
-
-        val cashFlow = buildCashFlow(
-            transactions = monthTransactions
-        )
-
-        val expenseCategories = buildExpenseCategories(
-            transactions = monthTransactions
-        )
-
-        val incomeCategories = buildIncomeCategories(
-            transactions = monthTransactions
-        )
-
-        val financialEvents = buildFinancialEvents(
-            transactions = monthTransactions,
-            groups = groups
-        )
-
-        return previousState.copy(
-            isLoading = false,
-            errorMessage = null,
-            selectedMonth = selectedMonth,
-            cashFlow = cashFlow,
-            expenseCategories = expenseCategories,
-            incomeCategories = incomeCategories,
-            financialEvents = financialEvents
-        )
-    }
-
-    // ------------------------------------------------------------------------
-    // Cash-flow calculations
+    // Account filter
     // ------------------------------------------------------------------------
 
     /**
-     * Varsel reporting rules:
+     * Select or deselect an account.
      *
-     * Actual income:
-     * - INCOME
-     * - excludes REIMBURSEMENT
-     * - excludes TRANSFER_IN
-     *
-     * Effective expense:
-     * - EXPENSE
-     * - excludes TRANSFER_OUT
-     * - subtracts REIMBURSEMENT
-     *
-     * Transfers therefore never become income or expense.
+     * Empty selection means All Accounts.
      */
+    fun toggleAccount(
+        accountId: String
+    ) {
+        val current =
+            _uiState.value.selectedAccountIds
+
+        val updated =
+            if (accountId in current) {
+                current - accountId
+            } else {
+                current + accountId
+            }
+
+        applyAccountSelection(updated)
+    }
+
+    /**
+     * Select a single account.
+     */
+    fun selectAccount(
+        accountId: String
+    ) {
+        applyAccountSelection(
+            setOf(accountId)
+        )
+    }
+
+    /**
+     * Show all accounts.
+     */
+    fun selectAllAccounts() {
+        applyAccountSelection(
+            emptySet()
+        )
+    }
+
+    /**
+     * Replace the complete account selection.
+     */
+    fun setSelectedAccounts(
+        accountIds: Set<String>
+    ) {
+        applyAccountSelection(accountIds)
+    }
+
+    private fun applyAccountSelection(
+        accountIds: Set<String>
+    ) {
+        _uiState.value = _uiState.value.copy(
+            selectedAccountIds = accountIds,
+            selectedExpenseCategory = null,
+            selectedIncomeCategory = null,
+            errorMessage = null,
+            isLoading = true
+        )
+
+        rebuildReport()
+    }
+
+    // ------------------------------------------------------------------------
+    // Money Flow
+    // ------------------------------------------------------------------------
+
+    fun selectFlow(
+        flow: ReportsFlow
+    ) {
+        _uiState.value = _uiState.value.copy(
+            selectedFlow = flow,
+            selectedExpenseCategory = null,
+            selectedIncomeCategory = null
+        )
+    }
+
+    fun selectExpenseCategory(
+        category: String?
+    ) {
+        _uiState.value = _uiState.value.copy(
+            selectedExpenseCategory = category
+        )
+    }
+
+    fun selectIncomeCategory(
+        category: String?
+    ) {
+        _uiState.value = _uiState.value.copy(
+            selectedIncomeCategory = category
+        )
+    }
+
+    fun clearCategorySelection() {
+        _uiState.value = _uiState.value.copy(
+            selectedExpenseCategory = null,
+            selectedIncomeCategory = null
+        )
+    }
+
+    fun retry() {
+        rebuildReport()
+    }
+
+    // ------------------------------------------------------------------------
+    // Repository observation
+    // ------------------------------------------------------------------------
+
+    private fun observeReportData() {
+
+        viewModelScope.launch(Dispatchers.IO) {
+
+            combine(
+                transactionRepository.getAllTransactions(),
+                transactionLinkGroupRepository.getAllGroups()
+            ) { transactions, groups ->
+
+                ReportSourceData(
+                    transactions = transactions,
+                    groups = groups
+                )
+
+            }.collect { sourceData ->
+
+                latestTransactions =
+                    sourceData.transactions
+
+                latestGroups =
+                    sourceData.groups
+
+                rebuildReport()
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Report rebuilding
+    // ------------------------------------------------------------------------
+
+    private fun rebuildReport() {
+
+        try {
+
+            val state =
+                _uiState.value
+
+            /*
+             * Step 1:
+             * Filter by selected reporting period.
+             */
+            val periodTransactions =
+                latestTransactions.filter { transaction ->
+                    transaction.belongsToMonth(
+                        state.selectedMonth
+                    )
+                }
+
+            /*
+             * Step 2:
+             * Filter by selected accounts.
+             *
+             * Empty Set means All Accounts.
+             */
+            val filteredTransactions =
+                filterByAccounts(
+                    transactions = periodTransactions,
+                    selectedAccountIds =
+                        state.selectedAccountIds
+                )
+
+            /*
+             * Step 3:
+             * Build all report sections from the
+             * already-filtered transaction list.
+             */
+            val cashFlow =
+                buildCashFlow(
+                    filteredTransactions
+                )
+
+            val expenseCategories =
+                buildExpenseCategories(
+                    filteredTransactions
+                )
+
+            val incomeCategories =
+                buildIncomeCategories(
+                    filteredTransactions
+                )
+
+            val financialEvents =
+                buildFinancialEvents(
+                    transactions =
+                        filteredTransactions,
+                    groups = latestGroups
+                )
+
+            /*
+             * Build the account list from all known
+             * transactions, not just the current month.
+             *
+             * This allows the filter to remain useful
+             * when a selected account has no transaction
+             * in the current month.
+             */
+            val accounts =
+                buildAccounts(
+                    latestTransactions
+                )
+
+            _uiState.value =
+                state.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                    accounts = accounts,
+                    cashFlow = cashFlow,
+                    expenseCategories =
+                        expenseCategories,
+                    incomeCategories =
+                        incomeCategories,
+                    financialEvents =
+                        financialEvents
+                )
+
+        } catch (exception: Exception) {
+
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage =
+                        exception.message
+                            ?: "Unable to prepare report"
+                )
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Account filtering
+    // ------------------------------------------------------------------------
+
+    private fun filterByAccounts(
+        transactions: List<Transaction>,
+        selectedAccountIds: Set<String>
+    ): List<Transaction> {
+
+        /*
+         * Empty means All Accounts.
+         */
+        if (selectedAccountIds.isEmpty()) {
+            return transactions
+        }
+
+        return transactions.filter { transaction ->
+
+            transaction.accountId != null &&
+                transaction.accountId in selectedAccountIds
+        }
+    }
+
+    /**
+     * Builds the account list from the complete transaction history.
+     *
+     * The account ID is safe for internal selection.
+     * Only accountLast4 is exposed to the UI.
+     */
+    private fun buildAccounts(
+        transactions: List<Transaction>
+    ): List<ReportsAccount> {
+
+        return transactions
+            .asSequence()
+            .filter {
+                !it.accountId.isNullOrBlank()
+            }
+            .groupBy {
+                it.accountId!!
+            }
+            .map { (accountId, accountTransactions) ->
+
+                val last4 =
+                    accountTransactions
+                        .mapNotNull {
+                            it.accountLast4
+                        }
+                        .firstOrNull()
+
+                ReportsAccount(
+                    accountId = accountId,
+                    accountLast4 = last4
+                )
+            }
+            .sortedBy {
+                it.accountLast4 ?: ""
+            }
+    }
+
+    // ------------------------------------------------------------------------
+    // Cash Flow
+    // ------------------------------------------------------------------------
+
     private fun buildCashFlow(
         transactions: List<Transaction>
     ): ReportsCashFlow {
 
-        val actualIncome = transactions
-            .asSequence()
-            .filter { transaction ->
+        val actualIncome =
+            transactions
+                .asSequence()
+                .filter { transaction ->
 
-                transaction.type == TransactionType.INCOME &&
-                    transaction.role != TransactionRole.REIMBURSEMENT &&
-                    transaction.role != TransactionRole.TRANSFER_IN
-            }
-            .sumOf { transaction ->
-                transaction.amount
-            }
+                    transaction.type ==
+                        TransactionType.INCOME &&
 
-        val grossExpense = transactions
-            .asSequence()
-            .filter { transaction ->
+                        transaction.role !=
+                            TransactionRole.REIMBURSEMENT &&
 
-                transaction.type == TransactionType.EXPENSE &&
-                    transaction.role != TransactionRole.TRANSFER_OUT
-            }
-            .sumOf { transaction ->
-                transaction.amount
-            }
+                        transaction.role !=
+                            TransactionRole.TRANSFER_IN
+                }
+                .sumOf {
+                    it.amount
+                }
 
-        val reimbursements = transactions
-            .asSequence()
-            .filter { transaction ->
+        val grossExpense =
+            transactions
+                .asSequence()
+                .filter { transaction ->
 
-                transaction.role == TransactionRole.REIMBURSEMENT
-            }
-            .sumOf { transaction ->
-                transaction.amount
-            }
+                    transaction.type ==
+                        TransactionType.EXPENSE &&
+
+                        transaction.role !=
+                            TransactionRole.TRANSFER_OUT
+                }
+                .sumOf {
+                    it.amount
+                }
+
+        val reimbursements =
+            transactions
+                .asSequence()
+                .filter { transaction ->
+
+                    transaction.role ==
+                        TransactionRole.REIMBURSEMENT
+                }
+                .sumOf {
+                    it.amount
+                }
 
         val effectiveExpense =
             grossExpense - reimbursements
 
-        val netCashFlow =
-            actualIncome - effectiveExpense
-
         return ReportsCashFlow(
             actualIncome = actualIncome,
             effectiveExpense = effectiveExpense,
-            netCashFlow = netCashFlow
+            netCashFlow =
+                actualIncome - effectiveExpense
         )
     }
 
     // ------------------------------------------------------------------------
-    // Expense categories
+    // Expense Categories
     // ------------------------------------------------------------------------
 
-    /**
-     * Builds dynamic expense categories from actual transaction data.
-     *
-     * We deliberately do NOT hardcode the category list here.
-     *
-     * This means user-created categories and future categories automatically
-     * appear in Reports.
-     */
     private fun buildExpenseCategories(
         transactions: List<Transaction>
     ): List<ReportsExpenseCategory> {
 
-        val expenseTransactions = transactions.filter { transaction ->
+        val expenseTransactions =
+            transactions.filter { transaction ->
 
-            transaction.type == TransactionType.EXPENSE &&
-                transaction.role != TransactionRole.TRANSFER_OUT
-        }
+                transaction.type ==
+                    TransactionType.EXPENSE &&
 
-        val reimbursementTransactions = transactions.filter { transaction ->
-
-            transaction.role == TransactionRole.REIMBURSEMENT
-        }
-
-        val categoryNames = (
-            expenseTransactions.map { transaction ->
-                transaction.category
-            } +
-                reimbursementTransactions.map { transaction ->
-                    transaction.category
-                }
-            )
-            .filter { category ->
-                category.isNotBlank()
+                    transaction.role !=
+                        TransactionRole.TRANSFER_OUT
             }
-            .distinct()
+
+        val reimbursementTransactions =
+            transactions.filter { transaction ->
+
+                transaction.role ==
+                    TransactionRole.REIMBURSEMENT
+            }
+
+        val categoryNames =
+            (
+                expenseTransactions.map {
+                    it.category
+                } +
+                    reimbursementTransactions.map {
+                        it.category
+                    }
+                )
+                .filter {
+                    it.isNotBlank()
+                }
+                .distinct()
 
         return categoryNames
             .map { category ->
 
                 val categoryExpenses =
-                    expenseTransactions.filter { transaction ->
-                        transaction.category == category
+                    expenseTransactions.filter {
+                        it.category == category
                     }
 
                 val categoryReimbursements =
-                    reimbursementTransactions.filter { transaction ->
-                        transaction.category == category
+                    reimbursementTransactions.filter {
+                        it.category == category
                     }
 
                 val normalAmount =
                     categoryExpenses
-                        .filter { transaction ->
-                            transaction.transactionLinkId == null
+                        .filter {
+                            it.transactionLinkId == null
                         }
-                        .sumOf { transaction ->
-                            transaction.amount
+                        .sumOf {
+                            it.amount
                         }
 
                 val financialEventAmount =
                     categoryExpenses
-                        .filter { transaction ->
-                            transaction.transactionLinkId != null
+                        .filter {
+                            it.transactionLinkId != null
                         }
-                        .sumOf { transaction ->
-                            transaction.amount
+                        .sumOf {
+                            it.amount
                         }
 
                 val reimbursedAmount =
-                    categoryReimbursements.sumOf { transaction ->
-                        transaction.amount
-                    }
+                    categoryReimbursements
+                        .sumOf {
+                            it.amount
+                        }
 
                 val effectiveFinancialEventAmount =
-                    financialEventAmount - reimbursedAmount
-
-                val totalAmount =
-                    normalAmount +
-                        financialEventAmount -
+                    financialEventAmount -
                         reimbursedAmount
 
                 ReportsExpenseCategory(
                     category = category,
-                    totalAmount = totalAmount,
-                    normalAmount = normalAmount,
-                    financialEventAmount = financialEventAmount,
-                    reimbursedAmount = reimbursedAmount,
+                    totalAmount =
+                        normalAmount +
+                            financialEventAmount -
+                            reimbursedAmount,
+                    normalAmount =
+                        normalAmount,
+                    financialEventAmount =
+                        financialEventAmount,
+                    reimbursedAmount =
+                        reimbursedAmount,
                     effectiveFinancialEventAmount =
                         effectiveFinancialEventAmount
                 )
             }
-            .filter { category ->
-                category.totalAmount != 0.0
+            .filter {
+                it.totalAmount != 0.0
             }
-            .sortedByDescending { category ->
-                category.totalAmount
+            .sortedByDescending {
+                it.totalAmount
             }
     }
 
     // ------------------------------------------------------------------------
-    // Income categories
+    // Income Categories
     // ------------------------------------------------------------------------
 
-    /**
-     * Builds dynamic income categories.
-     *
-     * Reimbursements and account transfers are excluded from actual income.
-     */
     private fun buildIncomeCategories(
         transactions: List<Transaction>
     ): List<ReportsIncomeCategory> {
@@ -456,26 +582,31 @@ class ReportsViewModel @Inject constructor(
             .asSequence()
             .filter { transaction ->
 
-                transaction.type == TransactionType.INCOME &&
-                    transaction.role == TransactionRole.NORMAL
+                transaction.type ==
+                    TransactionType.INCOME &&
+
+                    transaction.role ==
+                        TransactionRole.NORMAL
             }
-            .filter { transaction ->
-                transaction.category.isNotBlank()
+            .filter {
+                it.category.isNotBlank()
             }
-            .groupBy { transaction ->
-                transaction.category
+            .groupBy {
+                it.category
             }
             .map { (category, categoryTransactions) ->
 
                 ReportsIncomeCategory(
                     category = category,
-                    totalAmount = categoryTransactions.sumOf { transaction ->
-                        transaction.amount
-                    }
+                    totalAmount =
+                        categoryTransactions
+                            .sumOf {
+                                it.amount
+                            }
                 )
             }
-            .sortedByDescending { category ->
-                category.totalAmount
+            .sortedByDescending {
+                it.totalAmount
             }
     }
 
@@ -483,34 +614,37 @@ class ReportsViewModel @Inject constructor(
     // Financial Events
     // ------------------------------------------------------------------------
 
-    /**
-     * Builds Financial Event summaries from the existing transaction links.
-     *
-     * Financial Events are identified using transactionLinkId.
-     *
-     * Account transfers use transferLinkId and therefore do not enter
-     * this calculation.
-     */
     private fun buildFinancialEvents(
         transactions: List<Transaction>,
         groups: List<TransactionLinkGroup>
     ): List<ReportsFinancialEvent> {
 
+        /*
+         * IMPORTANT:
+         *
+         * This receives transactions AFTER the account
+         * filter has already been applied.
+         *
+         * Therefore a selected account cannot accidentally
+         * pull unrelated transactions from another account
+         * into the report.
+         */
         val linkedTransactions =
             transactions
-                .filter { transaction ->
-                    transaction.transactionLinkId != null
+                .filter {
+                    it.transactionLinkId != null
                 }
-                .groupBy { transaction ->
-                    transaction.transactionLinkId!!
+                .groupBy {
+                    it.transactionLinkId!!
                 }
 
         return linkedTransactions
-            .mapNotNull { (transactionLinkId, eventTransactions) ->
+            .mapNotNull {
+                    (transactionLinkId, eventTransactions) ->
 
                 val group =
-                    groups.firstOrNull { transactionLinkGroup ->
-                        transactionLinkGroup.transactionLinkId ==
+                    groups.firstOrNull {
+                        it.transactionLinkId ==
                             transactionLinkId
                     }
 
@@ -523,43 +657,50 @@ class ReportsViewModel @Inject constructor(
                         .asSequence()
                         .filter { transaction ->
 
-                            transaction.type == TransactionType.EXPENSE &&
-                                transaction.role != TransactionRole.TRANSFER_OUT
+                            transaction.type ==
+                                TransactionType.EXPENSE &&
+
+                                transaction.role !=
+                                    TransactionRole.TRANSFER_OUT
                         }
-                        .sumOf { transaction ->
-                            transaction.amount
+                        .sumOf {
+                            it.amount
                         }
 
                 val reimbursedAmount =
                     eventTransactions
                         .asSequence()
-                        .filter { transaction ->
+                        .filter {
 
-                            transaction.role ==
+                            it.role ==
                                 TransactionRole.REIMBURSEMENT
                         }
-                        .sumOf { transaction ->
-                            transaction.amount
+                        .sumOf {
+                            it.amount
                         }
 
-                val effectiveCost =
-                    expenseAmount - reimbursedAmount
-
                 ReportsFinancialEvent(
-                    transactionLinkId = transactionLinkId,
-                    groupName = group.groupName,
-                    category = group.category,
-                    expenseAmount = expenseAmount,
-                    reimbursedAmount = reimbursedAmount,
-                    effectiveCost = effectiveCost
+                    transactionLinkId =
+                        transactionLinkId,
+                    groupName =
+                        group.groupName,
+                    category =
+                        group.category,
+                    expenseAmount =
+                        expenseAmount,
+                    reimbursedAmount =
+                        reimbursedAmount,
+                    effectiveCost =
+                        expenseAmount -
+                            reimbursedAmount
                 )
             }
-            .filter { event ->
-                event.expenseAmount != 0.0 ||
-                    event.reimbursedAmount != 0.0
+            .filter {
+                it.expenseAmount != 0.0 ||
+                    it.reimbursedAmount != 0.0
             }
-            .sortedByDescending { event ->
-                event.effectiveCost
+            .sortedByDescending {
+                it.effectiveCost
             }
     }
 
@@ -572,10 +713,6 @@ class ReportsViewModel @Inject constructor(
         val groups: List<TransactionLinkGroup>
     )
 
-    /**
-     * Converts the transaction timestamp using the same device timezone
-     * convention used by the application.
-     */
     private fun Transaction.belongsToMonth(
         month: YearMonth
     ): Boolean {
@@ -586,6 +723,7 @@ class ReportsViewModel @Inject constructor(
                 .atZone(zoneId)
                 .toLocalDate()
 
-        return YearMonth.from(localDate) == month
+        return YearMonth.from(localDate) ==
+            month
     }
 }
