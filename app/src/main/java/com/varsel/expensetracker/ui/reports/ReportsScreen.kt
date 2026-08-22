@@ -24,6 +24,7 @@ import com.varsel.expensetracker.ui.reports.components.ReportFilterSheet
 import com.varsel.expensetracker.ui.reports.components.ReportsHeader
 import kotlinx.coroutines.launch
 import com.varsel.expensetracker.ui.reports.components.NetCashFlowCard
+import com.varsel.expensetracker.ui.reports.components.MoneyFlowCard
 
 /**
  * Production Reports screen.
@@ -150,6 +151,27 @@ private fun ReportsScreenContent(
     effectiveExpense = uiState.cashFlow.effectiveExpense,
     netCashFlow = uiState.cashFlow.netCashFlow
 )
+
+                    MoneyFlowCard(
+    selectedFlow = uiState.selectedFlow,
+    onFlowSelected = viewModel::selectFlow
+) {
+    Text(
+        text = if (
+            uiState.selectedFlow ==
+                ReportsFlow.EXPENSES
+        ) {
+            "Expense breakdown will appear here."
+        } else {
+            "Income breakdown will appear here."
+        },
+        style =
+            MaterialTheme.typography.bodyMedium,
+        color =
+            MaterialTheme.colorScheme
+                .onSurfaceVariant
+    )
+}
 
                     /*
                      * Remaining report sections will be
