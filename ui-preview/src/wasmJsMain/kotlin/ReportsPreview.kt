@@ -1232,10 +1232,11 @@ private fun shortCurrency(
 private fun formatCompact(
     value: Float
 ): String {
+    val rounded = (value * 10f).roundToInt() / 10f
 
-    return if (value % 1f == 0f) {
-        value.toInt().toString()
+    return if (rounded % 1f == 0f) {
+        rounded.toInt().toString()
     } else {
-        "%.1f".format(value)
+        rounded.toString()
     }
 }
