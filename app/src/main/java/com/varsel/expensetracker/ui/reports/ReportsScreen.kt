@@ -26,6 +26,8 @@ import com.varsel.expensetracker.ui.reports.components.NetCashFlowCard
 import com.varsel.expensetracker.ui.reports.components.ReportFilterSheet
 import com.varsel.expensetracker.ui.reports.components.ReportsHeader
 import kotlinx.coroutines.launch
+import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryList
+import com.varsel.expensetracker.ui.reports.components.IncomeCategoryList
 
 /**
  * Production Reports screen.
@@ -181,32 +183,32 @@ private fun ReportsScreenContent(
                     )
 
                     MoneyFlowCard(
-                        selectedFlow =
-                            uiState.selectedFlow,
+    selectedFlow =
+        uiState.selectedFlow,
 
-                        onFlowSelected =
-                            onFlowSelected
-                    ) {
+    onFlowSelected =
+        onFlowSelected
+) {
 
-                        Text(
-                            text =
-                                if (
-                                    uiState.selectedFlow ==
-                                        ReportsFlow.EXPENSES
-                                ) {
-                                    "Expense breakdown will appear here."
-                                } else {
-                                    "Income breakdown will appear here."
-                                },
+    when (uiState.selectedFlow) {
 
-                            style =
-                                MaterialTheme.typography.bodyMedium,
+        ReportsFlow.EXPENSES -> {
 
-                            color =
-                                MaterialTheme.colorScheme
-                                    .onSurfaceVariant
-                        )
-                    }
+            ExpenseCategoryList(
+                categories =
+                    uiState.expenseCategories
+            )
+        }
+
+        ReportsFlow.INCOME -> {
+
+            IncomeCategoryList(
+                categories =
+                    uiState.incomeCategories
+            )
+        }
+    }
+}
 
                     /*
                      * Remaining report sections will be
