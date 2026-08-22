@@ -1,9 +1,8 @@
 package com.varsel.expensetracker.category
 
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Category as CategoryIcon
 import androidx.compose.material.icons.filled.FlightTakeoff
+import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.LocalGroceryStore
 import androidx.compose.material.icons.filled.LocalHospital
@@ -17,6 +16,7 @@ import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
  * Central category icon catalog for Varsel.
@@ -145,10 +145,10 @@ object CategoryIconCatalog {
                 Category.UNCATEGORIZED,
                 ignoreCase = true
             ) ->
-                CategoryIcon
+                Icons.Filled.Label
 
             else ->
-                CategoryIcon
+                Icons.Filled.Label
         }
     }
 }
