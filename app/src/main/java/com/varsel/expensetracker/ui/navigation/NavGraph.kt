@@ -23,6 +23,7 @@ import com.varsel.expensetracker.ui.more.SettingsDetailScreen
 import com.varsel.expensetracker.ui.developer.DeveloperSettingsScreen
 import com.varsel.expensetracker.ui.transaction.TransactionDetailScreen
 import com.varsel.expensetracker.ui.financialevent.FinancialEventScreen
+import com.varsel.expensetracker.ui.reports.ReportsScreen
 
 @Composable
 fun NavGraph(
@@ -119,10 +120,19 @@ composable(
     )
 }
 
-        composable(AppDestination.Reports.route) {
+composable(AppDestination.Reports.route) {
 
-            Text("Reports - Coming Soon")
+    ReportsScreen(
+        viewModel = hiltViewModel(),
+
+        onFinancialEventClick = { transactionLinkId ->
+
+            navController.navigate(
+                "financial_event/$transactionLinkId"
+            )
         }
+    )
+}
 
         composable(AppDestination.More.route) {
 
