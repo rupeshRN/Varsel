@@ -16,19 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.varsel.expensetracker.ui.design.AppColors
 import java.text.NumberFormat
 import java.util.Locale
 
-/**
- * Net Cash Flow summary card.
- *
- * Displays:
- * - Income
- * - Expenses
- * - Net Cash Flow
- *
- * Values come directly from ReportsUiState.cashFlow.
- */
 @Composable
 fun NetCashFlowCard(
     actualIncome: Double,
@@ -40,6 +31,13 @@ fun NetCashFlowCard(
         NumberFormat.getCurrencyInstance(
             Locale("en", "IN")
         )
+
+    val netColor =
+        if (netCashFlow >= 0.0) {
+            AppColors.Income
+        } else {
+            AppColors.Expense
+        }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -61,33 +59,39 @@ fun NetCashFlowCard(
             )
 
             Text(
-                text = currencyFormatter.format(
-                    netCashFlow
-                ),
+                text =
+                    currencyFormatter.format(
+                        netCashFlow
+                    ),
                 style =
                     MaterialTheme.typography.headlineMedium,
                 fontWeight =
-                    FontWeight.Bold
+                    FontWeight.Bold,
+                color = netColor
             )
 
             Row(
-                modifier = Modifier.fillMaxWidth()
+                modifier =
+                    Modifier.fillMaxWidth()
             ) {
 
                 CashFlowValue(
                     label = "Income",
                     value = actualIncome,
+                    color = AppColors.Income,
                     modifier =
                         Modifier.weight(1f)
                 )
 
                 Spacer(
-                    modifier = Modifier.width(16.dp)
+                    modifier =
+                        Modifier.width(16.dp)
                 )
 
                 CashFlowValue(
                     label = "Expenses",
                     value = effectiveExpense,
+                    color = AppColors.Expense,
                     modifier =
                         Modifier.weight(1f)
                 )
@@ -100,6 +104,7 @@ fun NetCashFlowCard(
 private fun CashFlowValue(
     label: String,
     value: Double,
+    color: androidx.compose.ui.graphics.Color,
     modifier: Modifier = Modifier
 ) {
     val currencyFormatter =
@@ -115,21 +120,24 @@ private fun CashFlowValue(
             text = label,
             style =
                 MaterialTheme.typography.labelMedium,
-            color =
-                MaterialTheme.colorScheme
-                    .onSurfaceVariant
+            color = color,
+            fontWeight =
+                FontWeight.Medium
         )
 
         Spacer(
-            modifier = Modifier.height(4.dp)
+            modifier =
+                Modifier.height(4.dp)
         )
 
         Text(
-            text = currencyFormatter.format(value),
+            text =
+                currencyFormatter.format(value),
             style =
                 MaterialTheme.typography.titleMedium,
             fontWeight =
-                FontWeight.SemiBold
+                FontWeight.SemiBold,
+            color = color
         )
     }
 }
