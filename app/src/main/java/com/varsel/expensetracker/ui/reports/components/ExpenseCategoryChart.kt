@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.varsel.expensetracker.ui.design.AppColors
 import com.varsel.expensetracker.ui.design.CategoryPalette
@@ -27,21 +25,26 @@ import kotlin.math.max
 @Composable
 fun ExpenseCategoryChart(
     categories: List<ReportsExpenseCategory>,
+    selectedCategory: String?,
     modifier: Modifier = Modifier
 ) {
     if (categories.isEmpty()) {
         Text(
-            text = "No expense data for this period.",
+            text =
+                "No expense data for this period.",
+
             modifier =
                 modifier
                     .fillMaxWidth()
                     .padding(
                         vertical = 20.dp
                     ),
+
             color =
                 MaterialTheme.colorScheme
                     .onSurfaceVariant
         )
+
         return
     }
 
@@ -52,7 +55,10 @@ fun ExpenseCategoryChart(
 
     val total =
         validCategories.sumOf {
-            max(it.totalAmount, 0.0)
+            max(
+                it.totalAmount,
+                0.0
+            )
         }
 
     if (total <= 0.0) {
@@ -64,11 +70,28 @@ fun ExpenseCategoryChart(
             Locale("en", "IN")
         )
 
+    val selectedModel =
+        selectedCategory?.let { selected ->
+            validCategories.firstOrNull {
+                it.category == selected
+            }
+        }
+
+    val centerLabel =
+        selectedModel?.category
+            ?: "Overall"
+
+    val centerAmount =
+        selectedModel?.totalAmount
+            ?: total
+
     Column(
         modifier =
             modifier.fillMaxWidth(),
+
         horizontalAlignment =
             Alignment.CenterHorizontally,
+
         verticalArrangement =
             Arrangement.spacedBy(16.dp)
     ) {
@@ -78,6 +101,7 @@ fun ExpenseCategoryChart(
                 Modifier
                     .fillMaxWidth()
                     .height(220.dp),
+
             contentAlignment =
                 Alignment.Center
         ) {
@@ -89,22 +113,33 @@ fun ExpenseCategoryChart(
                         .fillMaxWidth()
             ) {
 
-                val strokeWidth =
-                    34.dp.toPx()
+                val defaultStrokeWidth =
+                    32.dp.toPx()
+
+                val selectedStrokeWidth =
+                    42.dp.toPx()
 
                 val diameter =
                     minOf(
                         size.width,
                         size.height
-                    ) - strokeWidth
+                    ) -
+                        selectedStrokeWidth
 
                 val left =
-                    (size.width - diameter) / 2f
+                    (
+                        size.width -
+                            diameter
+                        ) / 2f
 
                 val top =
-                    (size.height - diameter) / 2f
+                    (
+                        size.height -
+                            diameter
+                        ) / 2f
 
-                var startAngle = -90f
+                var startAngle =
+                    -90f
 
                 validCategories.forEach { category ->
 
@@ -112,34 +147,66 @@ fun ExpenseCategoryChart(
                         (
                             category.totalAmount /
                                 total
-                            ).toFloat() * 360f
+                            ).toFloat() *
+                            360f
+
+                    val isSelected =
+                        selectedCategory ==
+                            category.category
+
+                    val hasSelection =
+                        selectedCategory != null
+
+                    val alpha =
+                        if (
+                            hasSelection &&
+                            !isSelected
+                        ) {
+                            0.28f
+                        } else {
+                            1f
+                        }
 
                     drawArc(
                         color =
                             categoryColor(
                                 category.category
+                            ).copy(
+                                alpha = alpha
                             ),
+
                         startAngle =
                             startAngle,
+
                         sweepAngle =
                             sweep,
-                        useCenter = false,
+
+                        useCenter =
+                            false,
+
                         topLeft =
                             androidx.compose.ui.geometry
                                 .Offset(
                                     left,
                                     top
                                 ),
+
                         size =
                             androidx.compose.ui.geometry
                                 .Size(
                                     diameter,
                                     diameter
                                 ),
+
                         style =
                             Stroke(
                                 width =
-                                    strokeWidth,
+                                    if (isSelected) {
+                                        selectedStrokeWidth
+                                    } else {
+                                        defaultStrokeWidth
+                                    },
+
                                 cap =
                                     StrokeCap.Butt
                             )
@@ -155,10 +222,13 @@ fun ExpenseCategoryChart(
             ) {
 
                 Text(
-                    text = "Overall",
+                    text =
+                        centerLabel,
+
                     style =
                         MaterialTheme.typography
                             .labelMedium,
+
                     color =
                         MaterialTheme.colorScheme
                             .onSurfaceVariant
@@ -166,12 +236,13 @@ fun ExpenseCategoryChart(
 
                 Text(
                     text =
-                        formatter.format(total),
+                        formatter.format(
+                            centerAmount
+                        ),
+
                     style =
                         MaterialTheme.typography
-                            .titleLarge,
-                    fontWeight =
-                        FontWeight.Bold
+                            .titleLarge
                 )
             }
         }
@@ -182,40 +253,48 @@ private fun categoryColor(
     category: String
 ) =
     when {
+
         category.equals(
             "Food",
             ignoreCase = true
-        ) -> CategoryPalette.Food
+        ) ->
+            CategoryPalette.Food
 
         category.equals(
             "Travel",
             ignoreCase = true
-        ) -> CategoryPalette.Travel
+        ) ->
+            CategoryPalette.Travel
 
         category.equals(
             "Shopping",
             ignoreCase = true
-        ) -> CategoryPalette.Shopping
+        ) ->
+            CategoryPalette.Shopping
 
         category.equals(
             "Bills",
             ignoreCase = true
-        ) -> CategoryPalette.Bills
+        ) ->
+            CategoryPalette.Bills
 
         category.equals(
             "Fuel",
             ignoreCase = true
-        ) -> CategoryPalette.Fuel
+        ) ->
+            CategoryPalette.Fuel
 
         category.equals(
             "Medical",
             ignoreCase = true
-        ) -> CategoryPalette.Medical
+        ) ->
+            CategoryPalette.Medical
 
         category.equals(
             "Uncategorized",
             ignoreCase = true
-        ) -> CategoryPalette.Uncategorized
+        ) ->
+            CategoryPalette.Uncategorized
 
         else ->
             AppColors.Expense
