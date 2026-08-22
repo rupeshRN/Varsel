@@ -30,6 +30,7 @@ import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryList
 import com.varsel.expensetracker.ui.reports.components.IncomeCategoryList
 import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryChart
 import com.varsel.expensetracker.ui.reports.components.FinancialEventsCard
+import com.varsel.expensetracker.ui.reports.components.IncomeCategoryChart
 
 /**
  * Production Reports screen.
@@ -185,7 +186,7 @@ private fun ReportsScreenContent(
                             uiState.cashFlow.netCashFlow
                     )
 
-                    MoneyFlowCard(
+MoneyFlowCard(
     selectedFlow =
         uiState.selectedFlow,
 
@@ -195,31 +196,42 @@ private fun ReportsScreenContent(
 
     when (uiState.selectedFlow) {
 
-ReportsFlow.EXPENSES -> {
+        ReportsFlow.EXPENSES -> {
 
-    Column(
-        verticalArrangement =
-            Arrangement.spacedBy(20.dp)
-    ) {
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(16.dp)
+            ) {
 
-        ExpenseCategoryChart(
-            categories =
-                uiState.expenseCategories
-        )
+                ExpenseCategoryChart(
+                    categories =
+                        uiState.expenseCategories
+                )
 
-        ExpenseCategoryList(
-            categories =
-                uiState.expenseCategories
-        )
-    }
-}
+                ExpenseCategoryList(
+                    categories =
+                        uiState.expenseCategories
+                )
+            }
+        }
 
         ReportsFlow.INCOME -> {
 
-            IncomeCategoryList(
-                categories =
-                    uiState.incomeCategories
-            )
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(16.dp)
+            ) {
+
+                IncomeCategoryChart(
+                    categories =
+                        uiState.incomeCategories
+                )
+
+                IncomeCategoryList(
+                    categories =
+                        uiState.incomeCategories
+                )
+            }
         }
     }
 }
@@ -230,7 +242,7 @@ FinancialEventsCard(
 
     onFinancialEventClick =
         onFinancialEventClick
-)                 
+)          
                     /*
                      * Remaining report sections will be
                      * added progressively.
