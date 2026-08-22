@@ -23,26 +23,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.varsel.expensetracker.ui.design.AppColors
 import com.varsel.expensetracker.ui.reports.ReportsFinancialEvent
 import java.text.NumberFormat
 import java.util.Locale
 
-/**
- * Financial Events section for the Reports screen.
- *
- * Presentation-only component.
- *
- * Navigation is delegated to the parent screen so this
- * component does not know anything about NavController
- * or navigation routes.
- */
 @Composable
 fun FinancialEventsCard(
     financialEvents: List<ReportsFinancialEvent>,
     onFinancialEventClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencyFormatter =
+    val formatter =
         NumberFormat.getCurrencyInstance(
             Locale("en", "IN")
         )
@@ -53,13 +45,17 @@ fun FinancialEventsCard(
         }
 
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface
+        modifier =
+            modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(20.dp),
+        color =
+            MaterialTheme.colorScheme.surface
     ) {
 
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier =
+                Modifier.padding(20.dp),
             verticalArrangement =
                 Arrangement.spacedBy(16.dp)
         ) {
@@ -73,9 +69,8 @@ fun FinancialEventsCard(
             )
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment =
-                    Alignment.CenterVertically
+                modifier =
+                    Modifier.fillMaxWidth()
             ) {
 
                 Column(
@@ -86,7 +81,8 @@ fun FinancialEventsCard(
                     Text(
                         text = "Events",
                         style =
-                            MaterialTheme.typography.labelMedium,
+                            MaterialTheme.typography
+                                .labelMedium,
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
@@ -96,16 +92,12 @@ fun FinancialEventsCard(
                         text =
                             financialEvents.size.toString(),
                         style =
-                            MaterialTheme.typography.titleMedium,
+                            MaterialTheme.typography
+                                .titleMedium,
                         fontWeight =
                             FontWeight.SemiBold
                     )
                 }
-
-                Spacer(
-                    modifier =
-                        Modifier.width(20.dp)
-                )
 
                 Column(
                     modifier =
@@ -115,7 +107,8 @@ fun FinancialEventsCard(
                     Text(
                         text = "Effective Cost",
                         style =
-                            MaterialTheme.typography.labelMedium,
+                            MaterialTheme.typography
+                                .labelMedium,
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
@@ -123,13 +116,16 @@ fun FinancialEventsCard(
 
                     Text(
                         text =
-                            currencyFormatter.format(
+                            formatter.format(
                                 totalEffectiveCost
                             ),
                         style =
-                            MaterialTheme.typography.titleMedium,
+                            MaterialTheme.typography
+                                .titleMedium,
                         fontWeight =
-                            FontWeight.SemiBold
+                            FontWeight.SemiBold,
+                        color =
+                            AppColors.Expense
                     )
                 }
             }
@@ -145,8 +141,6 @@ fun FinancialEventsCard(
                             .padding(
                                 vertical = 12.dp
                             ),
-                    style =
-                        MaterialTheme.typography.bodyMedium,
                     color =
                         MaterialTheme.colorScheme
                             .onSurfaceVariant
@@ -162,16 +156,18 @@ fun FinancialEventsCard(
                 ) {
 
                     items(
-                        items = financialEvents,
+                        items =
+                            financialEvents,
                         key = {
                             it.transactionLinkId
                         }
                     ) { event ->
 
                         FinancialEventRow(
-                            event = event,
-                            currencyFormatter =
-                                currencyFormatter,
+                            event =
+                                event,
+                            formatter =
+                                formatter,
                             onClick = {
                                 onFinancialEventClick(
                                     event.transactionLinkId
@@ -188,24 +184,26 @@ fun FinancialEventsCard(
 @Composable
 private fun FinancialEventRow(
     event: ReportsFinancialEvent,
-    currencyFormatter: NumberFormat,
+    formatter: NumberFormat,
     onClick: () -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                onClick = onClick
-            )
-            .padding(
-                vertical = 10.dp
-            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(
+                    onClick = onClick
+                )
+                .padding(
+                    vertical = 10.dp
+                ),
         verticalArrangement =
-            Arrangement.spacedBy(4.dp)
+            Arrangement.spacedBy(6.dp)
     ) {
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier.fillMaxWidth(),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
@@ -216,19 +214,25 @@ private fun FinancialEventRow(
             ) {
 
                 Text(
-                    text = event.groupName,
+                    text =
+                        event.groupName,
                     style =
-                        MaterialTheme.typography.bodyLarge,
+                        MaterialTheme.typography
+                            .bodyLarge,
                     fontWeight =
                         FontWeight.Medium
                 )
 
-                if (event.category.isNotBlank()) {
+                if (
+                    event.category.isNotBlank()
+                ) {
 
                     Text(
-                        text = event.category,
+                        text =
+                            event.category,
                         style =
-                            MaterialTheme.typography.labelMedium,
+                            MaterialTheme.typography
+                                .labelMedium,
                         color =
                             MaterialTheme.colorScheme
                                 .onSurfaceVariant
@@ -238,23 +242,26 @@ private fun FinancialEventRow(
 
             Spacer(
                 modifier =
-                    Modifier.width(12.dp)
+                    Modifier.width(8.dp)
             )
 
             Text(
                 text =
-                    currencyFormatter.format(
+                    formatter.format(
                         event.effectiveCost
                     ),
                 style =
-                    MaterialTheme.typography.bodyLarge,
+                    MaterialTheme.typography
+                        .bodyLarge,
                 fontWeight =
-                    FontWeight.SemiBold
+                    FontWeight.Bold,
+                color =
+                    AppColors.Expense
             )
 
             Spacer(
                 modifier =
-                    Modifier.width(8.dp)
+                    Modifier.width(6.dp)
             )
 
             Icon(
@@ -269,21 +276,43 @@ private fun FinancialEventRow(
             )
         }
 
-        if (event.reimbursedAmount > 0.0) {
+        Row(
+            horizontalArrangement =
+                Arrangement.spacedBy(16.dp)
+        ) {
 
             Text(
                 text =
-                    "Reimbursed: ${
-                        currencyFormatter.format(
-                            event.reimbursedAmount
-                        )
-                    }",
+                    "${formatter.format(
+                        event.expenseAmount
+                    )} expense",
                 style =
-                    MaterialTheme.typography.labelSmall,
+                    MaterialTheme.typography
+                        .labelMedium,
                 color =
-                    MaterialTheme.colorScheme
-                        .onSurfaceVariant
+                    AppColors.Expense,
+                fontWeight =
+                    FontWeight.Medium
             )
+
+            if (
+                event.reimbursedAmount > 0.0
+            ) {
+
+                Text(
+                    text =
+                        "${formatter.format(
+                            event.reimbursedAmount
+                        )} reimbursed",
+                    style =
+                        MaterialTheme.typography
+                            .labelMedium,
+                    color =
+                        AppColors.Income,
+                    fontWeight =
+                        FontWeight.Medium
+                )
+            }
         }
 
         HorizontalDivider(
