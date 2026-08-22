@@ -18,80 +18,113 @@ import com.varsel.expensetracker.ui.reports.ReportsIncomeCategory
 import java.text.NumberFormat
 import java.util.Locale
 
-/**
- * Income category breakdown.
- */
 @Composable
 fun IncomeCategoryList(
     categories: List<ReportsIncomeCategory>,
     modifier: Modifier = Modifier
 ) {
     if (categories.isEmpty()) {
-
         Text(
             text = "No income for this period.",
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(
-                    vertical = 20.dp
-                ),
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .padding(
+                        vertical = 20.dp
+                    ),
             style =
                 MaterialTheme.typography.bodyMedium,
             color =
                 MaterialTheme.colorScheme
                     .onSurfaceVariant
         )
-
         return
     }
 
-    val currencyFormatter =
+    val formatter =
         NumberFormat.getCurrencyInstance(
             Locale("en", "IN")
         )
 
+    val total =
+        categories.sumOf {
+            it.totalAmount
+        }
+
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier =
+            modifier.fillMaxWidth(),
         verticalArrangement =
-            Arrangement.spacedBy(4.dp)
+            Arrangement.spacedBy(2.dp)
     ) {
 
         categories.forEach { category ->
 
+            val percentage =
+                if (total > 0.0) {
+                    (
+                        category.totalAmount /
+                            total
+                        ) * 100.0
+                } else {
+                    0.0
+                }
+
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        vertical = 10.dp
-                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            vertical = 8.dp
+                        ),
                 verticalAlignment =
                     Alignment.CenterVertically
             ) {
 
-                Text(
-                    text = category.category,
-                    modifier =
-                        Modifier.weight(1f),
-                    style =
-                        MaterialTheme.typography
-                            .bodyLarge,
-                    fontWeight =
-                        FontWeight.Medium
+                ReportCategoryIcon(
+                    category =
+                        category.category
                 )
 
                 Spacer(
                     modifier =
-                        Modifier.width(16.dp)
+                        Modifier.width(12.dp)
                 )
 
                 Text(
                     text =
-                        currencyFormatter.format(
+                        category.category,
+                    modifier =
+                        Modifier.weight(1f),
+                    style =
+                        MaterialTheme.typography.bodyLarge,
+                    fontWeight =
+                        FontWeight.Medium
+                )
+
+                Text(
+                    text =
+                        "${percentage.toInt()}%",
+                    style =
+                        MaterialTheme.typography
+                            .labelMedium,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.width(12.dp)
+                )
+
+                Text(
+                    text =
+                        formatter.format(
                             category.totalAmount
                         ),
                     style =
-                        MaterialTheme.typography
-                            .bodyLarge,
+                        MaterialTheme.typography.bodyLarge,
                     fontWeight =
                         FontWeight.SemiBold
                 )
