@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,19 +21,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryChart
+import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryList
+import com.varsel.expensetracker.ui.reports.components.FinancialEventsCard
+import com.varsel.expensetracker.ui.reports.components.IncomeCategoryChart
+import com.varsel.expensetracker.ui.reports.components.IncomeCategoryList
 import com.varsel.expensetracker.ui.reports.components.MoneyFlowCard
 import com.varsel.expensetracker.ui.reports.components.NetCashFlowCard
 import com.varsel.expensetracker.ui.reports.components.ReportFilterSheet
 import com.varsel.expensetracker.ui.reports.components.ReportsHeader
 import kotlinx.coroutines.launch
-import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryList
-import com.varsel.expensetracker.ui.reports.components.IncomeCategoryList
-import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryChart
-import com.varsel.expensetracker.ui.reports.components.FinancialEventsCard
-import com.varsel.expensetracker.ui.reports.components.IncomeCategoryChart
 
 /**
  * Production Reports screen.
+ *
+ * The complete report page uses one vertical scroll container.
+ *
+ * This is intentional:
+ * - Header
+ * - Net Cash Flow
+ * - Money Flow
+ * - Donut chart
+ * - Category list
+ * - Financial Events
+ *
+ * all belong to the same report page and should scroll together.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,32 +60,39 @@ fun ReportsScreen(
     }
 
     val sheetState =
-        rememberModalBottomSheetState(
+        androidx.compose.material3.rememberModalBottomSheetState(
             skipPartiallyExpanded = true
         )
 
-    val scope =
-        rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
-ReportsScreenContent(
-    uiState = uiState,
+    ReportsScreenContent(
+        uiState = uiState,
 
-    onPreviousMonth =
-        viewModel::previousMonth,
+        onPreviousMonth =
+            viewModel::previousMonth,
 
-    onNextMonth =
-        viewModel::nextMonth,
+        onNextMonth =
+            viewModel::nextMonth,
 
-    onFilterClick = {
-        filterSheetVisible = true
-    },
+        onFilterClick = {
+            filterSheetVisible = true
+        },
 
-    onFlowSelected =
-        viewModel::selectFlow,
+        onFlowSelected =
+            viewModel::selectFlow,
 
-    onFinancialEventClick =
-        onFinancialEventClick
-)
+        onExpenseCategorySelected = {
+            viewModel.selectExpenseCategory(it)
+        },
+
+        onIncomeCategorySelected = {
+            viewModel.selectIncomeCategory(it)
+        },
+
+        onFinancialEventClick =
+            onFinancialEventClick
+    )
 
     if (filterSheetVisible) {
 
@@ -113,6 +132,8 @@ private fun ReportsScreenContent(
     onNextMonth: () -> Unit,
     onFilterClick: () -> Unit,
     onFlowSelected: (ReportsFlow) -> Unit,
+    onExpenseCategorySelected: (String?) -> Unit,
+    onIncomeCategorySelected: (String?) -> Unit,
     onFinancialEventClick: (String) -> Unit
 ) {
     Box(
@@ -146,13 +167,24 @@ private fun ReportsScreenContent(
 
             else -> {
 
+                val scrollState =
+                    rememberScrollState()
+
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(
+                                scrollState
+                            )
+                            .padding(
+                                16.dp
+                            ),
 
                     verticalArrangement =
-                        Arrangement.spacedBy(16.dp)
+                        Arrangement.spacedBy(
+                            16.dp
+                        )
                 ) {
 
                     ReportsHeader(
@@ -186,67 +218,85 @@ private fun ReportsScreenContent(
                             uiState.cashFlow.netCashFlow
                     )
 
-MoneyFlowCard(
-    selectedFlow =
-        uiState.selectedFlow,
+                    MoneyFlowCard(
+                        selectedFlow =
+                            uiState.selectedFlow,
 
-    onFlowSelected =
-        onFlowSelected
-) {
+                        onFlowSelected =
+                            onFlowSelected
+                    ) {
 
-    when (uiState.selectedFlow) {
+                        when (uiState.selectedFlow) {
 
-        ReportsFlow.EXPENSES -> {
+                            ReportsFlow.EXPENSES -> {
 
-            Column(
-                verticalArrangement =
-                    Arrangement.spacedBy(16.dp)
-            ) {
+                                Column(
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(
+                                            16.dp
+                                        )
+                                ) {
 
-                ExpenseCategoryChart(
-                    categories =
-                        uiState.expenseCategories
-                )
+                                    ExpenseCategoryChart(
+                                        categories =
+                                            uiState.expenseCategories,
 
-                ExpenseCategoryList(
-                    categories =
-                        uiState.expenseCategories
-                )
-            }
-        }
+                                        selectedCategory =
+                                            uiState.selectedExpenseCategory
+                                    )
 
-        ReportsFlow.INCOME -> {
+                                    ExpenseCategoryList(
+                                        categories =
+                                            uiState.expenseCategories,
 
-            Column(
-                verticalArrangement =
-                    Arrangement.spacedBy(16.dp)
-            ) {
+                                        selectedCategory =
+                                            uiState.selectedExpenseCategory,
 
-                IncomeCategoryChart(
-                    categories =
-                        uiState.incomeCategories
-                )
+                                        onCategorySelected =
+                                            onExpenseCategorySelected
+                                    )
+                                }
+                            }
 
-                IncomeCategoryList(
-                    categories =
-                        uiState.incomeCategories
-                )
-            }
-        }
-    }
-}
+                            ReportsFlow.INCOME -> {
 
-FinancialEventsCard(
-    financialEvents =
-        uiState.financialEvents,
+                                Column(
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(
+                                            16.dp
+                                        )
+                                ) {
 
-    onFinancialEventClick =
-        onFinancialEventClick
-)          
-                    /*
-                     * Remaining report sections will be
-                     * added progressively.
-                     */
+                                    IncomeCategoryChart(
+                                        categories =
+                                            uiState.incomeCategories,
+
+                                        selectedCategory =
+                                            uiState.selectedIncomeCategory
+                                    )
+
+                                    IncomeCategoryList(
+                                        categories =
+                                            uiState.incomeCategories,
+
+                                        selectedCategory =
+                                            uiState.selectedIncomeCategory,
+
+                                        onCategorySelected =
+                                            onIncomeCategorySelected
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    FinancialEventsCard(
+                        financialEvents =
+                            uiState.financialEvents,
+
+                        onFinancialEventClick =
+                            onFinancialEventClick
+                    )
                 }
             }
         }
