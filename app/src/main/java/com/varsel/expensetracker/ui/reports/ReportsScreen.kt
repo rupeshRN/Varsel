@@ -28,6 +28,7 @@ import com.varsel.expensetracker.ui.reports.components.ReportsHeader
 import kotlinx.coroutines.launch
 import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryList
 import com.varsel.expensetracker.ui.reports.components.IncomeCategoryList
+import com.varsel.expensetracker.ui.reports.components.ExpenseCategoryChart
 
 /**
  * Production Reports screen.
@@ -192,13 +193,24 @@ private fun ReportsScreenContent(
 
     when (uiState.selectedFlow) {
 
-        ReportsFlow.EXPENSES -> {
+ReportsFlow.EXPENSES -> {
 
-            ExpenseCategoryList(
-                categories =
-                    uiState.expenseCategories
-            )
-        }
+    Column(
+        verticalArrangement =
+            Arrangement.spacedBy(20.dp)
+    ) {
+
+        ExpenseCategoryChart(
+            categories =
+                uiState.expenseCategories
+        )
+
+        ExpenseCategoryList(
+            categories =
+                uiState.expenseCategories
+        )
+    }
+}
 
         ReportsFlow.INCOME -> {
 
