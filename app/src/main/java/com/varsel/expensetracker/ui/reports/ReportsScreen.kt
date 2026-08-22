@@ -37,7 +37,8 @@ import com.varsel.expensetracker.ui.reports.components.FinancialEventsCard
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsScreen(
-    viewModel: ReportsViewModel = hiltViewModel()
+    viewModel: ReportsViewModel = hiltViewModel(),
+    onFinancialEventClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -53,22 +54,25 @@ fun ReportsScreen(
     val scope =
         rememberCoroutineScope()
 
-    ReportsScreenContent(
-        uiState = uiState,
+ReportsScreenContent(
+    uiState = uiState,
 
-        onPreviousMonth =
-            viewModel::previousMonth,
+    onPreviousMonth =
+        viewModel::previousMonth,
 
-        onNextMonth =
-            viewModel::nextMonth,
+    onNextMonth =
+        viewModel::nextMonth,
 
-        onFilterClick = {
-            filterSheetVisible = true
-        },
+    onFilterClick = {
+        filterSheetVisible = true
+    },
 
-        onFlowSelected =
-            viewModel::selectFlow
-    )
+    onFlowSelected =
+        viewModel::selectFlow,
+
+    onFinancialEventClick =
+        onFinancialEventClick
+)
 
     if (filterSheetVisible) {
 
@@ -104,14 +108,11 @@ fun ReportsScreen(
 @Composable
 private fun ReportsScreenContent(
     uiState: ReportsUiState,
-
     onPreviousMonth: () -> Unit,
-
     onNextMonth: () -> Unit,
-
     onFilterClick: () -> Unit,
-
-    onFlowSelected: (ReportsFlow) -> Unit
+    onFlowSelected: (ReportsFlow) -> Unit,
+    onFinancialEventClick: (String) -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
@@ -225,8 +226,11 @@ ReportsFlow.EXPENSES -> {
 
 FinancialEventsCard(
     financialEvents =
-        uiState.financialEvents
-)                    
+        uiState.financialEvents,
+
+    onFinancialEventClick =
+        onFinancialEventClick
+)                 
                     /*
                      * Remaining report sections will be
                      * added progressively.
