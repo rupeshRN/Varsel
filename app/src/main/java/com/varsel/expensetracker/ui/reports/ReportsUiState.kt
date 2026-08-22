@@ -6,7 +6,7 @@ import java.time.YearMonth
  * Complete UI state for the Reports feature.
  *
  * Rendering belongs in ReportsScreen and its smaller UI components.
- * Business calculations will be handled by ReportsViewModel.
+ * Business calculations belong in ReportsViewModel.
  */
 data class ReportsUiState(
 
@@ -15,9 +15,36 @@ data class ReportsUiState(
     val errorMessage: String? = null,
 
     /**
-     * Month currently displayed by the report.
+     * Currently selected reporting period.
+     *
+     * The first implementation supports MONTH.
+     * The model is intentionally separated so WEEK, QUARTER,
+     * YEAR and CUSTOM can be added later without redesigning
+     * the account filter.
+     */
+    val period: ReportPeriod = ReportPeriod.MONTH,
+
+    /**
+     * Currently selected month.
+     *
+     * Used while period == MONTH.
      */
     val selectedMonth: YearMonth = YearMonth.now(),
+
+    /**
+     * Currently selected account IDs.
+     *
+     * Empty means "All Accounts".
+     *
+     * A Set is used intentionally because the filter can later
+     * support selecting multiple accounts.
+     */
+    val selectedAccountIds: Set<String> = emptySet(),
+
+    /**
+     * Accounts available to the Reports filter.
+     */
+    val accounts: List<ReportsAccount> = emptyList(),
 
     /**
      * Currently selected top-level money-flow view.
@@ -44,21 +71,30 @@ data class ReportsUiState(
     val cashFlow: ReportsCashFlow = ReportsCashFlow(),
 
     /**
-     * Expense categories for the selected month.
+     * Expense categories for the selected period/filter.
      */
     val expenseCategories: List<ReportsExpenseCategory> = emptyList(),
 
     /**
-     * Income categories for the selected month.
+     * Income categories for the selected period/filter.
      */
     val incomeCategories: List<ReportsIncomeCategory> = emptyList(),
 
     /**
-     * Financial Events belonging to the selected month.
+     * Financial Events for the selected period/filter.
      */
     val financialEvents: List<ReportsFinancialEvent> = emptyList()
 ) {
 
+    /**
+     * True when the report represents all accounts.
+     */
+    val isAllAccountsSelected: Boolean
+        get() = selectedAccountIds.isEmpty()
+
+    /**
+     * Selected expense category model.
+     */
     val selectedExpenseCategoryModel: ReportsExpenseCategory?
         get() = selectedExpenseCategory?.let { category ->
             expenseCategories.firstOrNull {
@@ -66,12 +102,78 @@ data class ReportsUiState(
             }
         }
 
+    /**
+     * Selected income category model.
+     */
     val selectedIncomeCategoryModel: ReportsIncomeCategory?
         get() = selectedIncomeCategory?.let { category ->
             incomeCategories.firstOrNull {
                 it.category == category
             }
         }
+
+    /**
+     * User-facing account filter label.
+     */
+    val accountFilterLabel: String
+        get() {
+            if (selectedAccountIds.isEmpty()) {
+                return "All Accounts"
+            }
+
+            if (selectedAccountIds.size == 1) {
+                val account = accounts.firstOrNull {
+                    it.accountId == selectedAccountIds.first()
+                }
+
+                return account?.displayName
+                    ?: "1 Account"
+            }
+
+            return "${selectedAccountIds.size} Accounts"
+        }
+}
+
+/**
+ * Reporting period.
+ *
+ * MONTH is the only active period at this stage.
+ *
+ * WEEK / QUARTER / YEAR / CUSTOM are included now so that
+ * future report filtering can be added without changing
+ * the architecture.
+ */
+enum class ReportPeriod {
+    WEEK,
+    MONTH,
+    QUARTER,
+    YEAR,
+    CUSTOM
+}
+
+/**
+ * Account displayed by the Reports filter.
+ *
+ * The full account number is never stored/displayed here.
+ */
+data class ReportsAccount(
+
+    /**
+     * Stable internal account identifier.
+     */
+    val accountId: String,
+
+    /**
+     * Last four digits for safe display.
+     */
+    val accountLast4: String?
+) {
+
+    val displayName: String
+        get() = accountLast4
+            ?.takeIf { it.isNotBlank() }
+            ?.let { "Account ••••$it" }
+            ?: "Account"
 }
 
 /**
@@ -84,9 +186,6 @@ enum class ReportsFlow {
 
 /**
  * Monthly cash-flow totals.
- *
- * These values will be calculated by ReportsViewModel.
- * ReportsScreen only displays them.
  */
 data class ReportsCashFlow(
 
@@ -97,7 +196,7 @@ data class ReportsCashFlow(
     val actualIncome: Double = 0.0,
 
     /**
-     * Effective expense after excluding account transfers
+     * Effective expense after excluding transfers
      * and subtracting reimbursements.
      */
     val effectiveExpense: Double = 0.0,
@@ -113,34 +212,16 @@ data class ReportsCashFlow(
  */
 data class ReportsExpenseCategory(
 
-    /**
-     * Category name stored on the transaction.
-     */
     val category: String,
 
-    /**
-     * Total expense amount represented by this category.
-     */
     val totalAmount: Double = 0.0,
 
-    /**
-     * Amount from ordinary NORMAL expense transactions.
-     */
     val normalAmount: Double = 0.0,
 
-    /**
-     * Gross expense amount belonging to Financial Events.
-     */
     val financialEventAmount: Double = 0.0,
 
-    /**
-     * Reimbursement amount associated with this category.
-     */
     val reimbursedAmount: Double = 0.0,
 
-    /**
-     * Final Financial Event cost for this category.
-     */
     val effectiveFinancialEventAmount: Double = 0.0
 )
 
@@ -149,17 +230,8 @@ data class ReportsExpenseCategory(
  */
 data class ReportsIncomeCategory(
 
-    /**
-     * Category name stored on the transaction.
-     */
     val category: String,
 
-    /**
-     * Actual reportable income for this category.
-     *
-     * Reimbursements and transfers are excluded
-     * by ReportsViewModel.
-     */
     val totalAmount: Double = 0.0
 )
 
@@ -168,33 +240,15 @@ data class ReportsIncomeCategory(
  */
 data class ReportsFinancialEvent(
 
-    /**
-     * Stable Financial Event link ID.
-     */
     val transactionLinkId: String,
 
-    /**
-     * User-facing Financial Event name.
-     */
     val groupName: String,
 
-    /**
-     * Financial Event category.
-     */
     val category: String,
 
-    /**
-     * Gross expense amount linked to the event.
-     */
     val expenseAmount: Double = 0.0,
 
-    /**
-     * Reimbursement amount linked to the event.
-     */
     val reimbursedAmount: Double = 0.0,
 
-    /**
-     * expenseAmount - reimbursedAmount.
-     */
     val effectiveCost: Double = 0.0
 )
