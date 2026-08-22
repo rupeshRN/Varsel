@@ -212,15 +212,15 @@ fun ReportsPreview() {
          *
          * The report scrolls INSIDE this viewport.
          */
-        Box(
-            modifier = Modifier
-                .fillMaxHeight(0.94f)
-                .aspectRatio(9f / 19.5f)
-                .background(
-                    color = Background,
-                    shape = RoundedCornerShape(30.dp)
-                )
-        ) {
+      Box(
+    modifier = Modifier
+        .width(360.dp)
+        .height(780.dp)
+        .background(
+            color = Background,
+            shape = RoundedCornerShape(30.dp)
+        )
+) {
 
             Column(
                 modifier = Modifier
