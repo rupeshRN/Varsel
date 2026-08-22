@@ -3,9 +3,9 @@ package com.varsel.expensetracker.ui.reports.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -15,14 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.varsel.expensetracker.ui.design.AppColors
 import com.varsel.expensetracker.ui.reports.ReportsFlow
 
-/**
- * Container for the Money Flow section.
- *
- * This component deliberately does not draw the chart yet.
- * The chart and category list will be separate components.
- */
 @Composable
 fun MoneyFlowCard(
     selectedFlow: ReportsFlow,
@@ -31,14 +26,18 @@ fun MoneyFlowCard(
     content: @Composable () -> Unit
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface
+        modifier =
+            modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(20.dp),
+        color =
+            MaterialTheme.colorScheme.surface
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier =
+                Modifier.padding(20.dp),
             verticalArrangement =
-                Arrangement.spacedBy(16.dp)
+                Arrangement.spacedBy(20.dp)
         ) {
 
             Text(
@@ -50,8 +49,10 @@ fun MoneyFlowCard(
             )
 
             FlowSelector(
-                selectedFlow = selectedFlow,
-                onFlowSelected = onFlowSelected
+                selectedFlow =
+                    selectedFlow,
+                onFlowSelected =
+                    onFlowSelected
             )
 
             content()
@@ -59,16 +60,14 @@ fun MoneyFlowCard(
     }
 }
 
-/**
- * Expenses / Income selector.
- */
 @Composable
 private fun FlowSelector(
     selectedFlow: ReportsFlow,
     onFlowSelected: (ReportsFlow) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier =
+            Modifier.fillMaxWidth()
     ) {
 
         FlowTab(
@@ -76,6 +75,8 @@ private fun FlowSelector(
             selected =
                 selectedFlow ==
                     ReportsFlow.EXPENSES,
+            selectedColor =
+                AppColors.Expense,
             onClick = {
                 onFlowSelected(
                     ReportsFlow.EXPENSES
@@ -86,7 +87,8 @@ private fun FlowSelector(
         )
 
         Spacer(
-            modifier = Modifier.width(8.dp)
+            modifier =
+                Modifier.width(8.dp)
         )
 
         FlowTab(
@@ -94,6 +96,8 @@ private fun FlowSelector(
             selected =
                 selectedFlow ==
                     ReportsFlow.INCOME,
+            selectedColor =
+                AppColors.Income,
             onClick = {
                 onFlowSelected(
                     ReportsFlow.INCOME
@@ -105,38 +109,42 @@ private fun FlowSelector(
     }
 }
 
-/**
- * Individual Money Flow tab.
- */
 @Composable
 private fun FlowTab(
     label: String,
     selected: Boolean,
+    selectedColor:
+        androidx.compose.ui.graphics.Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape =
+            RoundedCornerShape(14.dp),
         color =
             if (selected) {
-                MaterialTheme.colorScheme
-                    .primaryContainer
+                selectedColor.copy(
+                    alpha = 0.14f
+                )
             } else {
                 MaterialTheme.colorScheme
                     .surfaceVariant
             },
         onClick = onClick
     ) {
+
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    vertical = 11.dp
-                ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        vertical = 12.dp
+                    ),
             horizontalArrangement =
                 Arrangement.Center
         ) {
+
             Text(
                 text = label,
                 style =
@@ -150,8 +158,7 @@ private fun FlowTab(
                     },
                 color =
                     if (selected) {
-                        MaterialTheme.colorScheme
-                            .onPrimaryContainer
+                        selectedColor
                     } else {
                         MaterialTheme.colorScheme
                             .onSurfaceVariant
