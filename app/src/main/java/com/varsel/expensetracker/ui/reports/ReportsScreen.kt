@@ -7,8 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,11 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.varsel.expensetracker.ui.reports.components.MoneyFlowCard
+import com.varsel.expensetracker.ui.reports.components.NetCashFlowCard
 import com.varsel.expensetracker.ui.reports.components.ReportFilterSheet
 import com.varsel.expensetracker.ui.reports.components.ReportsHeader
 import kotlinx.coroutines.launch
-import com.varsel.expensetracker.ui.reports.components.NetCashFlowCard
-import com.varsel.expensetracker.ui.reports.components.MoneyFlowCard
 
 /**
  * Production Reports screen.
@@ -50,13 +51,19 @@ fun ReportsScreen(
 
     ReportsScreenContent(
         uiState = uiState,
+
         onPreviousMonth =
             viewModel::previousMonth,
+
         onNextMonth =
             viewModel::nextMonth,
+
         onFilterClick = {
             filterSheetVisible = true
-        }
+        },
+
+        onFlowSelected =
+            viewModel::selectFlow
     )
 
     if (filterSheetVisible) {
@@ -64,13 +71,17 @@ fun ReportsScreen(
         ReportFilterSheet(
             accounts =
                 uiState.accounts,
+
             selectedAccountIds =
                 uiState.selectedAccountIds,
+
             sheetState =
                 sheetState,
+
             onDismiss = {
                 filterSheetVisible = false
             },
+
             onApply = { selectedAccounts ->
 
                 viewModel.setSelectedAccounts(
@@ -89,9 +100,14 @@ fun ReportsScreen(
 @Composable
 private fun ReportsScreenContent(
     uiState: ReportsUiState,
+
     onPreviousMonth: () -> Unit,
+
     onNextMonth: () -> Unit,
-    onFilterClick: () -> Unit
+
+    onFilterClick: () -> Unit,
+
+    onFlowSelected: (ReportsFlow) -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
@@ -114,6 +130,7 @@ private fun ReportsScreenContent(
                 Text(
                     text =
                         uiState.errorMessage,
+
                     modifier =
                         Modifier.align(
                             Alignment.Center
@@ -127,6 +144,7 @@ private fun ReportsScreenContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
+
                     verticalArrangement =
                         Arrangement.spacedBy(16.dp)
                 ) {
@@ -134,44 +152,61 @@ private fun ReportsScreenContent(
                     ReportsHeader(
                         selectedMonth =
                             uiState.selectedMonth,
+
                         accountFilterLabel =
                             uiState.accountFilterLabel,
+
                         hasActiveAccountFilter =
                             !uiState.isAllAccountsSelected,
+
                         onPreviousMonth =
                             onPreviousMonth,
+
                         onNextMonth =
                             onNextMonth,
+
                         onFilterClick =
                             onFilterClick
                     )
 
                     NetCashFlowCard(
-    actualIncome = uiState.cashFlow.actualIncome,
-    effectiveExpense = uiState.cashFlow.effectiveExpense,
-    netCashFlow = uiState.cashFlow.netCashFlow
-)
+                        actualIncome =
+                            uiState.cashFlow.actualIncome,
+
+                        effectiveExpense =
+                            uiState.cashFlow.effectiveExpense,
+
+                        netCashFlow =
+                            uiState.cashFlow.netCashFlow
+                    )
 
                     MoneyFlowCard(
-    selectedFlow = uiState.selectedFlow,
-    onFlowSelected = viewModel::selectFlow
-) {
-    Text(
-        text = if (
-            uiState.selectedFlow ==
-                ReportsFlow.EXPENSES
-        ) {
-            "Expense breakdown will appear here."
-        } else {
-            "Income breakdown will appear here."
-        },
-        style =
-            MaterialTheme.typography.bodyMedium,
-        color =
-            MaterialTheme.colorScheme
-                .onSurfaceVariant
-    )
-}
+                        selectedFlow =
+                            uiState.selectedFlow,
+
+                        onFlowSelected =
+                            onFlowSelected
+                    ) {
+
+                        Text(
+                            text =
+                                if (
+                                    uiState.selectedFlow ==
+                                        ReportsFlow.EXPENSES
+                                ) {
+                                    "Expense breakdown will appear here."
+                                } else {
+                                    "Income breakdown will appear here."
+                                },
+
+                            style =
+                                MaterialTheme.typography.bodyMedium,
+
+                            color =
+                                MaterialTheme.colorScheme
+                                    .onSurfaceVariant
+                        )
+                    }
 
                     /*
                      * Remaining report sections will be
