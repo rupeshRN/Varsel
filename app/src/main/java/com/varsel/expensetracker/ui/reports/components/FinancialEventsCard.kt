@@ -1,5 +1,6 @@
 package com.varsel.expensetracker.ui.reports.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,13 +32,14 @@ import java.util.Locale
  *
  * Presentation-only component.
  *
- * Financial Event calculations are performed by
- * ReportsViewModel and exposed through
- * ReportsUiState.financialEvents.
+ * Navigation is delegated to the parent screen so this
+ * component does not know anything about NavController
+ * or navigation routes.
  */
 @Composable
 fun FinancialEventsCard(
     financialEvents: List<ReportsFinancialEvent>,
+    onFinancialEventClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currencyFormatter =
@@ -66,9 +72,6 @@ fun FinancialEventsCard(
                     FontWeight.Bold
             )
 
-            /*
-             * Summary row.
-             */
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment =
@@ -131,9 +134,6 @@ fun FinancialEventsCard(
                 }
             }
 
-            /*
-             * No Financial Events.
-             */
             if (financialEvents.isEmpty()) {
 
                 Text(
@@ -154,9 +154,6 @@ fun FinancialEventsCard(
 
             } else {
 
-                /*
-                 * Event list.
-                 */
                 LazyColumn(
                     modifier =
                         Modifier.fillMaxWidth(),
@@ -174,7 +171,12 @@ fun FinancialEventsCard(
                         FinancialEventRow(
                             event = event,
                             currencyFormatter =
-                                currencyFormatter
+                                currencyFormatter,
+                            onClick = {
+                                onFinancialEventClick(
+                                    event.transactionLinkId
+                                )
+                            }
                         )
                     }
                 }
@@ -183,17 +185,18 @@ fun FinancialEventsCard(
     }
 }
 
-/**
- * Individual Financial Event row.
- */
 @Composable
 private fun FinancialEventRow(
     event: ReportsFinancialEvent,
-    currencyFormatter: NumberFormat
+    currencyFormatter: NumberFormat,
+    onClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(
+                onClick = onClick
+            )
             .padding(
                 vertical = 10.dp
             ),
@@ -220,9 +223,7 @@ private fun FinancialEventRow(
                         FontWeight.Medium
                 )
 
-                if (
-                    event.category.isNotBlank()
-                ) {
+                if (event.category.isNotBlank()) {
 
                     Text(
                         text = event.category,
@@ -250,12 +251,24 @@ private fun FinancialEventRow(
                 fontWeight =
                     FontWeight.SemiBold
             )
+
+            Spacer(
+                modifier =
+                    Modifier.width(8.dp)
+            )
+
+            Icon(
+                imageVector =
+                    Icons.AutoMirrored.Filled
+                        .ArrowForward,
+                contentDescription =
+                    "Open Financial Event",
+                tint =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
+            )
         }
 
-        /*
-         * Show reimbursement information only when
-         * the event actually has a reimbursement.
-         */
         if (event.reimbursedAmount > 0.0) {
 
             Text(
@@ -272,5 +285,12 @@ private fun FinancialEventRow(
                         .onSurfaceVariant
             )
         }
+
+        HorizontalDivider(
+            modifier =
+                Modifier.padding(
+                    top = 6.dp
+                )
+        )
     }
 }
