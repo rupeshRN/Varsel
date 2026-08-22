@@ -1,37 +1,13 @@
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.AssistChip
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -44,21 +20,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
-private val VarselBackground = Color(0xFFF5F5F2)
-private val VarselSurface = Color(0xFFFFFFFF)
-private val VarselPrimary = Color(0xFF181A18)
-private val VarselSecondary = Color(0xFF6B706B)
-private val VarselMuted = Color(0xFFE8EAE5)
+private val Background = Color(0xFFF5F5F2)
+private val Surface = Color.White
+private val Ink = Color(0xFF181A18)
+private val Muted = Color(0xFF6B706B)
 
-private val IncomeColor = Color(0xFF2F8061)
 private val ExpenseColor = Color(0xFFD15A58)
-private val ReimbursementColor = Color(0xFF5C73C5)
+private val IncomeColor = Color(0xFF2F8061)
+private val IncomeBlue = Color(0xFF5C73C5)
 
-private data class ExpenseCategory(
+private data class Category(
     val name: String,
     val amount: Int,
-    val normalAmount: Int,
-    val financialEventAmount: Int,
+    val normal: Int,
+    val financialEvent: Int,
     val color: Color
 )
 
@@ -71,47 +46,47 @@ private data class IncomeCategory(
 private data class FinancialEventPreview(
     val title: String,
     val category: String,
-    val originalExpense: Int,
-    val reimbursement: Int
+    val expense: Int,
+    val reimbursed: Int
 ) {
-    val finalExpense: Int
-        get() = originalExpense - reimbursement
+    val finalCost: Int
+        get() = expense - reimbursed
 }
 
 private val expenseCategories = listOf(
-    ExpenseCategory(
+    Category(
         name = "Food",
-        amount = 7000,
-        normalAmount = 6000,
-        financialEventAmount = 1000,
+        amount = 7_000,
+        normal = 6_000,
+        financialEvent = 1_000,
         color = Color(0xFFD36A5A)
     ),
-    ExpenseCategory(
-        name = "Transport",
-        amount = 2500,
-        normalAmount = 1500,
-        financialEventAmount = 1000,
-        color = Color(0xFF5D82B8)
-    ),
-    ExpenseCategory(
+    Category(
         name = "Shopping",
-        amount = 4100,
-        normalAmount = 4100,
-        financialEventAmount = 0,
+        amount = 4_100,
+        normal = 4_100,
+        financialEvent = 0,
         color = Color(0xFF8A69A8)
     ),
-    ExpenseCategory(
+    Category(
+        name = "Transport",
+        amount = 2_500,
+        normal = 1_500,
+        financialEvent = 1_000,
+        color = Color(0xFF5D82B8)
+    ),
+    Category(
         name = "Bills",
-        amount = 2100,
-        normalAmount = 2100,
-        financialEventAmount = 0,
+        amount = 2_100,
+        normal = 2_100,
+        financialEvent = 0,
         color = Color(0xFFC29A4A)
     ),
-    ExpenseCategory(
+    Category(
         name = "Other",
-        amount = 2600,
-        normalAmount = 2600,
-        financialEventAmount = 0,
+        amount = 2_600,
+        normal = 2_600,
+        financialEvent = 0,
         color = Color(0xFF6D8D78)
     )
 )
@@ -119,13 +94,13 @@ private val expenseCategories = listOf(
 private val incomeCategories = listOf(
     IncomeCategory(
         name = "Salary",
-        amount = 30000,
-        color = Color(0xFF2F8061)
+        amount = 30_000,
+        color = IncomeColor
     ),
     IncomeCategory(
         name = "Other income",
-        amount = 5000,
-        color = Color(0xFF5C73C5)
+        amount = 5_000,
+        color = IncomeBlue
     )
 )
 
@@ -133,31 +108,33 @@ private val financialEvents = listOf(
     FinancialEventPreview(
         title = "Team dinner",
         category = "Food",
-        originalExpense = 3000,
-        reimbursement = 2000
+        expense = 3_000,
+        reimbursed = 2_000
     ),
     FinancialEventPreview(
         title = "Office travel",
         category = "Transport",
-        originalExpense = 5000,
-        reimbursement = 4000
+        expense = 5_000,
+        reimbursed = 4_000
+    ),
+    FinancialEventPreview(
+        title = "Client lunch",
+        category = "Food",
+        expense = 1_800,
+        reimbursed = 1_200
     )
 )
 
 @Composable
 fun ReportsPreview() {
+    var selectedFlow by remember { mutableIntStateOf(0) }
 
-    var selectedFlow by remember {
-        mutableIntStateOf(0)
-    }
+    // -1 = Overall
+    // >= 0 = selected category
+    var selectedCategory by remember { mutableIntStateOf(-1) }
 
-    var selectedExpenseIndex by remember {
-        mutableIntStateOf(0)
-    }
-
-    var selectedIncomeIndex by remember {
-        mutableIntStateOf(0)
-    }
+    var normalExpanded by remember { mutableStateOf(false) }
+    var financialEventsExpanded by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -165,15 +142,19 @@ fun ReportsPreview() {
             .background(Color(0xFFDCDDD8)),
         contentAlignment = Alignment.TopCenter
     ) {
-
+        /*
+         * Responsive phone-sized canvas.
+         *
+         * We deliberately use widthIn instead of a fixed width so the preview
+         * behaves better when the GitHub Pages viewport is narrower/wider.
+         */
         Column(
             modifier = Modifier
-                .width(390.dp)
                 .fillMaxHeight()
-                .background(VarselBackground)
-                .verticalScroll(
-                    rememberScrollState()
-                )
+                .fillMaxWidth()
+                .widthIn(max = 390.dp)
+                .background(Background)
+                .verticalScroll(rememberScrollState())
                 .padding(
                     horizontal = 18.dp,
                     vertical = 22.dp
@@ -187,35 +168,45 @@ fun ReportsPreview() {
 
             MoneyFlowCard(
                 selectedFlow = selectedFlow,
-                onFlowSelected = {
-                    selectedFlow = it
+                onFlowSelected = { flow ->
+                    selectedFlow = flow
+                    selectedCategory = -1
+                    normalExpanded = false
+                    financialEventsExpanded = false
                 },
-                selectedExpenseIndex = selectedExpenseIndex,
-                onExpenseSelected = {
-                    selectedExpenseIndex = it
+                selectedCategory = selectedCategory,
+                onCategorySelected = { category ->
+                    selectedCategory = category
+                    normalExpanded = false
+                    financialEventsExpanded = false
                 },
-                selectedIncomeIndex = selectedIncomeIndex,
-                onIncomeSelected = {
-                    selectedIncomeIndex = it
+                normalExpanded = normalExpanded,
+                financialEventsExpanded = financialEventsExpanded,
+                onNormalClicked = {
+                    normalExpanded = !normalExpanded
+                    financialEventsExpanded = false
+                },
+                onFinancialEventsClicked = {
+                    financialEventsExpanded = !financialEventsExpanded
+                    normalExpanded = false
                 }
             )
 
-            ActualExpenseInsight()
-
             FinancialEventsSection()
 
-            Spacer(
-                modifier = Modifier.height(18.dp)
-            )
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
 
+/* -------------------------------------------------------------------------- */
+/* Header                                                                     */
+/* -------------------------------------------------------------------------- */
+
 @Composable
 private fun ReportsHeader() {
-
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
 
         Text(
@@ -223,7 +214,7 @@ private fun ReportsHeader() {
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold
             ),
-            color = VarselPrimary
+            color = Ink
         )
 
         Row(
@@ -234,14 +225,10 @@ private fun ReportsHeader() {
 
             Surface(
                 shape = RoundedCornerShape(14.dp),
-                color = VarselSurface
+                color = Surface,
+                shadowElevation = 1.dp
             ) {
-
                 Row(
-                    modifier = Modifier.padding(
-                        horizontal = 4.dp,
-                        vertical = 2.dp
-                    ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
@@ -250,7 +237,8 @@ private fun ReportsHeader() {
                     ) {
                         Text(
                             text = "‹",
-                            fontSize = 22.sp
+                            fontSize = 22.sp,
+                            color = Ink
                         )
                     }
 
@@ -259,7 +247,7 @@ private fun ReportsHeader() {
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        color = VarselPrimary
+                        color = Ink
                     )
 
                     TextButton(
@@ -267,7 +255,8 @@ private fun ReportsHeader() {
                     ) {
                         Text(
                             text = "›",
-                            fontSize = 22.sp
+                            fontSize = 22.sp,
+                            color = Ink
                         )
                     }
                 }
@@ -283,63 +272,36 @@ private fun ReportsHeader() {
     }
 }
 
+/* -------------------------------------------------------------------------- */
+/* Net Cash Flow                                                              */
+/* -------------------------------------------------------------------------- */
+
 @Composable
 private fun NetCashFlowCard() {
-
-    val netCashFlow = 35000 - 22550
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = VarselPrimary
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
+            containerColor = Ink
         )
     ) {
 
         Column(
             modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                Text(
-                    text = "NET CASH FLOW",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        letterSpacing = 1.2.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = Color(0xFFB8BCB8)
-                )
-
-                Surface(
-                    shape = CircleShape,
-                    color = Color(0xFF2B302C)
-                ) {
-
-                    Box(
-                        modifier = Modifier.size(34.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-
-                        Text(
-                            text = "↗",
-                            color = IncomeColor,
-                            fontSize = 18.sp
-                        )
-                    }
-                }
-            }
+            Text(
+                text = "NET CASH FLOW",
+                style = MaterialTheme.typography.labelMedium.copy(
+                    letterSpacing = 1.2.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Color(0xFFB8BCB8)
+            )
 
             Text(
-                text = formatCurrency(netCashFlow),
+                text = "₹12.5K",
                 style = MaterialTheme.typography.displaySmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -358,21 +320,19 @@ private fun NetCashFlowCard() {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
-                FlowSummary(
+                NetAmount(
                     label = "Income",
-                    amount = 35000,
-                    color = Color(0xFF72C49D),
-                    modifier = Modifier.weight(1f)
+                    value = "₹35K",
+                    color = Color(0xFF72C49D)
                 )
 
-                FlowSummary(
+                NetAmount(
                     label = "Expense",
-                    amount = 22550,
-                    color = Color(0xFFE98987),
-                    modifier = Modifier.weight(1f)
+                    value = "₹22.5K",
+                    color = Color(0xFFE98987)
                 )
             }
         }
@@ -380,16 +340,13 @@ private fun NetCashFlowCard() {
 }
 
 @Composable
-private fun FlowSummary(
+private fun NetAmount(
     label: String,
-    amount: Int,
-    color: Color,
-    modifier: Modifier
+    value: String,
+    color: Color
 ) {
-
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
 
         Text(
@@ -399,7 +356,7 @@ private fun FlowSummary(
         )
 
         Text(
-            text = formatCurrency(amount),
+            text = value,
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.SemiBold
             ),
@@ -408,68 +365,67 @@ private fun FlowSummary(
     }
 }
 
+/* -------------------------------------------------------------------------- */
+/* Money Flow                                                                 */
+/* -------------------------------------------------------------------------- */
+
 @Composable
 private fun MoneyFlowCard(
     selectedFlow: Int,
     onFlowSelected: (Int) -> Unit,
-    selectedExpenseIndex: Int,
-    onExpenseSelected: (Int) -> Unit,
-    selectedIncomeIndex: Int,
-    onIncomeSelected: (Int) -> Unit
+    selectedCategory: Int,
+    onCategorySelected: (Int) -> Unit,
+    normalExpanded: Boolean,
+    financialEventsExpanded: Boolean,
+    onNormalClicked: () -> Unit,
+    onFinancialEventsClicked: () -> Unit
 ) {
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = VarselSurface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
+            containerColor = Surface
         )
     ) {
 
         Column(
             modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            Text(
+                text = "Money Flow",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Ink
+            )
 
-                Text(
-                    text = "Money Flow",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = VarselPrimary
-                )
-
-                Text(
-                    text = "Explore where your money came from and where it went.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = VarselSecondary
-                )
-            }
+            Text(
+                text = "Explore where your money came from and where it went.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Muted
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
 
-                FlowFilterChip(
+                FlowSelector(
                     text = "Expenses",
                     selected = selectedFlow == 0,
+                    color = ExpenseColor,
                     onClick = {
                         onFlowSelected(0)
                     },
                     modifier = Modifier.weight(1f)
                 )
 
-                FlowFilterChip(
+                FlowSelector(
                     text = "Income",
                     selected = selectedFlow == 1,
+                    color = IncomeColor,
                     onClick = {
                         onFlowSelected(1)
                     },
@@ -479,155 +435,197 @@ private fun MoneyFlowCard(
 
             if (selectedFlow == 0) {
 
-                ExpenseFlow(
-                    selectedIndex = selectedExpenseIndex,
-                    onSelected = onExpenseSelected
+                ExpenseMoneyFlow(
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = onCategorySelected,
+                    normalExpanded = normalExpanded,
+                    financialEventsExpanded = financialEventsExpanded,
+                    onNormalClicked = onNormalClicked,
+                    onFinancialEventsClicked = onFinancialEventsClicked
                 )
 
             } else {
 
-                IncomeFlow(
-                    selectedIndex = selectedIncomeIndex,
-                    onSelected = onIncomeSelected
-                )
+                IncomeMoneyFlow()
             }
         }
     }
 }
 
 @Composable
-private fun FlowFilterChip(
+private fun FlowSelector(
     text: String,
     selected: Boolean,
+    color: Color,
     onClick: () -> Unit,
     modifier: Modifier
 ) {
+    Surface(
+        modifier = modifier
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        color = if (selected) {
+            color.copy(alpha = 0.14f)
+        } else {
+            Color(0xFFF1F2EF)
+        }
+    ) {
 
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+
             Text(
                 text = text,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        modifier = modifier
-    )
-}
-
-@Composable
-private fun ExpenseFlow(
-    selectedIndex: Int,
-    onSelected: (Int) -> Unit
-) {
-
-    val selectedCategory = expenseCategories[selectedIndex]
-    val total = expenseCategories.sumOf {
-        it.amount
-    }
-
-    DonutChart(
-        categories = expenseCategories.map {
-            it.amount
-        },
-        colors = expenseCategories.map {
-            it.color
-        },
-        selectedIndex = selectedIndex,
-        centerTitle = selectedCategory.name,
-        centerValue = formatCurrency(selectedCategory.amount),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(260.dp)
-    )
-
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-
-        expenseCategories.forEachIndexed { index, category ->
-
-            CategoryRow(
-                categoryName = category.name,
-                amount = category.amount,
-                total = total,
-                color = category.color,
-                selected = index == selectedIndex,
-                onClick = {
-                    onSelected(index)
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = if (selected) {
+                        FontWeight.Bold
+                    } else {
+                        FontWeight.Medium
+                    }
+                ),
+                color = if (selected) {
+                    color
+                } else {
+                    Muted
                 }
             )
         }
     }
-
-    SelectedCategoryInsight(
-        category = selectedCategory
-    )
 }
 
+/* -------------------------------------------------------------------------- */
+/* Expense View                                                               */
+/* -------------------------------------------------------------------------- */
+
 @Composable
-private fun IncomeFlow(
-    selectedIndex: Int,
-    onSelected: (Int) -> Unit
+private fun ExpenseMoneyFlow(
+    selectedCategory: Int,
+    onCategorySelected: (Int) -> Unit,
+    normalExpanded: Boolean,
+    financialEventsExpanded: Boolean,
+    onNormalClicked: () -> Unit,
+    onFinancialEventsClicked: () -> Unit
 ) {
+    val total = expenseCategories.sumOf { it.amount }
 
-    val selectedCategory = incomeCategories[selectedIndex]
-    val total = incomeCategories.sumOf {
-        it.amount
-    }
+    val category =
+        if (selectedCategory >= 0) {
+            expenseCategories.getOrNull(selectedCategory)
+        } else {
+            null
+        }
 
-    DonutChart(
-        categories = incomeCategories.map {
-            it.amount
+    /*
+     * Overall is selected by default.
+     *
+     * The donut therefore opens showing the complete expense picture,
+     * rather than opening on Food.
+     */
+    ExpenseDonutChart(
+        values = expenseCategories.map { it.amount },
+        colors = expenseCategories.map { it.color },
+        selectedIndex = selectedCategory,
+        centerValue = if (category == null) {
+            shortCurrency(total)
+        } else {
+            shortCurrency(category.amount)
         },
-        colors = incomeCategories.map {
-            it.color
-        },
-        selectedIndex = selectedIndex,
-        centerTitle = selectedCategory.name,
-        centerValue = formatCurrency(selectedCategory.amount),
+        centerLabel = category?.name ?: "Overall",
         modifier = Modifier
             .fillMaxWidth()
-            .height(260.dp)
+            .height(250.dp)
     )
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-
-        incomeCategories.forEachIndexed { index, category ->
-
-            CategoryRow(
-                categoryName = category.name,
-                amount = category.amount,
-                total = total,
-                color = category.color,
-                selected = index == selectedIndex,
-                onClick = {
-                    onSelected(index)
-                }
-            )
+    CategoryListRow(
+        name = "Overall",
+        amount = total,
+        total = total,
+        color = Color(0xFF555955),
+        selected = selectedCategory == -1,
+        onClick = {
+            onCategorySelected(-1)
         }
+    )
+
+    expenseCategories.forEachIndexed { index, categoryItem ->
+
+        CategoryListRow(
+            name = categoryItem.name,
+            amount = categoryItem.amount,
+            total = total,
+            color = categoryItem.color,
+            selected = selectedCategory == index,
+            onClick = {
+                onCategorySelected(index)
+            }
+        )
     }
 
-    IncomeInsight(
-        category = selectedCategory,
-        total = total
-    )
+    /*
+     * Only display the drill-down when a real category has been selected.
+     */
+    if (category != null) {
+
+        CategoryBreakdownCard(
+            category = category,
+            normalExpanded = normalExpanded,
+            financialEventsExpanded = financialEventsExpanded,
+            onNormalClicked = onNormalClicked,
+            onFinancialEventsClicked = onFinancialEventsClicked
+        )
+    }
 }
 
+/* -------------------------------------------------------------------------- */
+/* Income View                                                                */
+/* -------------------------------------------------------------------------- */
+
 @Composable
-private fun DonutChart(
-    categories: List<Int>,
+private fun IncomeMoneyFlow() {
+    val total = incomeCategories.sumOf { it.amount }
+
+    ExpenseDonutChart(
+        values = incomeCategories.map { it.amount },
+        colors = incomeCategories.map { it.color },
+        selectedIndex = -1,
+        centerValue = shortCurrency(total),
+        centerLabel = "Overall",
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(250.dp)
+    )
+
+    incomeCategories.forEach { category ->
+
+        CategoryListRow(
+            name = category.name,
+            amount = category.amount,
+            total = total,
+            color = category.color,
+            selected = false,
+            onClick = {}
+        )
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Donut Chart                                                                */
+/* -------------------------------------------------------------------------- */
+
+@Composable
+private fun ExpenseDonutChart(
+    values: List<Int>,
     colors: List<Color>,
     selectedIndex: Int,
-    centerTitle: String,
     centerValue: String,
+    centerLabel: String,
     modifier: Modifier
 ) {
-
-    val total = categories.sum()
+    val total = values.sum()
 
     Box(
         modifier = modifier,
@@ -635,46 +633,61 @@ private fun DonutChart(
     ) {
 
         Canvas(
-            modifier = Modifier.size(230.dp)
+            modifier = Modifier.size(220.dp)
         ) {
 
-            val strokeWidth = 30.dp.toPx()
+            if (total > 0) {
 
-            var currentAngle = -90f
+                var startAngle = -90f
 
-            categories.forEachIndexed { index, value ->
+                val baseStroke = 32.dp.toPx()
 
-                val sweepAngle =
-                    (value.toFloat() / total.toFloat()) * 360f
+                values.forEachIndexed { index, value ->
 
-                val selected = index == selectedIndex
+                    val sweepAngle =
+                        value.toFloat() / total.toFloat() * 360f
 
-                drawArc(
-                    color = colors[index].copy(
-                        alpha = if (selected) 1f else 0.28f
-                    ),
-                    startAngle = currentAngle,
-                    sweepAngle = sweepAngle - 2f,
-                    useCenter = false,
-                    topLeft = Offset(
-                        strokeWidth / 2,
-                        strokeWidth / 2
-                    ),
-                    size = Size(
-                        width = size.width - strokeWidth,
-                        height = size.height - strokeWidth
-                    ),
-                    style = Stroke(
-                        width = if (selected) {
-                            strokeWidth + 5.dp.toPx()
+                    val isSelected =
+                        selectedIndex == index
+
+                    val isOverall =
+                        selectedIndex == -1
+
+                    val alpha =
+                        if (isOverall || isSelected) {
+                            1f
                         } else {
-                            strokeWidth
-                        },
-                        cap = StrokeCap.Round
-                    )
-                )
+                            0.20f
+                        }
 
-                currentAngle += sweepAngle
+                    val strokeWidth =
+                        if (isSelected) {
+                            baseStroke + 5.dp.toPx()
+                        } else {
+                            baseStroke
+                        }
+
+                    drawArc(
+                        color = colors[index].copy(alpha = alpha),
+                        startAngle = startAngle,
+                        sweepAngle = (sweepAngle - 2f).coerceAtLeast(0f),
+                        useCenter = false,
+                        topLeft = Offset(
+                            baseStroke / 2f,
+                            baseStroke / 2f
+                        ),
+                        size = Size(
+                            width = size.width - baseStroke,
+                            height = size.height - baseStroke
+                        ),
+                        style = Stroke(
+                            width = strokeWidth,
+                            cap = StrokeCap.Round
+                        )
+                    )
+
+                    startAngle += sweepAngle
+                }
             }
         }
 
@@ -688,41 +701,46 @@ private fun DonutChart(
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                color = VarselPrimary
+                color = Ink
             )
 
             Text(
-                text = centerTitle,
+                text = centerLabel,
                 style = MaterialTheme.typography.bodyMedium,
-                color = VarselSecondary
+                color = Muted
             )
         }
     }
 }
 
+/* -------------------------------------------------------------------------- */
+/* Category List                                                              */
+/* -------------------------------------------------------------------------- */
+
 @Composable
-private fun CategoryRow(
-    categoryName: String,
+private fun CategoryListRow(
+    name: String,
     amount: Int,
     total: Int,
     color: Color,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-
     val percentage =
-        ((amount.toFloat() / total.toFloat()) * 100f)
-            .roundToInt()
+        if (total == 0) {
+            0
+        } else {
+            (amount.toFloat() / total.toFloat() * 100f)
+                .roundToInt()
+        }
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                onClick = onClick
-            ),
-        shape = RoundedCornerShape(16.dp),
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
         color = if (selected) {
-            color.copy(alpha = 0.09f)
+            color.copy(alpha = 0.10f)
         } else {
             Color.Transparent
         }
@@ -730,150 +748,70 @@ private fun CategoryRow(
 
         Row(
             modifier = Modifier.padding(
-                horizontal = 12.dp,
-                vertical = 11.dp
+                horizontal = 10.dp,
+                vertical = 10.dp
             ),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
             Box(
                 modifier = Modifier
-                    .size(10.dp)
+                    .size(9.dp)
                     .background(
                         color = color,
                         shape = CircleShape
                     )
             )
 
-            Spacer(
-                modifier = Modifier.width(10.dp)
-            )
+            Spacer(modifier = Modifier.width(10.dp))
 
             Text(
-                text = categoryName,
+                text = name,
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = if (selected) {
-                        FontWeight.SemiBold
+                        FontWeight.Bold
                     } else {
                         FontWeight.Normal
                     }
                 ),
-                color = VarselPrimary,
-                modifier = Modifier.weight(1f)
+                color = Ink
             )
 
             Text(
                 text = "$percentage%",
-                style = MaterialTheme.typography.labelMedium,
-                color = VarselSecondary
+                style = MaterialTheme.typography.labelSmall,
+                color = Muted
             )
 
-            Spacer(
-                modifier = Modifier.width(12.dp)
-            )
+            Spacer(modifier = Modifier.width(12.dp))
 
             Text(
-                text = formatCurrency(amount),
+                text = shortCurrency(amount),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
-                color = VarselPrimary
+                color = Ink
             )
         }
     }
 }
 
-@Composable
-private fun SelectedCategoryInsight(
-    category: ExpenseCategory
-) {
+/* -------------------------------------------------------------------------- */
+/* Category Breakdown                                                         */
+/* -------------------------------------------------------------------------- */
 
+@Composable
+private fun CategoryBreakdownCard(
+    category: Category,
+    normalExpanded: Boolean,
+    financialEventsExpanded: Boolean,
+    onNormalClicked: () -> Unit,
+    onFinancialEventsClicked: () -> Unit
+) {
     Surface(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         color = Color(0xFFF4F4F0)
-    ) {
-
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-
-            Text(
-                text = "${category.name} expense",
-                style = MaterialTheme.typography.titleSmall.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = VarselPrimary
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-
-                InsightValue(
-                    label = "Normal",
-                    value = category.normalAmount,
-                    modifier = Modifier.weight(1f)
-                )
-
-                InsightValue(
-                    label = "Financial events",
-                    value = category.financialEventAmount,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Text(
-                text = "The Financial Event amount shown here is the final personal expense after reimbursement.",
-                style = MaterialTheme.typography.bodySmall,
-                color = VarselSecondary
-            )
-        }
-    }
-}
-
-@Composable
-private fun InsightValue(
-    label: String,
-    value: Int,
-    modifier: Modifier
-) {
-
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
-
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = VarselSecondary
-        )
-
-        Text(
-            text = formatCurrency(value),
-            style = MaterialTheme.typography.titleSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = VarselPrimary
-        )
-    }
-}
-
-@Composable
-private fun IncomeInsight(
-    category: IncomeCategory,
-    total: Int
-) {
-
-    val percentage =
-        ((category.amount.toFloat() / total.toFloat()) * 100f)
-            .roundToInt()
-
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = Color(0xFFF1F6F3)
     ) {
 
         Column(
@@ -882,153 +820,253 @@ private fun IncomeInsight(
         ) {
 
             Text(
-                text = category.name,
+                text = "${category.name} breakdown",
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                color = VarselPrimary
+                color = Ink
             )
 
-            Text(
-                text = "$percentage% of this month's income",
-                style = MaterialTheme.typography.bodySmall,
-                color = VarselSecondary
+            Spacer(modifier = Modifier.height(4.dp))
+
+            DrillDownRow(
+                label = "Normal transactions",
+                amount = shortCurrency(category.normal),
+                expanded = normalExpanded,
+                onClick = onNormalClicked
             )
-        }
-    }
-}
 
-@Composable
-private fun ActualExpenseInsight() {
+            if (normalExpanded) {
 
-    val grossExpense = 22550
-    val reimbursements = 4250
-    val personalCost = grossExpense - reimbursements
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFEFF4EF)
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
-        )
-    ) {
-
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-
-                    Text(
-                        text = "Your actual cost",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = VarselPrimary
-                    )
-
-                    Text(
-                        text = "After financial-event reimbursements",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = VarselSecondary
-                    )
-                }
-
-                Text(
-                    text = formatCurrency(personalCost),
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = IncomeColor
+                TransactionPreview(
+                    category = category.name
                 )
             }
 
             HorizontalDivider(
-                color = Color(0xFFD9E1D9)
+                color = Color(0xFFE1E2DE)
             )
 
-            ImpactRow(
-                label = "Recorded expenses",
-                amount = grossExpense,
-                color = VarselPrimary
+            DrillDownRow(
+                label = "Financial events",
+                amount = shortCurrency(category.financialEvent),
+                expanded = financialEventsExpanded,
+                onClick = onFinancialEventsClicked
             )
 
-            ImpactRow(
-                label = "Reimbursements",
-                amount = -reimbursements,
-                color = IncomeColor
-            )
+            if (financialEventsExpanded) {
 
-            ImpactRow(
-                label = "Personal cost",
-                amount = personalCost,
-                color = VarselPrimary,
-                emphasize = true
-            )
+                FinancialEventPreviewList(
+                    category = category.name
+                )
+            }
+        }
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Drill Down                                                                 */
+/* -------------------------------------------------------------------------- */
+
+@Composable
+private fun DrillDownRow(
+    label: String,
+    amount: String,
+    expanded: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = Ink
+        )
+
+        Text(
+            text = amount,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = Ink
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = if (expanded) "⌃" else "›",
+            style = MaterialTheme.typography.titleMedium,
+            color = Muted
+        )
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Normal Transactions Preview                                                */
+/* -------------------------------------------------------------------------- */
+
+@Composable
+private fun TransactionPreview(
+    category: String
+) {
+    Column(
+        modifier = Modifier.padding(
+            start = 8.dp,
+            bottom = 8.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+
+        Text(
+            text = "Recent $category transactions",
+            style = MaterialTheme.typography.labelMedium,
+            color = Muted
+        )
+
+        TransactionLine(
+            date = "21 Aug",
+            description = "Restaurant",
+            amount = "₹850"
+        )
+
+        TransactionLine(
+            date = "19 Aug",
+            description = "Groceries",
+            amount = "₹1.45K"
+        )
+
+        TextButton(
+            onClick = {}
+        ) {
+            Text("View all transactions →")
         }
     }
 }
 
 @Composable
-private fun ImpactRow(
-    label: String,
-    amount: Int,
-    color: Color,
-    emphasize: Boolean = false
+private fun TransactionLine(
+    date: String,
+    description: String,
+    amount: String
 ) {
-
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
 
         Text(
-            text = label,
-            style = if (emphasize) {
-                MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold
-                )
-            } else {
-                MaterialTheme.typography.bodyMedium
-            },
-            color = VarselSecondary
+            text = date,
+            modifier = Modifier.width(52.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = Muted
         )
 
         Text(
-            text = if (amount < 0) {
-                "-${formatCurrency(-amount)}"
-            } else {
-                formatCurrency(amount)
-            },
-            style = if (emphasize) {
-                MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold
-                )
-            } else {
-                MaterialTheme.typography.bodyMedium
-            },
-            color = color
+            text = description,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodySmall,
+            color = Ink
+        )
+
+        Text(
+            text = amount,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = Ink
         )
     }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Financial Event Drill Down                                                 */
+/* -------------------------------------------------------------------------- */
+
+@Composable
+private fun FinancialEventPreviewList(
+    category: String
+) {
+    val matchingEvents =
+        financialEvents.filter {
+            it.category == category
+        }
+
+    Column(
+        modifier = Modifier.padding(
+            start = 8.dp,
+            bottom = 8.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+
+        Text(
+            text = "Financial events in $category",
+            style = MaterialTheme.typography.labelMedium,
+            color = Muted
+        )
+
+        if (matchingEvents.isEmpty()) {
+
+            Text(
+                text = "No financial events in this category.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Muted
+            )
+
+        } else {
+
+            matchingEvents.forEach { event ->
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+
+                    Text(
+                        text = event.title,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = Ink
+                    )
+
+                    Text(
+                        text =
+                            "${shortCurrency(event.expense)} expense → " +
+                                "${shortCurrency(event.reimbursed)} reimbursed → " +
+                                "${shortCurrency(event.finalCost)} final",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Muted
+                    )
+                }
+            }
+        }
+
+        TextButton(
+            onClick = {}
+        ) {
+            Text("View all financial events →")
+        }
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Financial Events Section                                                   */
+/* -------------------------------------------------------------------------- */
 
 @Composable
 private fun FinancialEventsSection() {
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
 
         Row(
@@ -1038,7 +1076,7 @@ private fun FinancialEventsSection() {
         ) {
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
 
                 Text(
@@ -1046,42 +1084,46 @@ private fun FinancialEventsSection() {
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = VarselPrimary
+                    color = Ink
                 )
 
                 Text(
-                    text = "Tracked separately from ordinary transactions",
+                    text = "A quick view of recent events",
                     style = MaterialTheme.typography.bodySmall,
-                    color = VarselSecondary
+                    color = Muted
                 )
             }
 
             Surface(
                 shape = CircleShape,
-                color = VarselPrimary
+                color = Ink
             ) {
 
-                Box(
-                    modifier = Modifier.size(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-
-                    Text(
-                        text = financialEvents.size.toString(),
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = Color.White
-                    )
-                }
+                Text(
+                    text = financialEvents.size.toString(),
+                    modifier = Modifier.padding(8.dp),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
         }
 
-        financialEvents.forEach { event ->
+        /*
+         * Deliberately limit the dashboard to two events.
+         * The full event history belongs on the dedicated event report.
+         */
+        financialEvents
+            .take(2)
+            .forEach { event ->
 
-            FinancialEventCard(
-                event = event
-            )
+                FinancialEventCard(event)
+            }
+
+        TextButton(
+            modifier = Modifier.align(Alignment.End),
+            onClick = {}
+        ) {
+            Text("View all financial events →")
         }
     }
 }
@@ -1090,128 +1132,110 @@ private fun FinancialEventsSection() {
 private fun FinancialEventCard(
     event: FinancialEventPreview
 ) {
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = VarselSurface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
+            containerColor = Surface
         )
     ) {
 
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-
-                    Text(
-                        text = event.title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = VarselPrimary
-                    )
-
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFF0F1EE)
-                    ) {
-
-                        Text(
-                            text = event.category,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = VarselSecondary,
-                            modifier = Modifier.padding(
-                                horizontal = 9.dp,
-                                vertical = 5.dp
-                            )
-                        )
-                    }
-                }
-
-                Text(
-                    text = formatCurrency(event.finalExpense),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = VarselPrimary
-                )
-            }
-
-            HorizontalDivider(
-                color = VarselMuted
-            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
-                EventAmount(
-                    label = "Expense",
-                    amount = event.originalExpense,
-                    color = ExpenseColor
-                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
 
-                EventAmount(
-                    label = "Reimbursed",
-                    amount = event.reimbursement,
-                    color = ReimbursementColor
-                )
+                    Text(
+                        text = event.title,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Ink
+                    )
 
-                EventAmount(
-                    label = "Personal cost",
-                    amount = event.finalExpense,
-                    color = IncomeColor
+                    Text(
+                        text = event.category,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Muted
+                    )
+                }
+
+                Text(
+                    text = shortCurrency(event.finalCost),
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = Ink
                 )
             }
+
+            Text(
+                text =
+                    "${shortCurrency(event.expense)} expense  →  " +
+                        "${shortCurrency(event.reimbursed)} reimbursed",
+                style = MaterialTheme.typography.bodySmall,
+                color = Muted
+            )
         }
     }
 }
 
-@Composable
-private fun EventAmount(
-    label: String,
-    amount: Int,
-    color: Color
-) {
+/* -------------------------------------------------------------------------- */
+/* Currency Formatting                                                        */
+/* -------------------------------------------------------------------------- */
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
+private fun shortCurrency(
+    value: Int
+): String {
 
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = VarselSecondary
-        )
+    return when {
 
-        Text(
-            text = formatCurrency(amount),
-            style = MaterialTheme.typography.labelLarge.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
-            color = color
-        )
+        value >= 1_00_00_000 -> {
+
+            val amount =
+                value / 1_00_00_000f
+
+            "₹${formatCompact(amount)}Cr"
+        }
+
+        value >= 1_00_000 -> {
+
+            val amount =
+                value / 1_00_000f
+
+            "₹${formatCompact(amount)}L"
+        }
+
+        value >= 1_000 -> {
+
+            val amount =
+                value / 1_000f
+
+            "₹${formatCompact(amount)}K"
+        }
+
+        else -> {
+            "₹$value"
+        }
     }
 }
 
-private fun formatCurrency(
-    amount: Int
+private fun formatCompact(
+    value: Float
 ): String {
 
-    return "₹${amount.toString().reversed().chunked(3).joinToString(",").reversed()}"
+    return if (value % 1f == 0f) {
+        value.toInt().toString()
+    } else {
+        "%.1f".format(value)
+    }
 }
