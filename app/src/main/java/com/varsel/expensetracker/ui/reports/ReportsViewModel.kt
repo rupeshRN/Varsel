@@ -31,11 +31,41 @@ import kotlinx.coroutines.launch
  * - Apply period filtering.
  * - Apply account filtering.
  * - Calculate cash flow.
- * - Calculate categories.
+ * - Calculate category reports.
  * - Calculate Financial Events.
  * - Manage report selections.
  *
- * UI rendering remains outside this class.
+ * IMPORTANT REPORTING RULE:
+ *
+ * A transaction linked to a Financial Event must NOT appear
+ * inside its original transaction category.
+ *
+ * Instead:
+ *
+ *     linked expense transactions
+ *                 +
+ *     linked reimbursement transactions
+ *                 ↓
+ *          Financial Event
+ *                 ↓
+ *        effective cost
+ *                 ↓
+ *       Financial Event category
+ *
+ * Example:
+ *
+ *     Food transaction       ₹1,000
+ *     Travel transaction     ₹1,500
+ *     Uncategorized         ₹500
+ *     Reimbursement        -₹2,000
+ *     --------------------------------
+ *     Financial Event        ₹1,000
+ *
+ * If the Financial Event category is Travel, only ₹1,000
+ * is added to Travel.
+ *
+ * The original Food / Travel / Uncategorized transactions
+ * disappear from normal category reporting.
  */
 @HiltViewModel
 class ReportsViewModel @Inject constructor(
@@ -82,21 +112,24 @@ class ReportsViewModel @Inject constructor(
         )
     }
 
-    fun selectMonth(month: YearMonth) {
+    fun selectMonth(
+        month: YearMonth
+    ) {
         updateSelectedMonth(month)
     }
 
     private fun updateSelectedMonth(
         month: YearMonth
     ) {
-        _uiState.value = _uiState.value.copy(
-            period = ReportPeriod.MONTH,
-            selectedMonth = month,
-            selectedExpenseCategory = null,
-            selectedIncomeCategory = null,
-            errorMessage = null,
-            isLoading = true
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                period = ReportPeriod.MONTH,
+                selectedMonth = month,
+                selectedExpenseCategory = null,
+                selectedIncomeCategory = null,
+                errorMessage = null,
+                isLoading = true
+            )
 
         rebuildReport()
     }
@@ -158,13 +191,14 @@ class ReportsViewModel @Inject constructor(
     private fun applyAccountSelection(
         accountIds: Set<String>
     ) {
-        _uiState.value = _uiState.value.copy(
-            selectedAccountIds = accountIds,
-            selectedExpenseCategory = null,
-            selectedIncomeCategory = null,
-            errorMessage = null,
-            isLoading = true
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                selectedAccountIds = accountIds,
+                selectedExpenseCategory = null,
+                selectedIncomeCategory = null,
+                errorMessage = null,
+                isLoading = true
+            )
 
         rebuildReport()
     }
@@ -176,34 +210,38 @@ class ReportsViewModel @Inject constructor(
     fun selectFlow(
         flow: ReportsFlow
     ) {
-        _uiState.value = _uiState.value.copy(
-            selectedFlow = flow,
-            selectedExpenseCategory = null,
-            selectedIncomeCategory = null
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                selectedFlow = flow,
+                selectedExpenseCategory = null,
+                selectedIncomeCategory = null
+            )
     }
 
     fun selectExpenseCategory(
         category: String?
     ) {
-        _uiState.value = _uiState.value.copy(
-            selectedExpenseCategory = category
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                selectedExpenseCategory = category
+            )
     }
 
     fun selectIncomeCategory(
         category: String?
     ) {
-        _uiState.value = _uiState.value.copy(
-            selectedIncomeCategory = category
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                selectedIncomeCategory = category
+            )
     }
 
     fun clearCategorySelection() {
-        _uiState.value = _uiState.value.copy(
-            selectedExpenseCategory = null,
-            selectedIncomeCategory = null
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                selectedExpenseCategory = null,
+                selectedIncomeCategory = null
+            )
     }
 
     fun retry() {
@@ -254,10 +292,13 @@ class ReportsViewModel @Inject constructor(
 
             /*
              * Step 1:
-             * Filter by selected reporting period.
+             *
+             * Filter transactions by the selected reporting
+             * period.
              */
             val periodTransactions =
                 latestTransactions.filter { transaction ->
+
                     transaction.belongsToMonth(
                         state.selectedMonth
                     )
@@ -265,7 +306,8 @@ class ReportsViewModel @Inject constructor(
 
             /*
              * Step 2:
-             * Filter by selected accounts.
+             *
+             * Apply account filter.
              *
              * Empty Set means All Accounts.
              */
@@ -278,8 +320,9 @@ class ReportsViewModel @Inject constructor(
 
             /*
              * Step 3:
-             * Build all report sections from the
-             * already-filtered transaction list.
+             *
+             * Build report sections from the same filtered
+             * transaction collection.
              */
             val cashFlow =
                 buildCashFlow(
@@ -288,8 +331,10 @@ class ReportsViewModel @Inject constructor(
 
             val expenseCategories =
                 buildExpenseCategories(
-                    transactions = filteredTransactions,
-                    groups = latestGroups
+                    transactions =
+                        filteredTransactions,
+                    groups =
+                        latestGroups
                 )
 
             val incomeCategories =
@@ -301,16 +346,15 @@ class ReportsViewModel @Inject constructor(
                 buildFinancialEvents(
                     transactions =
                         filteredTransactions,
-                    groups = latestGroups
+                    groups =
+                        latestGroups
                 )
 
             /*
-             * Build the account list from all known
-             * transactions, not just the current month.
-             *
-             * This allows the filter to remain useful
-             * when a selected account has no transaction
-             * in the current month.
+             * Account list comes from the complete transaction
+             * history so accounts remain available to the filter
+             * even if they have no transaction in the current
+             * month.
              */
             val accounts =
                 buildAccounts(
@@ -362,15 +406,14 @@ class ReportsViewModel @Inject constructor(
         return transactions.filter { transaction ->
 
             transaction.accountId != null &&
-                transaction.accountId in selectedAccountIds
+                transaction.accountId in
+                selectedAccountIds
         }
     }
 
     /**
-     * Builds the account list from the complete transaction history.
-     *
-     * The account ID is safe for internal selection.
-     * Only accountLast4 is exposed to the UI.
+     * Builds the account list from the complete transaction
+     * history.
      */
     private fun buildAccounts(
         transactions: List<Transaction>
@@ -411,6 +454,13 @@ class ReportsViewModel @Inject constructor(
         transactions: List<Transaction>
     ): ReportsCashFlow {
 
+        /*
+         * Actual income:
+         *
+         * - NORMAL income is real income.
+         * - REIMBURSEMENT is not income.
+         * - TRANSFER_IN is not income.
+         */
         val actualIncome =
             transactions
                 .asSequence()
@@ -419,16 +469,21 @@ class ReportsViewModel @Inject constructor(
                     transaction.type ==
                         TransactionType.INCOME &&
 
-                        transaction.role !=
-                            TransactionRole.REIMBURSEMENT &&
-
-                        transaction.role !=
-                            TransactionRole.TRANSFER_IN
+                        transaction.role ==
+                            TransactionRole.NORMAL
                 }
                 .sumOf {
                     it.amount
                 }
 
+        /*
+         * Gross expense:
+         *
+         * - NORMAL expenses
+         * - LENT expenses
+         *
+         * TRANSFER_OUT is excluded.
+         */
         val grossExpense =
             transactions
                 .asSequence()
@@ -444,6 +499,9 @@ class ReportsViewModel @Inject constructor(
                     it.amount
                 }
 
+        /*
+         * Reimbursements reduce effective expense.
+         */
         val reimbursements =
             transactions
                 .asSequence()
@@ -457,13 +515,19 @@ class ReportsViewModel @Inject constructor(
                 }
 
         val effectiveExpense =
-            grossExpense - reimbursements
+            grossExpense -
+                reimbursements
 
         return ReportsCashFlow(
-            actualIncome = actualIncome,
-            effectiveExpense = effectiveExpense,
+            actualIncome =
+                actualIncome,
+
+            effectiveExpense =
+                effectiveExpense,
+
             netCashFlow =
-                actualIncome - effectiveExpense
+                actualIncome -
+                    effectiveExpense
         )
     }
 
@@ -471,158 +535,317 @@ class ReportsViewModel @Inject constructor(
     // Expense Categories
     // ------------------------------------------------------------------------
 
-private fun buildExpenseCategories(
-    transactions: List<Transaction>,
-    groups: List<TransactionLinkGroup>
-): List<ReportsExpenseCategory> {
-
-    /*
-     * Financial Event groups tell us the logical category
-     * of the event.
+    /**
+     * Builds Money Flow expense categories.
      *
-     * This is important because a reimbursement transaction
-     * may itself be Uncategorized, while the event it
-     * reimburses belongs to a real expense category.
-     */
-    val eventCategoryByLinkId =
-        groups.associate {
-            it.transactionLinkId to it.category
-        }
-
-    val expenseTransactions =
-        transactions.filter { transaction ->
-
-            transaction.type ==
-                TransactionType.EXPENSE &&
-
-                transaction.role !=
-                    TransactionRole.TRANSFER_OUT
-        }
-
-    val reimbursementTransactions =
-        transactions.filter { transaction ->
-
-            transaction.role ==
-                TransactionRole.REIMBURSEMENT
-        }
-
-    /*
-     * Normal expenses keep their own category.
+     * IMPORTANT:
      *
-     * Financial-event reimbursements use the category
-     * of the linked Financial Event instead of the
-     * reimbursement transaction's own category.
+     * A Financial Event is treated as one logical report item.
+     *
+     * Therefore:
+     *
+     *     linked transaction A
+     *     linked transaction B
+     *     linked transaction C
+     *
+     * are NOT included in their original categories.
+     *
+     * Instead:
+     *
+     *     event expense total
+     *     - event reimbursement total
+     *     = event effective cost
+     *
+     * and the effective cost is added to the Financial Event's
+     * selected category.
      */
-    val expenseAmountsByCategory =
-        expenseTransactions
-            .groupBy {
-                it.category
-            }
-            .mapValues { (_, categoryTransactions) ->
+    private fun buildExpenseCategories(
+        transactions: List<Transaction>,
+        groups: List<TransactionLinkGroup>
+    ): List<ReportsExpenseCategory> {
 
-                categoryTransactions.sumOf {
-                    it.amount
+        /*
+         * Map Financial Event ID -> Financial Event.
+         */
+        val groupsByLinkId =
+            groups.associateBy {
+                it.transactionLinkId
+            }
+
+        /*
+         * ----------------------------------------------------
+         * NORMAL EXPENSES
+         * ----------------------------------------------------
+         *
+         * Only completely normal, unlinked expenses belong
+         * directly to their transaction category.
+         *
+         * Any transaction with transactionLinkId is handled
+         * through the Financial Event section below.
+         */
+        val normalExpenseTransactions =
+            transactions.filter { transaction ->
+
+                transaction.type ==
+                    TransactionType.EXPENSE &&
+
+                    transaction.role ==
+                        TransactionRole.NORMAL &&
+
+                    transaction.transactionLinkId == null &&
+
+                    transaction.transferLinkId == null
+            }
+
+        /*
+         * ----------------------------------------------------
+         * NORMAL CATEGORY TOTALS
+         * ----------------------------------------------------
+         */
+        val normalAmountsByCategory =
+            normalExpenseTransactions
+                .groupBy {
+                    it.category
                 }
-            }
+                .mapValues { (_, categoryTransactions) ->
 
-    val reimbursementAmountsByCategory =
-        reimbursementTransactions
-            .groupBy { transaction ->
-
-                transaction.transactionLinkId
-                    ?.let {
-                        eventCategoryByLinkId[it]
-                    }
-                    ?: transaction.category
-            }
-            .mapValues { (_, categoryTransactions) ->
-
-                categoryTransactions.sumOf {
-                    it.amount
-                }
-            }
-
-    val categories =
-        (
-            expenseAmountsByCategory.keys +
-                reimbursementAmountsByCategory.keys
-            )
-            .filter {
-                it.isNotBlank()
-            }
-            .distinct()
-
-    return categories
-        .map { category ->
-
-            val normalExpenseAmount =
-                expenseTransactions
-                    .filter {
-                        it.category == category &&
-                            it.transactionLinkId == null
-                    }
-                    .sumOf {
+                    categoryTransactions.sumOf {
                         it.amount
                     }
+                }
 
-            val financialEventExpenseAmount =
-                expenseTransactions
-                    .filter {
-                        it.category == category &&
-                            it.transactionLinkId != null
-                    }
-                    .sumOf {
-                        it.amount
-                    }
+        /*
+         * ----------------------------------------------------
+         * FINANCIAL EVENT TOTALS
+         * ----------------------------------------------------
+         *
+         * Every linked transaction is grouped by its
+         * Financial Event.
+         */
+        val linkedTransactionsByEvent =
+            transactions
+                .filter {
+                    it.transactionLinkId != null
+                }
+                .groupBy {
+                    it.transactionLinkId!!
+                }
 
-            val reimbursedAmount =
-                reimbursementAmountsByCategory[
-                    category
-                ] ?: 0.0
+        /*
+         * For every Financial Event:
+         *
+         * expense total
+         * -
+         * reimbursement total
+         * =
+         * effective cost
+         *
+         * The result is then assigned to the Financial
+         * Event's category.
+         */
+        val financialEventAmountsByCategory =
+            mutableMapOf<String, Double>()
 
-            val totalAmount =
-                normalExpenseAmount +
-                    financialEventExpenseAmount -
-                    reimbursedAmount
+        val financialEventGrossExpensesByCategory =
+            mutableMapOf<String, Double>()
 
-            ReportsExpenseCategory(
-                category = category,
+        val financialEventReimbursementsByCategory =
+            mutableMapOf<String, Double>()
 
-                totalAmount =
-                    totalAmount,
+        linkedTransactionsByEvent.forEach {
+                (transactionLinkId, eventTransactions) ->
 
-                normalAmount =
-                    normalExpenseAmount,
+            val group =
+                groupsByLinkId[
+                    transactionLinkId
+                ] ?: return@forEach
 
-                financialEventAmount =
-                    financialEventExpenseAmount,
+            val category =
+                group.category.trim()
 
-                reimbursedAmount =
-                    reimbursedAmount,
+            if (category.isBlank()) {
+                return@forEach
+            }
 
-                effectiveFinancialEventAmount =
-                    financialEventExpenseAmount -
-                        reimbursedAmount
-            )
-        }
-        .filter {
             /*
-             * A category that only contains reimbursements
-             * is not an expense category.
+             * All EXPENSE transactions belonging to the
+             * Financial Event.
              *
-             * Do not display it as a negative expense.
+             * Their original categories are deliberately
+             * ignored.
              */
-            it.totalAmount > 0.0
+            val eventExpense =
+                eventTransactions
+                    .asSequence()
+                    .filter { transaction ->
+
+                        transaction.type ==
+                            TransactionType.EXPENSE &&
+
+                            transaction.role !=
+                                TransactionRole.TRANSFER_OUT
+                    }
+                    .sumOf {
+                        it.amount
+                    }
+
+            /*
+             * All REIMBURSEMENT transactions belonging to
+             * this Financial Event.
+             */
+            val eventReimbursement =
+                eventTransactions
+                    .asSequence()
+                    .filter { transaction ->
+
+                        transaction.role ==
+                            TransactionRole.REIMBURSEMENT
+                    }
+                    .sumOf {
+                        it.amount
+                    }
+
+            /*
+             * This is the amount the Financial Event actually
+             * costs the user.
+             */
+            val effectiveCost =
+                eventExpense -
+                    eventReimbursement
+
+            /*
+             * Keep the event gross expense and reimbursement
+             * values available in the category model.
+             */
+            financialEventGrossExpensesByCategory[category] =
+                (
+                    financialEventGrossExpensesByCategory[
+                        category
+                    ] ?: 0.0
+                ) + eventExpense
+
+            financialEventReimbursementsByCategory[category] =
+                (
+                    financialEventReimbursementsByCategory[
+                        category
+                    ] ?: 0.0
+                ) + eventReimbursement
+
+            /*
+             * Only positive effective expense contributes to
+             * the expense category chart.
+             *
+             * A fully reimbursed event contributes ₹0.
+             *
+             * An event whose reimbursement is larger than
+             * its expense is not rendered as a negative
+             * expense category.
+             */
+            if (effectiveCost > 0.0) {
+
+                financialEventAmountsByCategory[category] =
+                    (
+                        financialEventAmountsByCategory[
+                            category
+                        ] ?: 0.0
+                    ) + effectiveCost
+            }
         }
-        .sortedByDescending {
-            it.totalAmount
-        }
-}
+
+        /*
+         * ----------------------------------------------------
+         * COMBINE NORMAL + FINANCIAL EVENT CATEGORIES
+         * ----------------------------------------------------
+         */
+        val allCategories =
+            (
+                normalAmountsByCategory.keys +
+                    financialEventAmountsByCategory.keys
+                )
+                .filter {
+                    it.isNotBlank()
+                }
+                .distinct()
+
+        return allCategories
+            .map { category ->
+
+                val normalAmount =
+                    normalAmountsByCategory[
+                        category
+                    ] ?: 0.0
+
+                val financialEventAmount =
+                    financialEventAmountsByCategory[
+                        category
+                    ] ?: 0.0
+
+                val grossFinancialEventAmount =
+                    financialEventGrossExpensesByCategory[
+                        category
+                    ] ?: 0.0
+
+                val reimbursedAmount =
+                    financialEventReimbursementsByCategory[
+                        category
+                    ] ?: 0.0
+
+                val totalAmount =
+                    normalAmount +
+                        financialEventAmount
+
+                ReportsExpenseCategory(
+                    category =
+                        category,
+
+                    totalAmount =
+                        totalAmount,
+
+                    normalAmount =
+                        normalAmount,
+
+                    /*
+                     * This field now represents the amount
+                     * actually contributed by Financial Events
+                     * to this category.
+                     */
+                    financialEventAmount =
+                        financialEventAmount,
+
+                    /*
+                     * Preserve the gross reimbursement
+                     * information for the category model.
+                     */
+                    reimbursedAmount =
+                        reimbursedAmount,
+
+                    effectiveFinancialEventAmount =
+                        financialEventAmount
+                )
+            }
+            .filter {
+                it.totalAmount > 0.0
+            }
+            .sortedByDescending {
+                it.totalAmount
+            }
+    }
 
     // ------------------------------------------------------------------------
     // Income Categories
     // ------------------------------------------------------------------------
 
+    /**
+     * Builds actual income categories.
+     *
+     * Financial Event reimbursements are deliberately excluded.
+     *
+     * Account transfers are deliberately excluded.
+     *
+     * This means the Income chart represents genuine income,
+     * not money received to recover a Financial Event expense
+     * and not money moved between the user's own accounts.
+     */
     private fun buildIncomeCategories(
         transactions: List<Transaction>
     ): List<ReportsIncomeCategory> {
@@ -635,7 +858,11 @@ private fun buildExpenseCategories(
                     TransactionType.INCOME &&
 
                     transaction.role ==
-                        TransactionRole.NORMAL
+                        TransactionRole.NORMAL &&
+
+                    transaction.transactionLinkId == null &&
+
+                    transaction.transferLinkId == null
             }
             .filter {
                 it.category.isNotBlank()
@@ -646,12 +873,13 @@ private fun buildExpenseCategories(
             .map { (category, categoryTransactions) ->
 
                 ReportsIncomeCategory(
-                    category = category,
+                    category =
+                        category,
+
                     totalAmount =
-                        categoryTransactions
-                            .sumOf {
-                                it.amount
-                            }
+                        categoryTransactions.sumOf {
+                            it.amount
+                        }
                 )
             }
             .sortedByDescending {
@@ -663,21 +891,17 @@ private fun buildExpenseCategories(
     // Financial Events
     // ------------------------------------------------------------------------
 
+    /**
+     * Builds Financial Event summaries.
+     *
+     * The transaction list is already filtered by period and
+     * account before reaching this function.
+     */
     private fun buildFinancialEvents(
         transactions: List<Transaction>,
         groups: List<TransactionLinkGroup>
     ): List<ReportsFinancialEvent> {
 
-        /*
-         * IMPORTANT:
-         *
-         * This receives transactions AFTER the account
-         * filter has already been applied.
-         *
-         * Therefore a selected account cannot accidentally
-         * pull unrelated transactions from another account
-         * into the report.
-         */
         val linkedTransactions =
             transactions
                 .filter {
@@ -701,6 +925,9 @@ private fun buildExpenseCategories(
                     return@mapNotNull null
                 }
 
+                /*
+                 * Gross expense belonging to this event.
+                 */
                 val expenseAmount =
                     eventTransactions
                         .asSequence()
@@ -716,6 +943,9 @@ private fun buildExpenseCategories(
                             it.amount
                         }
 
+                /*
+                 * Reimbursement belonging to this event.
+                 */
                 val reimbursedAmount =
                     eventTransactions
                         .asSequence()
@@ -728,20 +958,31 @@ private fun buildExpenseCategories(
                             it.amount
                         }
 
+                /*
+                 * Effective cost of the event.
+                 */
+                val effectiveCost =
+                    expenseAmount -
+                        reimbursedAmount
+
                 ReportsFinancialEvent(
                     transactionLinkId =
                         transactionLinkId,
+
                     groupName =
                         group.groupName,
+
                     category =
                         group.category,
+
                     expenseAmount =
                         expenseAmount,
+
                     reimbursedAmount =
                         reimbursedAmount,
+
                     effectiveCost =
-                        expenseAmount -
-                            reimbursedAmount
+                        effectiveCost
                 )
             }
             .filter {
