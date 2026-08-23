@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.varsel.expensetracker.category.CategoryMetadata
 
 @HiltViewModel
 class FinancialEventViewModel @Inject constructor(
@@ -219,19 +220,15 @@ class FinancialEventViewModel @Inject constructor(
         // Existing application categories
         //--------------------------------------------------
 
-        val categories =
-            categoryDao
-                .getAllCategoriesSnapshot()
-                .map {
-
-                    it.name
-                }
-                .filter {
-
-                    it.isNotBlank()
-                }
-                .distinct()
-                .sorted()
+val categories =
+    CategoryMetadata.all
+        .map {
+            it.id
+        }
+        .filter {
+            it.isNotBlank()
+        }
+        .distinct()
 
         //--------------------------------------------------
         // Totals
