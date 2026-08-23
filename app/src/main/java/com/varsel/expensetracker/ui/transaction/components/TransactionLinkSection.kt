@@ -566,7 +566,7 @@ var category by
 
                         enabled =
                             !isSaving &&
-                            categories.isNotEmpty(),
+                            availableCategories.isNotEmpty(),
 
                         modifier =
                             Modifier.fillMaxWidth()
