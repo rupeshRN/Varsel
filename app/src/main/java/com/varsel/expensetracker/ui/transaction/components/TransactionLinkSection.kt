@@ -29,6 +29,7 @@ import com.varsel.expensetracker.domain.model.TransactionLinkGroup
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.varsel.expensetracker.category.CategoryMetadata
 
 @Composable
 fun TransactionLinkSection(
@@ -410,15 +411,24 @@ private fun CreateReportGroupDialog(
             mutableStateOf("")
         }
 
-    var category by
-        remember(categories) {
-
-            mutableStateOf(
-
-                categories.firstOrNull()
-                    ?: ""
-            )
+val availableCategories =
+    CategoryMetadata.all
+        .map {
+            it.id
         }
+        .filter {
+            it.isNotBlank()
+        }
+        .distinct()
+
+var category by
+    remember(availableCategories) {
+
+        mutableStateOf(
+            availableCategories.firstOrNull()
+                ?: ""
+        )
+    }
 
     var categoryExpanded by
         remember {
@@ -533,7 +543,7 @@ private fun CreateReportGroupDialog(
 
                         enabled =
                             !isSaving &&
-                            categories.isNotEmpty(),
+                            availableCategories.isNotEmpty(),
 
                         modifier =
                             Modifier.fillMaxWidth()
@@ -600,7 +610,7 @@ private fun CreateReportGroupDialog(
                         }
                     ) {
 
-                        categories.forEach {
+                        availableCategories.forEach {
 
                             availableCategory ->
 
@@ -630,7 +640,7 @@ private fun CreateReportGroupDialog(
                 }
 
                 if (
-                    categories.isEmpty()
+                    availableCategories.isEmpty()
                 ) {
 
                     Text(
