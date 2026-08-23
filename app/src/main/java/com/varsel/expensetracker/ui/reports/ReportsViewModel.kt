@@ -288,7 +288,8 @@ class ReportsViewModel @Inject constructor(
 
             val expenseCategories =
                 buildExpenseCategories(
-                    filteredTransactions
+                    transactions = filteredTransactions,
+                    groups = latestGroups
                 )
 
             val incomeCategories =
@@ -470,105 +471,153 @@ class ReportsViewModel @Inject constructor(
     // Expense Categories
     // ------------------------------------------------------------------------
 
-    private fun buildExpenseCategories(
-        transactions: List<Transaction>
-    ): List<ReportsExpenseCategory> {
+private fun buildExpenseCategories(
+    transactions: List<Transaction>,
+    groups: List<TransactionLinkGroup>
+): List<ReportsExpenseCategory> {
 
-        val expenseTransactions =
-            transactions.filter { transaction ->
+    /*
+     * Financial Event groups tell us the logical category
+     * of the event.
+     *
+     * This is important because a reimbursement transaction
+     * may itself be Uncategorized, while the event it
+     * reimburses belongs to a real expense category.
+     */
+    val eventCategoryByLinkId =
+        groups.associate {
+            it.transactionLinkId to it.category
+        }
 
-                transaction.type ==
-                    TransactionType.EXPENSE &&
+    val expenseTransactions =
+        transactions.filter { transaction ->
 
-                    transaction.role !=
-                        TransactionRole.TRANSFER_OUT
+            transaction.type ==
+                TransactionType.EXPENSE &&
+
+                transaction.role !=
+                    TransactionRole.TRANSFER_OUT
+        }
+
+    val reimbursementTransactions =
+        transactions.filter { transaction ->
+
+            transaction.role ==
+                TransactionRole.REIMBURSEMENT
+        }
+
+    /*
+     * Normal expenses keep their own category.
+     *
+     * Financial-event reimbursements use the category
+     * of the linked Financial Event instead of the
+     * reimbursement transaction's own category.
+     */
+    val expenseAmountsByCategory =
+        expenseTransactions
+            .groupBy {
+                it.category
             }
+            .mapValues { (_, categoryTransactions) ->
 
-        val reimbursementTransactions =
-            transactions.filter { transaction ->
-
-                transaction.role ==
-                    TransactionRole.REIMBURSEMENT
-            }
-
-        val categoryNames =
-            (
-                expenseTransactions.map {
-                    it.category
-                } +
-                    reimbursementTransactions.map {
-                        it.category
-                    }
-                )
-                .filter {
-                    it.isNotBlank()
+                categoryTransactions.sumOf {
+                    it.amount
                 }
-                .distinct()
-
-        return categoryNames
-            .map { category ->
-
-                val categoryExpenses =
-                    expenseTransactions.filter {
-                        it.category == category
-                    }
-
-                val categoryReimbursements =
-                    reimbursementTransactions.filter {
-                        it.category == category
-                    }
-
-                val normalAmount =
-                    categoryExpenses
-                        .filter {
-                            it.transactionLinkId == null
-                        }
-                        .sumOf {
-                            it.amount
-                        }
-
-                val financialEventAmount =
-                    categoryExpenses
-                        .filter {
-                            it.transactionLinkId != null
-                        }
-                        .sumOf {
-                            it.amount
-                        }
-
-                val reimbursedAmount =
-                    categoryReimbursements
-                        .sumOf {
-                            it.amount
-                        }
-
-                val effectiveFinancialEventAmount =
-                    financialEventAmount -
-                        reimbursedAmount
-
-                ReportsExpenseCategory(
-                    category = category,
-                    totalAmount =
-                        normalAmount +
-                            financialEventAmount -
-                            reimbursedAmount,
-                    normalAmount =
-                        normalAmount,
-                    financialEventAmount =
-                        financialEventAmount,
-                    reimbursedAmount =
-                        reimbursedAmount,
-                    effectiveFinancialEventAmount =
-                        effectiveFinancialEventAmount
-                )
             }
+
+    val reimbursementAmountsByCategory =
+        reimbursementTransactions
+            .groupBy { transaction ->
+
+                transaction.transactionLinkId
+                    ?.let {
+                        eventCategoryByLinkId[it]
+                    }
+                    ?: transaction.category
+            }
+            .mapValues { (_, categoryTransactions) ->
+
+                categoryTransactions.sumOf {
+                    it.amount
+                }
+            }
+
+    val categories =
+        (
+            expenseAmountsByCategory.keys +
+                reimbursementAmountsByCategory.keys
+            )
             .filter {
-                it.totalAmount != 0.0
+                it.isNotBlank()
             }
-            .sortedByDescending {
-                it.totalAmount
-            }
-    }
+            .distinct()
+
+    return categories
+        .map { category ->
+
+            val normalExpenseAmount =
+                expenseTransactions
+                    .filter {
+                        it.category == category &&
+                            it.transactionLinkId == null
+                    }
+                    .sumOf {
+                        it.amount
+                    }
+
+            val financialEventExpenseAmount =
+                expenseTransactions
+                    .filter {
+                        it.category == category &&
+                            it.transactionLinkId != null
+                    }
+                    .sumOf {
+                        it.amount
+                    }
+
+            val reimbursedAmount =
+                reimbursementAmountsByCategory[
+                    category
+                ] ?: 0.0
+
+            val totalAmount =
+                normalExpenseAmount +
+                    financialEventExpenseAmount -
+                    reimbursedAmount
+
+            ReportsExpenseCategory(
+                category = category,
+
+                totalAmount =
+                    totalAmount,
+
+                normalAmount =
+                    normalExpenseAmount,
+
+                financialEventAmount =
+                    financialEventExpenseAmount,
+
+                reimbursedAmount =
+                    reimbursedAmount,
+
+                effectiveFinancialEventAmount =
+                    financialEventExpenseAmount -
+                        reimbursedAmount
+            )
+        }
+        .filter {
+            /*
+             * A category that only contains reimbursements
+             * is not an expense category.
+             *
+             * Do not display it as a negative expense.
+             */
+            it.totalAmount > 0.0
+        }
+        .sortedByDescending {
+            it.totalAmount
+        }
+}
 
     // ------------------------------------------------------------------------
     // Income Categories
