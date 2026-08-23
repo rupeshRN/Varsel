@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.varsel.expensetracker.ui.design.AppColors
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.abs
 
 @Composable
 fun NetCashFlowCard(
@@ -61,7 +62,7 @@ fun NetCashFlowCard(
             Text(
                 text =
                     currencyFormatter.format(
-                        netCashFlow
+                        abs(netCashFlow)
                     ),
                 style =
                     MaterialTheme.typography.headlineMedium,
@@ -121,8 +122,7 @@ private fun CashFlowValue(
             style =
                 MaterialTheme.typography.labelMedium,
             color = color,
-            fontWeight =
-                FontWeight.Medium
+            fontWeight = FontWeight.Medium
         )
 
         Spacer(
@@ -132,7 +132,9 @@ private fun CashFlowValue(
 
         Text(
             text =
-                currencyFormatter.format(value),
+                currencyFormatter.format(
+                    abs(value)
+                ),
             style =
                 MaterialTheme.typography.titleMedium,
             fontWeight =
