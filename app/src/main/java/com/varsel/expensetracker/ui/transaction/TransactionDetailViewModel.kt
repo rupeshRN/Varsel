@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
+import com.varsel.expensetracker.category.CategoryMetadata
 
 @HiltViewModel
 class TransactionDetailViewModel @Inject constructor(
@@ -168,20 +169,17 @@ class TransactionDetailViewModel @Inject constructor(
     // Load categories
     //--------------------------------------------------
 
-    private suspend fun loadCategories():
-        List<String> {
+private fun loadCategories(): List<String> {
 
-        return categoryDao
-            .getAllCategoriesSnapshot()
-            .map {
-                it.name.trim()
-            }
-            .filter {
-                it.isNotBlank()
-            }
-            .distinct()
-            .sorted()
-    }
+    return CategoryMetadata.all
+        .map {
+            it.id
+        }
+        .filter {
+            it.isNotBlank()
+        }
+        .distinct()
+}
 
     //--------------------------------------------------
     // Observe transaction changes
