@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Provider
+import com.varsel.expensetracker.data.local.entity.FinancialEventAllocationEntity
 
 @Database(
     entities = [
@@ -25,9 +26,10 @@ import javax.inject.Provider
         CategoryEntity::class,
         CustomRuleEntity::class,
         StatementSnapshotEntity::class,
-        TransactionLinkGroupEntity::class
+        TransactionLinkGroupEntity::class,
+        FinancialEventAllocationEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -164,6 +166,92 @@ val MIGRATION_8_9 =
                 """
                 ALTER TABLE transactions
                 ADD COLUMN transferLinkId TEXT
+                """.trimIndent()
+            )
+        }
+    }
+
+    val MIGRATION_9_10 =
+    object : Migration(9, 10) {
+
+        override fun migrate(
+            database:
+                SupportSQLiteDatabase
+        ) {
+
+            database.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS financial_event_allocations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    transactionId INTEGER NOT NULL,
+                    transactionLinkId TEXT NOT NULL,
+                    allocatedAmount REAL NOT NULL,
+                    createdAt INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+
+            database.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS
+                index_financial_event_allocations_transactionId
+                ON financial_event_allocations(transactionId)
+                """.trimIndent()
+            )
+
+            database.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS
+                index_financial_event_allocations_transactionLinkId
+                ON financial_event_allocations(transactionLinkId)
+                """.trimIndent()
+            )
+
+            database.execSQL(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS
+                index_financial_event_allocations_transactionId_transactionLinkId
+                ON financial_event_allocations(
+                    transactionId,
+                    transactionLinkId
+                )
+                """.trimIndent()
+            )
+
+            /*
+             * --------------------------------------------------
+             * BACKWARD COMPATIBILITY
+             * --------------------------------------------------
+             *
+             * Every existing one-to-one Financial Event
+             * relationship becomes a 100% allocation.
+             *
+             * Existing transaction:
+             *
+             * transactionLinkId = ABC
+             * amount = ₹1,000
+             *
+             * becomes:
+             *
+             * transactionId = same ID
+             * transactionLinkId = ABC
+             * allocatedAmount = ₹1,000
+             */
+            database.execSQL(
+                """
+                INSERT INTO financial_event_allocations (
+                    transactionId,
+                    transactionLinkId,
+                    allocatedAmount,
+                    createdAt
+                )
+                SELECT
+                    id,
+                    transactionLinkId,
+                    amount,
+                    dateTimestamp
+                FROM transactions
+                WHERE transactionLinkId IS NOT NULL
                 """.trimIndent()
             )
         }
