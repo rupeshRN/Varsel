@@ -49,11 +49,6 @@ class FinancialEventAllocationRepository @Inject constructor(
             "Allocated amount must be greater than zero."
         }
 
-        val existingAllocated =
-            dao.getAllocatedAmountForTransaction(
-                transactionId
-            )
-
         /*
          * Do not allow allocations to exceed the
          * transaction amount.
