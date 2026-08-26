@@ -151,7 +151,11 @@ fun FinancialEventsCard(
                             FontWeight.SemiBold,
 
                         color =
-                            AppColors.Expense
+                            if (totalEffectiveCost < 0.0) {
+                                AppColors.Income
+                            } else {
+                                AppColors.Expense
+                            }
                     )
                 }
             }
@@ -214,6 +218,11 @@ private fun FinancialEventRow(
     formatter: NumberFormat,
     onClick: () -> Unit
 ) {
+    val periodAmountPresentation =
+        rememberFinancialEventPeriodAmount(
+            event = event,
+            formatter = formatter
+        )
 
     Column(
         modifier =
@@ -276,9 +285,12 @@ private fun FinancialEventRow(
                 }
 
                 /*
-                 * Show a small indicator only when the
-                 * Financial Event has linked transactions
-                 * in more than one month.
+                 * Show a small indicator when the Financial Event
+                 * has linked transactions in more than one month.
+                 *
+                 * Example:
+                 *
+                 * Spans Jun–Jul 2026
                  */
                 if (
                     event.coveredMonths.size > 1
@@ -311,11 +323,32 @@ private fun FinancialEventRow(
                     )
             )
 
+            /*
+             * IMPORTANT:
+             *
+             * This amount represents the Financial Event's
+             * activity within the CURRENTLY SELECTED REPORT
+             * PERIOD.
+             *
+             * It must not blindly use effectiveCost because:
+             *
+             * June:
+             *   reimbursement only
+             *   effectiveCost = -₹25,474.09
+             *
+             * The user should see:
+             *
+             *   ₹25,474.09
+             *
+             * in GREEN, not:
+             *
+             *   -₹25,474.09
+             *
+             * in RED.
+             */
             Text(
                 text =
-                    formatter.format(
-                        event.effectiveCost
-                    ),
+                    periodAmountPresentation.amountText,
 
                 style =
                     MaterialTheme.typography
@@ -325,7 +358,7 @@ private fun FinancialEventRow(
                     FontWeight.Bold,
 
                 color =
-                    AppColors.Expense
+                    periodAmountPresentation.color
             )
 
             Spacer(
@@ -349,6 +382,12 @@ private fun FinancialEventRow(
             )
         }
 
+        /*
+         * Detailed period activity.
+         *
+         * Expense is always RED.
+         * Reimbursement is always GREEN.
+         */
         Row(
             horizontalArrangement =
                 Arrangement.spacedBy(
@@ -356,22 +395,27 @@ private fun FinancialEventRow(
                 )
         ) {
 
-            Text(
-                text =
-                    "${formatter.format(
-                        event.expenseAmount
-                    )} expense",
+            if (
+                event.expenseAmount > 0.0
+            ) {
 
-                style =
-                    MaterialTheme.typography
-                        .labelMedium,
+                Text(
+                    text =
+                        "${formatter.format(
+                            event.expenseAmount
+                        )} expense",
 
-                color =
-                    AppColors.Expense,
+                    style =
+                        MaterialTheme.typography
+                            .labelMedium,
 
-                fontWeight =
-                    FontWeight.Medium
-            )
+                    color =
+                        AppColors.Expense,
+
+                    fontWeight =
+                        FontWeight.Medium
+                )
+            }
 
             if (
                 event.reimbursedAmount > 0.0
@@ -406,6 +450,177 @@ private fun FinancialEventRow(
 }
 
 /**
+ * Determines how the prominent amount on a Financial Event
+ * should be displayed for the CURRENTLY SELECTED REPORT PERIOD.
+ *
+ * Rules:
+ *
+ * 1. Reimbursement only
+ *
+ *    expense = ₹0
+ *    reimbursement = ₹25,474.09
+ *
+ *    -> ₹25,474.09 GREEN
+ *
+ * 2. Expense only
+ *
+ *    expense = ₹26,950.45
+ *    reimbursement = ₹0
+ *
+ *    -> ₹26,950.45 RED
+ *
+ * 3. Both expense and reimbursement
+ *
+ *    expense = ₹26,950.45
+ *    reimbursement = ₹25,474.09
+ *
+ *    effective cost = ₹1,476.36
+ *
+ *    -> ₹1,476.36 RED
+ *
+ * 4. Reimbursement exceeds expense
+ *
+ *    expense = ₹1,000
+ *    reimbursement = ₹1,500
+ *
+ *    effective cost = -₹500
+ *
+ *    -> ₹500 GREEN
+ *
+ * 5. Fully reimbursed
+ *
+ *    expense = ₹1,000
+ *    reimbursement = ₹1,000
+ *
+ *    -> ₹0
+ *
+ * This function deliberately separates:
+ *
+ * - transaction direction during the selected period
+ * - the Financial Event's overall business meaning
+ */
+@Composable
+private fun rememberFinancialEventPeriodAmount(
+    event: ReportsFinancialEvent,
+    formatter: NumberFormat
+): FinancialEventPeriodAmount {
+
+    val expense =
+        event.expenseAmount
+
+    val reimbursement =
+        event.reimbursedAmount
+
+    /*
+     * --------------------------------------------------------
+     * REIMBURSEMENT ONLY
+     * --------------------------------------------------------
+     *
+     * This is the important June case for Train.
+     */
+    if (
+        expense <= 0.0 &&
+        reimbursement > 0.0
+    ) {
+
+        return FinancialEventPeriodAmount(
+            amountText =
+                formatter.format(
+                    reimbursement
+                ),
+
+            color =
+                AppColors.Income
+        )
+    }
+
+    /*
+     * --------------------------------------------------------
+     * EXPENSE ONLY
+     * --------------------------------------------------------
+     */
+    if (
+        expense > 0.0 &&
+        reimbursement <= 0.0
+    ) {
+
+        return FinancialEventPeriodAmount(
+            amountText =
+                formatter.format(
+                    expense
+                ),
+
+            color =
+                AppColors.Expense
+        )
+    }
+
+    /*
+     * --------------------------------------------------------
+     * BOTH EXPENSE + REIMBURSEMENT
+     * --------------------------------------------------------
+     *
+     * Use the period's net direction.
+     */
+    val effectiveCost =
+        expense -
+            reimbursement
+
+    if (
+        effectiveCost < 0.0
+    ) {
+
+        return FinancialEventPeriodAmount(
+            amountText =
+                formatter.format(
+                    kotlin.math.abs(
+                        effectiveCost
+                    )
+                ),
+
+            color =
+                AppColors.Income
+        )
+    }
+
+    if (
+        effectiveCost > 0.0
+    ) {
+
+        return FinancialEventPeriodAmount(
+            amountText =
+                formatter.format(
+                    effectiveCost
+                ),
+
+            color =
+                AppColors.Expense
+        )
+    }
+
+    /*
+     * --------------------------------------------------------
+     * FULLY OFFSET
+     * --------------------------------------------------------
+     */
+    return FinancialEventPeriodAmount(
+        amountText =
+            formatter.format(
+                0.0
+            ),
+
+        color =
+            MaterialTheme.colorScheme
+                .onSurfaceVariant
+    )
+}
+
+private data class FinancialEventPeriodAmount(
+    val amountText: String,
+    val color: androidx.compose.ui.graphics.Color
+)
+
+/**
  * Creates a concise user-facing description of the months
  * covered by a Financial Event.
  *
@@ -424,12 +639,16 @@ private fun formatEventPeriod(
     months: List<YearMonth>
 ): String {
 
-    if (months.size < 2) {
+    if (
+        months.size < 2
+    ) {
         return ""
     }
 
     val sortedMonths =
-        months.distinct().sorted()
+        months
+            .distinct()
+            .sorted()
 
     val first =
         sortedMonths.first()
