@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import com.varsel.expensetracker.ui.design.AppColors
 import com.varsel.expensetracker.ui.reports.ReportsFinancialEvent
 import java.text.NumberFormat
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
@@ -212,6 +214,7 @@ private fun FinancialEventRow(
     formatter: NumberFormat,
     onClick: () -> Unit
 ) {
+
     Column(
         modifier =
             Modifier
@@ -271,11 +274,41 @@ private fun FinancialEventRow(
                                 .onSurfaceVariant
                     )
                 }
+
+                /*
+                 * Show a small indicator only when the
+                 * Financial Event has linked transactions
+                 * in more than one month.
+                 */
+                if (
+                    event.coveredMonths.size > 1
+                ) {
+
+                    Text(
+                        text =
+                            formatEventPeriod(
+                                event.coveredMonths
+                            ),
+
+                        style =
+                            MaterialTheme.typography
+                                .labelSmall,
+
+                        color =
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant,
+
+                        fontWeight =
+                            FontWeight.Medium
+                    )
+                }
             }
 
             Spacer(
                 modifier =
-                    Modifier.width(8.dp)
+                    Modifier.width(
+                        8.dp
+                    )
             )
 
             Text(
@@ -297,7 +330,9 @@ private fun FinancialEventRow(
 
             Spacer(
                 modifier =
-                    Modifier.width(6.dp)
+                    Modifier.width(
+                        6.dp
+                    )
             )
 
             Icon(
@@ -367,5 +402,75 @@ private fun FinancialEventRow(
                     top = 6.dp
                 )
         )
+    }
+}
+
+/**
+ * Creates a concise user-facing description of the months
+ * covered by a Financial Event.
+ *
+ * Examples:
+ *
+ * Jun 2026 + Jul 2026
+ *     -> Spans Jun–Jul 2026
+ *
+ * Jun 2026 + Jul 2026 + Aug 2026
+ *     -> Spans Jun–Aug 2026
+ *
+ * Dec 2025 + Jan 2026
+ *     -> Spans Dec 2025–Jan 2026
+ */
+private fun formatEventPeriod(
+    months: List<YearMonth>
+): String {
+
+    if (months.size < 2) {
+        return ""
+    }
+
+    val sortedMonths =
+        months.distinct().sorted()
+
+    val first =
+        sortedMonths.first()
+
+    val last =
+        sortedMonths.last()
+
+    val monthFormatter =
+        DateTimeFormatter.ofPattern(
+            "MMM"
+        )
+
+    val monthYearFormatter =
+        DateTimeFormatter.ofPattern(
+            "MMM yyyy"
+        )
+
+    return if (
+        first.year == last.year
+    ) {
+
+        "Spans ${
+            first.format(
+                monthFormatter
+            )
+        }–${
+            last.format(
+                monthFormatter
+            )
+        } ${last.year}"
+
+    } else {
+
+        "Spans ${
+            first.format(
+                monthYearFormatter
+            )
+        }–${
+            last.format(
+                monthYearFormatter
+            )
+        }"
     }
 }
