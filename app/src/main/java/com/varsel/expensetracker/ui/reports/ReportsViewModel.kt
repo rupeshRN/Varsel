@@ -317,9 +317,24 @@ class ReportsViewModel @Inject constructor(
                     selectedAccountIds =
                         state.selectedAccountIds
                 )
+            /*
+ * Account-filtered transactions across the complete
+ * transaction history.
+ *
+ * This is NOT period filtered.
+ *
+ * It is used only to determine whether a Financial Event
+ * spans multiple months.
+ */
+val accountFilteredAllTransactions =
+    filterByAccounts(
+        transactions = latestTransactions,
+        selectedAccountIds =
+            state.selectedAccountIds
+    )
 
             /*
-             * Step 3:
+             * Step 4:
              *
              * Build report sections from the same filtered
              * transaction collection.
@@ -342,13 +357,17 @@ class ReportsViewModel @Inject constructor(
                     filteredTransactions
                 )
 
-            val financialEvents =
-                buildFinancialEvents(
-                    transactions =
-                        filteredTransactions,
-                    groups =
-                        latestGroups
-                )
+val financialEvents =
+    buildFinancialEvents(
+        transactions =
+            filteredTransactions,
+
+        allAccountTransactions =
+            accountFilteredAllTransactions,
+
+        groups =
+            latestGroups
+    )
 
             /*
              * Account list comes from the complete transaction
@@ -887,112 +906,181 @@ class ReportsViewModel @Inject constructor(
             }
     }
 
-    // ------------------------------------------------------------------------
-    // Financial Events
-    // ------------------------------------------------------------------------
+/**
+ * Builds Financial Event summaries.
+ *
+ * The transaction list is already filtered by period and
+ * account before reaching this function.
+ *
+ * IMPORTANT:
+ *
+ * The financial amounts shown in the report remain restricted
+ * to the selected reporting period.
+ *
+ * The complete account-filtered transaction history is used
+ * only to determine whether an event spans multiple months.
+ */
+private fun buildFinancialEvents(
+    transactions: List<Transaction>,
+    allAccountTransactions: List<Transaction>,
+    groups: List<TransactionLinkGroup>
+): List<ReportsFinancialEvent> {
 
-    /**
-     * Builds Financial Event summaries.
-     *
-     * The transaction list is already filtered by period and
-     * account before reaching this function.
+    /*
+     * Transactions belonging to the currently selected
+     * reporting period.
      */
-    private fun buildFinancialEvents(
-        transactions: List<Transaction>,
-        groups: List<TransactionLinkGroup>
-    ): List<ReportsFinancialEvent> {
+    val linkedTransactions =
+        transactions
+            .filter {
+                it.transactionLinkId != null
+            }
+            .groupBy {
+                it.transactionLinkId!!
+            }
 
-        val linkedTransactions =
-            transactions
-                .filter {
-                    it.transactionLinkId != null
+    /*
+     * Complete account-filtered transaction history.
+     *
+     * This is intentionally NOT restricted to the selected
+     * month.
+     */
+    val allLinkedTransactions =
+        allAccountTransactions
+            .filter {
+                it.transactionLinkId != null
+            }
+            .groupBy {
+                it.transactionLinkId!!
+            }
+
+    return linkedTransactions
+        .mapNotNull {
+                (transactionLinkId, eventTransactions) ->
+
+            val group =
+                groups.firstOrNull {
+                    it.transactionLinkId ==
+                        transactionLinkId
                 }
-                .groupBy {
-                    it.transactionLinkId!!
-                }
 
-        return linkedTransactions
-            .mapNotNull {
-                    (transactionLinkId, eventTransactions) ->
+            if (group == null) {
+                return@mapNotNull null
+            }
 
-                val group =
-                    groups.firstOrNull {
-                        it.transactionLinkId ==
-                            transactionLinkId
+            /*
+             * Gross expense belonging to this event
+             * within the selected report period.
+             */
+            val expenseAmount =
+                eventTransactions
+                    .asSequence()
+                    .filter { transaction ->
+
+                        transaction.type ==
+                            TransactionType.EXPENSE &&
+
+                            transaction.role !=
+                                TransactionRole.TRANSFER_OUT
+                    }
+                    .sumOf {
+                        it.amount
                     }
 
-                if (group == null) {
-                    return@mapNotNull null
-                }
+            /*
+             * Reimbursement belonging to this event
+             * within the selected report period.
+             */
+            val reimbursedAmount =
+                eventTransactions
+                    .asSequence()
+                    .filter {
 
-                /*
-                 * Gross expense belonging to this event.
-                 */
-                val expenseAmount =
-                    eventTransactions
-                        .asSequence()
-                        .filter { transaction ->
+                        it.role ==
+                            TransactionRole.REIMBURSEMENT
+                    }
+                    .sumOf {
+                        it.amount
+                    }
 
-                            transaction.type ==
-                                TransactionType.EXPENSE &&
+            /*
+             * Effective cost for the SELECTED REPORT PERIOD.
+             *
+             * This calculation intentionally does not include
+             * transactions from other months.
+             */
+            val effectiveCost =
+                expenseAmount -
+                    reimbursedAmount
 
-                                transaction.role !=
-                                    TransactionRole.TRANSFER_OUT
-                        }
-                        .sumOf {
-                            it.amount
-                        }
+            /*
+             * ------------------------------------------------
+             * MULTI-MONTH EVENT DETECTION
+             * ------------------------------------------------
+             *
+             * Look at the complete account-filtered history
+             * for this Financial Event.
+             *
+             * We only consider expense/reimbursement
+             * transactions because those are the transactions
+             * that determine the Financial Event's reporting
+             * lifecycle.
+             */
+            val coveredMonths =
+                allLinkedTransactions[
+                    transactionLinkId
+                ]
+                    .orEmpty()
+                    .asSequence()
+                    .filter { transaction ->
 
-                /*
-                 * Reimbursement belonging to this event.
-                 */
-                val reimbursedAmount =
-                    eventTransactions
-                        .asSequence()
-                        .filter {
+                        transaction.type ==
+                            TransactionType.EXPENSE ||
 
-                            it.role ==
+                            transaction.role ==
                                 TransactionRole.REIMBURSEMENT
-                        }
-                        .sumOf {
-                            it.amount
-                        }
+                    }
+                    .map {
+                        transactionYearMonth(
+                            it.dateTimestamp
+                        )
+                    }
+                    .distinct()
+                    .sorted()
+                    .toList()
 
-                /*
-                 * Effective cost of the event.
-                 */
-                val effectiveCost =
-                    expenseAmount -
-                        reimbursedAmount
+            ReportsFinancialEvent(
 
-                ReportsFinancialEvent(
-                    transactionLinkId =
-                        transactionLinkId,
+                transactionLinkId =
+                    transactionLinkId,
 
-                    groupName =
-                        group.groupName,
+                groupName =
+                    group.groupName,
 
-                    category =
-                        group.category,
+                category =
+                    group.category,
 
-                    expenseAmount =
-                        expenseAmount,
+                expenseAmount =
+                    expenseAmount,
 
-                    reimbursedAmount =
-                        reimbursedAmount,
+                reimbursedAmount =
+                    reimbursedAmount,
 
-                    effectiveCost =
-                        effectiveCost
-                )
-            }
-            .filter {
-                it.expenseAmount != 0.0 ||
-                    it.reimbursedAmount != 0.0
-            }
-            .sortedByDescending {
-                it.effectiveCost
-            }
-    }
+                effectiveCost =
+                    effectiveCost,
+
+                coveredMonths =
+                    coveredMonths
+            )
+        }
+        .filter {
+            it.expenseAmount != 0.0 ||
+                it.reimbursedAmount != 0.0
+        }
+        .sortedByDescending {
+            it.effectiveCost
+        }
+}
 
     // ------------------------------------------------------------------------
     // Helpers
@@ -1003,6 +1091,19 @@ class ReportsViewModel @Inject constructor(
         val groups: List<TransactionLinkGroup>
     )
 
+    private fun transactionYearMonth(
+    dateTimestamp: Long
+): YearMonth {
+
+    return Instant
+        .ofEpochMilli(dateTimestamp)
+        .atZone(zoneId)
+        .let {
+            YearMonth.from(
+                it.toLocalDate()
+            )
+        }
+}
     private fun Transaction.belongsToMonth(
         month: YearMonth
     ): Boolean {
