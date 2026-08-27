@@ -8,6 +8,8 @@ import com.varsel.expensetracker.domain.model.TransactionRole
 import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.domain.repository.TransactionLinkGroupRepository
 import com.varsel.expensetracker.domain.repository.TransactionRepository
+import com.varsel.expensetracker.data.repository.FinancialEventAllocationRepository
+import com.varsel.expensetracker.data.local.entity.FinancialEventAllocationEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
 import java.time.YearMonth
@@ -70,7 +72,8 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class ReportsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
-    private val transactionLinkGroupRepository: TransactionLinkGroupRepository
+    private val transactionLinkGroupRepository: TransactionLinkGroupRepository,
+    private val financialEventAllocationRepository: FinancialEventAllocationRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -91,6 +94,10 @@ class ReportsViewModel @Inject constructor(
 
     private var latestGroups: List<TransactionLinkGroup> =
         emptyList()
+
+    private var latestAllocations:
+    List<FinancialEventAllocationEntity> =
+    emptyList()
 
     init {
         observeReportData()
@@ -252,32 +259,37 @@ class ReportsViewModel @Inject constructor(
     // Repository observation
     // ------------------------------------------------------------------------
 
-    private fun observeReportData() {
+private fun observeReportData() {
 
-        viewModelScope.launch(Dispatchers.IO) {
+    viewModelScope.launch(Dispatchers.IO) {
 
-            combine(
-                transactionRepository.getAllTransactions(),
-                transactionLinkGroupRepository.getAllGroups()
-            ) { transactions, groups ->
+        combine(
+            transactionRepository.getAllTransactions(),
+            transactionLinkGroupRepository.getAllGroups(),
+            financialEventAllocationRepository.observeAllAllocations()
+        ) { transactions, groups, allocations ->
 
-                ReportSourceData(
-                    transactions = transactions,
-                    groups = groups
-                )
+            ReportSourceData(
+                transactions = transactions,
+                groups = groups,
+                allocations = allocations
+            )
 
-            }.collect { sourceData ->
+        }.collect { sourceData ->
 
-                latestTransactions =
-                    sourceData.transactions
+            latestTransactions =
+                sourceData.transactions
 
-                latestGroups =
-                    sourceData.groups
+            latestGroups =
+                sourceData.groups
 
-                rebuildReport()
-            }
+            latestAllocations =
+                sourceData.allocations
+
+            rebuildReport()
         }
     }
+}
 
     // ------------------------------------------------------------------------
     // Report rebuilding
@@ -344,13 +356,17 @@ val accountFilteredAllTransactions =
                     filteredTransactions
                 )
 
-            val expenseCategories =
-                buildExpenseCategories(
-                    transactions =
-                        filteredTransactions,
-                    groups =
-                        latestGroups
-                )
+val expenseCategories =
+    buildExpenseCategories(
+        transactions =
+            filteredTransactions,
+
+        groups =
+            latestGroups,
+
+        allocations =
+            latestAllocations
+    )
 
             val incomeCategories =
                 buildIncomeCategories(
@@ -580,7 +596,8 @@ val financialEvents =
      */
     private fun buildExpenseCategories(
         transactions: List<Transaction>,
-        groups: List<TransactionLinkGroup>
+        groups: List<TransactionLinkGroup>,
+        allocations: List<FinancialEventAllocationEntity>
     ): List<ReportsExpenseCategory> {
 
         /*
@@ -1088,7 +1105,8 @@ private fun buildFinancialEvents(
 
     private data class ReportSourceData(
         val transactions: List<Transaction>,
-        val groups: List<TransactionLinkGroup>
+        val groups: List<TransactionLinkGroup>,
+        val allocations: List<FinancialEventAllocationEntity>
     )
 
     private fun transactionYearMonth(
