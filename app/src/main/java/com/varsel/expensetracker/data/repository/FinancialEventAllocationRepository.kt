@@ -22,13 +22,27 @@ class FinancialEventAllocationRepository @Inject constructor(
             transactionId
         )
 
-        suspend fun getTransactionIdsForFinancialEvent(
-    transactionLinkId: String
-): List<Long> =
-    dao.getTransactionIdsForFinancialEvent(
-        transactionLinkId
-    )
+    /**
+     * Get all transaction IDs allocated to a
+     * Financial Event.
+     */
+    suspend fun getTransactionIdsForFinancialEvent(
+        transactionLinkId: String
+    ): List<Long> =
+        dao.getTransactionIdsForFinancialEvent(
+            transactionLinkId
+        )
 
+    /**
+     * Get all allocation rows belonging to a
+     * Financial Event.
+     *
+     * Each row contains:
+     *
+     * transactionId
+     * transactionLinkId
+     * allocatedAmount
+     */
     suspend fun getAllocationsForFinancialEvent(
         transactionLinkId: String
     ): List<FinancialEventAllocationEntity> =
@@ -36,6 +50,10 @@ class FinancialEventAllocationRepository @Inject constructor(
             transactionLinkId
         )
 
+    /**
+     * Get the total amount of a transaction that
+     * has already been allocated to Financial Events.
+     */
     suspend fun getAllocatedAmountForTransaction(
         transactionId: Long
     ): Double =
@@ -43,11 +61,19 @@ class FinancialEventAllocationRepository @Inject constructor(
             transactionId
         )
 
+    /**
+     * Insert one Financial Event allocation.
+     *
+     * Amount validation against the original
+     * transaction is intentionally performed by
+     * CreateFinancialEventAllocationUseCase.
+     */
     suspend fun insertAllocation(
         transactionId: Long,
         transactionLinkId: String,
         allocatedAmount: Double,
-        createdAt: Long = System.currentTimeMillis()
+        createdAt: Long =
+            System.currentTimeMillis()
     ): Long {
 
         require(
@@ -56,15 +82,6 @@ class FinancialEventAllocationRepository @Inject constructor(
             "Allocated amount must be greater than zero."
         }
 
-        /*
-         * Do not allow allocations to exceed the
-         * transaction amount.
-         *
-         * The transaction amount itself will be
-         * validated by the caller because this
-         * repository intentionally does not own
-         * TransactionEntity.
-         */
         return dao.insertAllocation(
             FinancialEventAllocationEntity(
                 transactionId =
@@ -82,6 +99,9 @@ class FinancialEventAllocationRepository @Inject constructor(
         )
     }
 
+    /**
+     * Insert multiple allocations.
+     */
     suspend fun insertAllocations(
         allocations:
             List<FinancialEventAllocationEntity>
@@ -100,6 +120,9 @@ class FinancialEventAllocationRepository @Inject constructor(
         )
     }
 
+    /**
+     * Delete one allocation.
+     */
     suspend fun deleteAllocation(
         allocation:
             FinancialEventAllocationEntity
@@ -109,6 +132,9 @@ class FinancialEventAllocationRepository @Inject constructor(
         )
     }
 
+    /**
+     * Delete allocation by ID.
+     */
     suspend fun deleteAllocationById(
         allocationId: Long
     ) {
@@ -117,6 +143,10 @@ class FinancialEventAllocationRepository @Inject constructor(
         )
     }
 
+    /**
+     * Delete every allocation belonging to a
+     * transaction.
+     */
     suspend fun deleteAllocationsForTransaction(
         transactionId: Long
     ) {
@@ -125,6 +155,10 @@ class FinancialEventAllocationRepository @Inject constructor(
         )
     }
 
+    /**
+     * Delete every allocation belonging to a
+     * Financial Event.
+     */
     suspend fun deleteAllocationsForFinancialEvent(
         transactionLinkId: String
     ) {
