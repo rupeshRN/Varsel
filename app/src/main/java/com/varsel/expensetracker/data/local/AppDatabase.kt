@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Provider
 import com.varsel.expensetracker.data.local.entity.FinancialEventAllocationEntity
+import com.varsel.expensetracker.data.local.dao.FinancialEventAllocationDao
 
 @Database(
     entities = [
@@ -35,6 +36,9 @@ import com.varsel.expensetracker.data.local.entity.FinancialEventAllocationEntit
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
+
+    abstract fun financialEventAllocationDao():
+    FinancialEventAllocationDao
 
     abstract fun categoryDao(): CategoryDao
 
