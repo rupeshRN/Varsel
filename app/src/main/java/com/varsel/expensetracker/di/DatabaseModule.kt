@@ -18,6 +18,7 @@ import javax.inject.Provider
 import javax.inject.Singleton
 import com.varsel.expensetracker.data.local.dao.StatementSnapshotDao
 import com.varsel.expensetracker.data.local.dao.TransactionLinkGroupDao
+import com.varsel.expensetracker.data.local.dao.FinancialEventAllocationDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -50,6 +51,13 @@ object DatabaseModule {
         categoryDaoProvider: Provider<CategoryDao>
     ): AppDatabase {
         val factory = SupportOpenHelperFactory(passphrase)
+
+    @Provides
+@Singleton
+fun provideFinancialEventAllocationDao(
+    database: AppDatabase
+): FinancialEventAllocationDao =
+    database.financialEventAllocationDao()
 
 return Room.databaseBuilder(
     context,
