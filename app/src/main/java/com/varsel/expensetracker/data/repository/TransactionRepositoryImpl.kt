@@ -11,11 +11,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.math.abs
 
 class TransactionRepositoryImpl @Inject constructor(
 
     private val transactionDao:
-        TransactionDao
+        TransactionDao,
+
+    private val financialEventAllocationRepository:
+        FinancialEventAllocationRepository
 
 ) : TransactionRepository {
 
@@ -92,6 +96,16 @@ class TransactionRepositoryImpl @Inject constructor(
         transaction: Transaction
     ) {
 
+        /*
+         * Remove Financial Event allocations first.
+         *
+         * The transaction itself is then deleted.
+         */
+        financialEventAllocationRepository
+            .deleteAllocationsForTransaction(
+                transaction.id
+            )
+
         transactionDao
             .deleteTransaction(
                 transaction.toEntity()
@@ -133,6 +147,25 @@ class TransactionRepositoryImpl @Inject constructor(
     //--------------------------------------------------
     // Financial Event linking
     //--------------------------------------------------
+    //
+    // IMPORTANT:
+    //
+    // The legacy transactionLinkId is intentionally
+    // still maintained for backward compatibility.
+    //
+    // In addition, every transaction linked through
+    // this method now receives a Financial Event
+    // allocation equal to the full transaction amount.
+    //
+    // This means existing UI behaviour remains:
+    //
+    //     transaction -> one Financial Event
+    //
+    // while the database now also supports:
+    //
+    //     transaction -> multiple allocations
+    //
+    //--------------------------------------------------
 
     override suspend fun linkTransactions(
 
@@ -148,15 +181,86 @@ class TransactionRepositoryImpl @Inject constructor(
             return
         }
 
-        transactionDao
-            .linkTransactions(
+        /*
+         * Process each transaction individually.
+         *
+         * We intentionally use the existing repository
+         * operation rather than changing the existing UI.
+         */
+        transactionIds
+            .distinct()
+            .forEach { transactionId ->
 
-                transactionIds =
-                    transactionIds,
+                val transaction =
+                    transactionDao
+                        .getTransactionById(
+                            transactionId
+                        )
+                        ?.toDomain()
+                        ?: return@forEach
 
-                transactionLinkId =
-                    transactionLinkId
-            )
+                /*
+                 * Existing UI only presents completely
+                 * unlinked transactions.
+                 *
+                 * Preserve that rule here as well.
+                 *
+                 * This prevents accidentally replacing
+                 * an existing Financial Event relationship.
+                 */
+                if (
+                    transaction.transactionLinkId !=
+                        null
+                ) {
+                    return@forEach
+                }
+
+                /*
+                 * Full allocation for the existing
+                 * one-to-one Financial Event behaviour.
+                 *
+                 * Example:
+                 *
+                 * Transaction = ₹1,000
+                 *
+                 * Existing Financial Event UI:
+                 *     Event A = ₹1,000
+                 *
+                 * New allocation model:
+                 *     Event A = ₹1,000
+                 */
+                financialEventAllocationRepository
+                    .insertAllocation(
+                        transactionId =
+                            transaction.id,
+
+                        transactionLinkId =
+                            transactionLinkId,
+
+                        allocatedAmount =
+                            abs(
+                                transaction.amount
+                            )
+                    )
+
+                /*
+                 * Keep the legacy relationship.
+                 *
+                 * This is still required by the current
+                 * Financial Event UI and other existing
+                 * code paths.
+                 */
+                transactionDao
+                    .linkTransactions(
+                        transactionIds =
+                            listOf(
+                                transaction.id
+                            ),
+
+                        transactionLinkId =
+                            transactionLinkId
+                    )
+            }
     }
 
     //--------------------------------------------------
@@ -166,6 +270,27 @@ class TransactionRepositoryImpl @Inject constructor(
     override suspend fun unlinkTransaction(
         transactionId: Long
     ) {
+
+        /*
+         * Current UI semantics are:
+         *
+         *     remove transaction from Financial Event
+         *
+         * Because the current UI has one legacy
+         * transactionLinkId, unlinking currently means
+         * removing all Financial Event allocations for
+         * this transaction.
+         *
+         * This is safe for the current one-to-one UI.
+         *
+         * When the multi-event allocation editor is
+         * introduced, this method will be replaced by
+         * an allocation-specific unlink operation.
+         */
+        financialEventAllocationRepository
+            .deleteAllocationsForTransaction(
+                transactionId
+            )
 
         transactionDao
             .unlinkTransaction(
@@ -177,8 +302,6 @@ class TransactionRepositoryImpl @Inject constructor(
     // Transfer linking
     //--------------------------------------------------
     //
-    // IMPORTANT:
-    //
     // A transfer is valid only when:
     //
     //     TRANSFER_OUT
@@ -187,9 +310,6 @@ class TransactionRepositoryImpl @Inject constructor(
     //
     // and both amounts are exactly equal.
     //
-    // Validation happens here BEFORE the DAO is
-    // called, so an invalid transfer can never be
-    // persisted by this repository method.
     //--------------------------------------------------
 
     override suspend fun linkTransfer(
@@ -210,8 +330,8 @@ class TransactionRepositoryImpl @Inject constructor(
             transferOutTransactionId ==
                 transferInTransactionId
         ) {
-
-            return TransferLinkResult.InvalidTransactionPair
+            return TransferLinkResult
+                .InvalidTransactionPair
         }
 
         //--------------------------------------------------
@@ -241,16 +361,12 @@ class TransactionRepositoryImpl @Inject constructor(
             transferIn == null
         ) {
 
-            return TransferLinkResult.TransactionNotFound
+            return TransferLinkResult
+                .TransactionNotFound
         }
 
         //--------------------------------------------------
         // Validate transaction types / roles.
-        //
-        // We intentionally validate the ROLE here,
-        // because the user must explicitly classify
-        // the transactions as Transfer Out / Transfer In
-        // before linking them.
         //--------------------------------------------------
 
         if (
@@ -261,18 +377,12 @@ class TransactionRepositoryImpl @Inject constructor(
                 TransactionRole.TRANSFER_IN
         ) {
 
-            return TransferLinkResult.InvalidTransactionPair
+            return TransferLinkResult
+                .InvalidTransactionPair
         }
 
         //--------------------------------------------------
-        // Both transactions must be income/expense
-        // according to their original bank movement.
-        //
-        // TRANSFER_OUT is normally an expense-side
-        // transaction.
-        //
-        // TRANSFER_IN is normally an income-side
-        // transaction.
+        // Validate income / expense types.
         //--------------------------------------------------
 
         if (
@@ -283,20 +393,12 @@ class TransactionRepositoryImpl @Inject constructor(
                 TransactionType.INCOME
         ) {
 
-            return TransferLinkResult.InvalidTransactionPair
+            return TransferLinkResult
+                .InvalidTransactionPair
         }
 
         //--------------------------------------------------
         // Exact amount validation.
-        //
-        // No tolerance is intentionally used.
-        //
-        // Example:
-        //
-        // 1000.00 == 1000.00 -> valid
-        // 1000.00 != 999.99  -> invalid
-        //
-        // The user explicitly requested exact matching.
         //--------------------------------------------------
 
         if (
@@ -304,19 +406,19 @@ class TransactionRepositoryImpl @Inject constructor(
                 transferIn.amount
         ) {
 
-            return TransferLinkResult.AmountMismatch(
+            return TransferLinkResult
+                .AmountMismatch(
 
-                transferOutAmount =
-                    transferOut.amount,
+                    transferOutAmount =
+                        transferOut.amount,
 
-                transferInAmount =
-                    transferIn.amount
-            )
+                    transferInAmount =
+                        transferIn.amount
+                )
         }
 
         //--------------------------------------------------
-        // Both transactions must not already belong
-        // to another transfer.
+        // Existing transfer validation.
         //--------------------------------------------------
 
         if (
@@ -327,11 +429,12 @@ class TransactionRepositoryImpl @Inject constructor(
                 null
         ) {
 
-            return TransferLinkResult.AlreadyLinked
+            return TransferLinkResult
+                .AlreadyLinked
         }
 
         //--------------------------------------------------
-        // Create one shared transfer ID.
+        // Create shared transfer ID.
         //--------------------------------------------------
 
         val transferLinkId =
@@ -339,7 +442,7 @@ class TransactionRepositoryImpl @Inject constructor(
                 .toString()
 
         //--------------------------------------------------
-        // Persist only after ALL validation succeeds.
+        // Persist transfer only after validation.
         //--------------------------------------------------
 
         transactionDao
@@ -385,12 +488,8 @@ class TransactionRepositoryImpl @Inject constructor(
          * the other side of a transfer rather than all
          * transactions by transferLinkId.
          *
-         * Therefore this method is intentionally not
-         * implemented through a new DAO query in this
-         * step.
-         *
-         * The transfer UI currently works with the
-         * current transaction + getLinkedTransfer().
+         * The current transfer UI works with the existing
+         * transaction + getLinkedTransfer() flow.
          */
         return emptyList()
     }
