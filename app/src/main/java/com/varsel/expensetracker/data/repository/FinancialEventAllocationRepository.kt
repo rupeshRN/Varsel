@@ -22,6 +22,13 @@ class FinancialEventAllocationRepository @Inject constructor(
             transactionId
         )
 
+        suspend fun getTransactionIdsForFinancialEvent(
+    transactionLinkId: String
+): List<Long> =
+    dao.getTransactionIdsForFinancialEvent(
+        transactionLinkId
+    )
+
     suspend fun getAllocationsForFinancialEvent(
         transactionLinkId: String
     ): List<FinancialEventAllocationEntity> =
