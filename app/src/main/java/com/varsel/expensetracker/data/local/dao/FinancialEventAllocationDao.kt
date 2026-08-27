@@ -144,4 +144,20 @@ interface FinancialEventAllocationDao {
     suspend fun getAllocatedAmountForTransaction(
         transactionId: Long
     ): Double
+
+    /**
+ * Get all transaction IDs allocated to a Financial Event.
+ */
+@Query(
+    """
+    SELECT transactionId
+    FROM financial_event_allocations
+    WHERE transactionLinkId = :transactionLinkId
+    ORDER BY createdAt ASC
+    """
+)
+suspend fun getTransactionIdsForFinancialEvent(
+    transactionLinkId: String
+): List<Long>
+    
 }
