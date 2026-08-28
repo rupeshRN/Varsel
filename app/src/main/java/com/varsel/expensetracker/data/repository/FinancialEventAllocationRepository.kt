@@ -15,6 +15,16 @@ class FinancialEventAllocationRepository @Inject constructor(
         Flow<List<FinancialEventAllocationEntity>> =
         dao.getAllAllocations()
 
+    fun observeAllocationsForTransaction(
+        transactionId: Long
+    ): Flow<List<FinancialEventAllocationEntity>> =
+        dao.observeAllocationsForTransaction(transactionId)
+
+    fun observeAllocationsForFinancialEvent(
+        transactionLinkId: String
+    ): Flow<List<FinancialEventAllocationEntity>> =
+        dao.observeAllocationsForFinancialEvent(transactionLinkId)
+
     suspend fun getAllocationsForTransaction(
         transactionId: Long
     ): List<FinancialEventAllocationEntity> =
@@ -152,6 +162,40 @@ class FinancialEventAllocationRepository @Inject constructor(
     ) {
         dao.deleteAllocationsForTransaction(
             transactionId
+        )
+    }
+
+    /**
+     * Update allocated amount for a specific transaction and event.
+     */
+    suspend fun updateAllocationAmount(
+        transactionId: Long,
+        transactionLinkId: String,
+        newAmount: Double
+    ) {
+        require(
+            newAmount > 0.0
+        ) {
+            "Allocated amount must be greater than zero."
+        }
+
+        dao.updateAllocationAmount(
+            transactionId = transactionId,
+            transactionLinkId = transactionLinkId,
+            newAmount = newAmount
+        )
+    }
+
+    /**
+     * Delete allocation for a specific transaction and event.
+     */
+    suspend fun deleteAllocationForTransactionAndEvent(
+        transactionId: Long,
+        transactionLinkId: String
+    ) {
+        dao.deleteAllocationForTransactionAndEvent(
+            transactionId = transactionId,
+            transactionLinkId = transactionLinkId
         )
     }
 
