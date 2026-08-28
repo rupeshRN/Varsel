@@ -1,21 +1,29 @@
 package com.varsel.expensetracker.ui.financialevent
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,589 +32,290 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.varsel.expensetracker.domain.model.Transaction
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 
-@OptIn(ExperimentalMaterial3Api::class)
 private enum class AddTransactionMode {
     EXPENSE,
     REIMBURSEMENT
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinancialEventScreen(
     transactionLinkId: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    viewModel: FinancialEventViewModel = hiltViewModel()
 ) {
-
-    val viewModel:
-        FinancialEventViewModel =
-        hiltViewModel()
-
-    val uiState by
-        viewModel.uiState
-            .collectAsStateWithLifecycle()
-
-    val scrollState =
-        rememberScrollState()
-
-    var addMode by
-        remember {
-            mutableStateOf<AddTransactionMode?>(null)
-        }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var addMode by remember { mutableStateOf<AddTransactionMode?>(null) }
 
     LaunchedEffect(transactionLinkId) {
-
-        viewModel.loadFinancialEvent(
-            transactionLinkId
-        )
+        viewModel.loadFinancialEvent(transactionLinkId)
     }
 
     Scaffold(
-
         topBar = {
-
-            CenterAlignedTopAppBar(
-
+            TopAppBar(
                 title = {
-                    Text(
-                        "Financial Event"
-                    )
+                    Text("Financial Event")
                 },
-
                 navigationIcon = {
-
-                    IconButton(
-                        onClick =
-                            onBackClick
-                    ) {
-
+                    IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector =
-                                Icons.Default.ArrowBack,
-
-                            contentDescription =
-                                "Back"
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
                         )
                     }
                 }
             )
         }
-
-    ) { padding ->
-
-        Column(
-
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(
-                        scrollState
-                    )
-                    .padding(24.dp),
-
-            verticalArrangement =
-                Arrangement.spacedBy(
-                    16.dp
-                )
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
-
-            when (
-                val state = uiState
-            ) {
-
-                //--------------------------------------------------
-                // Loading
-                //--------------------------------------------------
-
+            when (val state = uiState) {
                 FinancialEventUiState.Loading -> {
-
-                    Text(
-                        "Loading financial event..."
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
-
-                //--------------------------------------------------
-                // Error
-                //--------------------------------------------------
 
                 is FinancialEventUiState.Error -> {
-
                     Text(
-                        state.message
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp)
                     )
                 }
 
-                //--------------------------------------------------
-                // Loaded
-                //--------------------------------------------------
-
                 is FinancialEventUiState.Loaded -> {
-
-                    //--------------------------------------------------
-                    // Header
-                    //--------------------------------------------------
-
-                    Card(
-                        modifier =
-                            Modifier.fillMaxWidth()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-
-                        Column(
-
-                            modifier =
-                                Modifier.padding(
-                                    16.dp
-                                ),
-
-                            verticalArrangement =
-                                Arrangement.spacedBy(
-                                    8.dp
-                                )
-                        ) {
-
-                            Text(
-                                text =
-                                    state.group
-                                        .groupName,
-
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .headlineSmall,
-
-                                fontWeight =
-                                    FontWeight.Bold
-                            )
-
-                            Text(
-                                text =
-                                    state.group
-                                        .category,
-
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .bodyMedium,
-
-                                color =
-                                    MaterialTheme
-                                        .colorScheme
-                                        .onSurfaceVariant
-                            )
-
-                            OutlinedButton(
-
-                                onClick =
-                                    viewModel
-                                        ::startEditingGroup,
-
-                                enabled =
-                                    !state.isUpdating,
-
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
+                        // Header Card
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = state.group.groupName,
+                                            style = MaterialTheme.typography.headlineSmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "Category: ${state.group.category}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
 
+                                    IconButton(
+                                        onClick = viewModel::startEditingGroup,
+                                        enabled = !state.isUpdating
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Edit Event Name / Category",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Expenses Section
+                        Text(
+                            text = "Expenses (${state.allocatedExpenses.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        if (state.allocatedExpenses.isEmpty()) {
+                            Text(
+                                text = "No expenses allocated to this event.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            state.allocatedExpenses.forEach { item ->
+                                FinancialEventAllocatedRow(
+                                    item = item,
+                                    onEdit = { viewModel.startEditingItem(item) },
+                                    onRemove = { viewModel.removeTransaction(item.transaction.id) },
+                                    enabled = !state.isUpdating
+                                )
+                            }
+                        }
+
+                        if (state.availableExpenses.isNotEmpty()) {
+                            OutlinedButton(
+                                onClick = { addMode = AddTransactionMode.EXPENSE },
+                                enabled = !state.isUpdating,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Add / Allocate Expenses")
+                            }
+                        }
+
+                        // Reimbursements Section
+                        Text(
+                            text = "Reimbursements (${state.allocatedReimbursements.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        if (state.allocatedReimbursements.isEmpty()) {
+                            Text(
+                                text = "No reimbursements allocated to this event.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            state.allocatedReimbursements.forEach { item ->
+                                FinancialEventAllocatedRow(
+                                    item = item,
+                                    onEdit = { viewModel.startEditingItem(item) },
+                                    onRemove = { viewModel.removeTransaction(item.transaction.id) },
+                                    enabled = !state.isUpdating
+                                )
+                            }
+                        }
+
+                        if (state.availableReimbursements.isNotEmpty()) {
+                            OutlinedButton(
+                                onClick = { addMode = AddTransactionMode.REIMBURSEMENT },
+                                enabled = !state.isUpdating,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Add / Allocate Reimbursements")
+                            }
+                        }
+
+                        // Event Summary Card
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 Text(
-                                    "Edit Financial Event"
+                                    text = "Event Summary",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
                                 )
-                            }
-                        }
-                    }
 
-                    //--------------------------------------------------
-                    // Expenses
-                    //--------------------------------------------------
-
-                    Text(
-                        text =
-                            "Expenses",
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .titleMedium,
-
-                        fontWeight =
-                            FontWeight.SemiBold
-                    )
-
-                    if (
-                        state.expenses.isEmpty()
-                    ) {
-
-                        Text(
-                            text =
-                                "No expenses linked.",
-
-                            color =
-                                MaterialTheme
-                                    .colorScheme
-                                    .onSurfaceVariant
-                        )
-
-                    } else {
-
-                        state.expenses.forEach {
-                            transaction ->
-
-                            FinancialEventTransactionRow(
-
-                                transaction =
-                                    transaction,
-
-                                onRemove = {
-
-                                    viewModel
-                                        .removeTransaction(
-                                            transaction.id
-                                        )
-                                },
-
-                                enabled =
-                                    !state.isUpdating
-                            )
-                        }
-                    }
-
-                    //--------------------------------------------------
-                    // Add expenses
-                    //--------------------------------------------------
-
-                    if (
-                        state.availableExpenses
-                            .isNotEmpty()
-                    ) {
-
-                        OutlinedButton(
-
-                            onClick = {
-
-                                addMode =
-                                    AddTransactionMode
-                                        .EXPENSE
-                            },
-
-                            enabled =
-                                !state.isUpdating,
-
-                            modifier =
-                                Modifier.fillMaxWidth()
-
-                        ) {
-
-                            Text(
-                                "Add Expenses"
-                            )
-                        }
-                    }
-
-                    //--------------------------------------------------
-                    // Reimbursements
-                    //--------------------------------------------------
-
-                    Text(
-                        text =
-                            "Reimbursements",
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .titleMedium,
-
-                        fontWeight =
-                            FontWeight.SemiBold
-                    )
-
-                    if (
-                        state.reimbursements
-                            .isEmpty()
-                    ) {
-
-                        Text(
-                            text =
-                                "No reimbursements linked.",
-
-                            color =
-                                MaterialTheme
-                                    .colorScheme
-                                    .onSurfaceVariant
-                        )
-
-                    } else {
-
-                        state.reimbursements
-                            .forEach {
-                                transaction ->
-
-                                FinancialEventTransactionRow(
-
-                                    transaction =
-                                        transaction,
-
-                                    onRemove = {
-
-                                        viewModel
-                                            .removeTransaction(
-                                                transaction.id
-                                            )
-                                    },
-
-                                    enabled =
-                                        !state.isUpdating
-                                )
-                            }
-                    }
-
-                    //--------------------------------------------------
-                    // Add reimbursements
-                    //--------------------------------------------------
-
-                    if (
-                        state.availableReimbursements
-                            .isNotEmpty()
-                    ) {
-
-                        OutlinedButton(
-
-                            onClick = {
-
-                                addMode =
-                                    AddTransactionMode
-                                        .REIMBURSEMENT
-                            },
-
-                            enabled =
-                                !state.isUpdating,
-
-                            modifier =
-                                Modifier.fillMaxWidth()
-
-                        ) {
-
-                            Text(
-                                "Add Reimbursements"
-                            )
-                        }
-                    }
-
-                    //--------------------------------------------------
-                    // Event Summary
-                    //--------------------------------------------------
-
-                    Card(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                    ) {
-
-                        Column(
-
-                            modifier =
-                                Modifier.padding(
-                                    16.dp
-                                ),
-
-                            verticalArrangement =
-                                Arrangement.spacedBy(
-                                    8.dp
-                                )
-                        ) {
-
-                            Text(
-                                text =
-                                    "Event Summary",
-
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .titleMedium,
-
-                                fontWeight =
-                                    FontWeight.SemiBold
-                            )
-
-                            Text(
-                                text =
-                                    "Total Expenses: " +
-                                        "₹%,.2f".format(
-                                            state
-                                                .totalExpenses
-                                        )
-                            )
-
-                            Text(
-                                text =
-                                    "Total Reimbursed: " +
-                                        "₹%,.2f".format(
-                                            state
-                                                .totalReimbursements
-                                        )
-                            )
-
-                            Text(
-                                text =
-                                    "My Actual Expense: " +
-                                        "₹%,.2f".format(
-                                            state
-                                                .actualExpense
-                                        ),
-
-                                fontWeight =
-                                    FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    //--------------------------------------------------
-                    // Month-wise transaction picker
-                    //--------------------------------------------------
-
-                    if (
-                        addMode != null
-                    ) {
-
-                        val transactions =
-                            when (addMode) {
-
-                                AddTransactionMode
-                                    .EXPENSE ->
-
-                                    state
-                                        .availableExpenses
-
-                                AddTransactionMode
-                                    .REIMBURSEMENT ->
-
-                                    state
-                                        .availableReimbursements
-
-                                null ->
-                                    emptyList()
-                            }
-
-                        MonthWiseTransactionPicker(
-
-                            title =
-                                when (addMode) {
-
-                                    AddTransactionMode
-                                        .EXPENSE ->
-
-                                        "Add Expenses"
-
-                                    AddTransactionMode
-                                        .REIMBURSEMENT ->
-
-                                        "Add Reimbursements"
-
-                                    null ->
-                                        ""
-                                },
-
-                            transactions =
-                                transactions,
-
-                            isUpdating =
-                                state.isUpdating,
-
-                            onDismiss = {
-
-                                addMode =
-                                    null
-                            },
-
-                            onConfirm = {
-                                selectedIds ->
-
-                                when (addMode) {
-
-                                    AddTransactionMode
-                                        .EXPENSE -> {
-
-                                        viewModel
-                                            .addExpenses(
-                                                selectedIds
-                                            )
-                                    }
-
-                                    AddTransactionMode
-                                        .REIMBURSEMENT -> {
-
-                                        viewModel
-                                            .addReimbursements(
-                                                selectedIds
-                                            )
-                                    }
-
-                                    null -> Unit
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Total Allocated Expenses:")
+                                    Text("₹%,.2f".format(state.totalExpenses), fontWeight = FontWeight.SemiBold)
                                 }
 
-                                addMode =
-                                    null
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Total Allocated Reimbursements:")
+                                    Text("₹%,.2f".format(state.totalReimbursements), fontWeight = FontWeight.SemiBold)
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("My Actual Expense:", fontWeight = FontWeight.Bold)
+                                    Text(
+                                        "₹%,.2f".format(state.actualExpense),
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
-                        )
-                    }
+                        }
 
-                    //--------------------------------------------------
-                    // Bottom spacing
-                    //--------------------------------------------------
+                        // Month-wise transaction picker
+                        if (addMode != null) {
+                            val availableList = when (addMode) {
+                                AddTransactionMode.EXPENSE -> state.availableExpenses
+                                AddTransactionMode.REIMBURSEMENT -> state.availableReimbursements
+                                null -> emptyList()
+                            }
 
-                    Spacer(
-                        modifier =
-                            Modifier.padding(
-                                bottom = 24.dp
+                            MonthWiseTransactionPicker(
+                                title = when (addMode) {
+                                    AddTransactionMode.EXPENSE -> "Add Expenses"
+                                    AddTransactionMode.REIMBURSEMENT -> "Add Reimbursements"
+                                    null -> ""
+                                },
+                                transactions = availableList,
+                                isUpdating = state.isUpdating,
+                                onDismiss = { addMode = null },
+                                onConfirm = { allocationsMap ->
+                                    when (addMode) {
+                                        AddTransactionMode.EXPENSE -> viewModel.addExpensesWithAmounts(allocationsMap)
+                                        AddTransactionMode.REIMBURSEMENT -> viewModel.addReimbursementsWithAmounts(allocationsMap)
+                                        null -> Unit
+                                    }
+                                    addMode = null
+                                }
                             )
-                    )
+                        }
 
-                    //--------------------------------------------------
-                    // Edit Financial Event dialog
-                    //--------------------------------------------------
+                        // Edit Group Dialog
+                        if (state.isEditingGroup) {
+                            EditFinancialEventDialog(
+                                initialName = state.group.groupName,
+                                initialCategory = state.group.category,
+                                categories = state.categories,
+                                onDismiss = viewModel::cancelEditingGroup,
+                                onSave = viewModel::saveGroup
+                            )
+                        }
 
-                    if (
-                        state.isEditingGroup
-                    ) {
+                        // Edit Item Allocation Dialog
+                        if (state.editingItem != null) {
+                            val item = state.editingItem
+                            EditItemAmountDialog(
+                                item = item,
+                                onDismiss = viewModel::cancelEditingItem,
+                                onSave = { newAmount ->
+                                    viewModel.updateItemAllocationAmount(item.transaction.id, newAmount)
+                                }
+                            )
+                        }
 
-                        EditFinancialEventDialog(
-
-                            initialName =
-                                state.group
-                                    .groupName,
-
-                            initialCategory =
-                                state.group
-                                    .category,
-
-                            categories =
-                                state.categories,
-
-                            onDismiss =
-                                viewModel
-                                    ::cancelEditingGroup,
-
-                            onSave =
-                                viewModel
-                                    ::saveGroup
-                        )
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
@@ -614,773 +323,453 @@ fun FinancialEventScreen(
     }
 }
 
-//--------------------------------------------------
-// Month-wise transaction picker
-//--------------------------------------------------
+@Composable
+private fun FinancialEventAllocatedRow(
+    item: FinancialEventItemUiModel,
+    onEdit: () -> Unit,
+    onRemove: () -> Unit,
+    enabled: Boolean
+) {
+    val date = SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH).format(Date(item.transaction.dateTimestamp))
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.transaction.description,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = date,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "₹%,.2f".format(item.allocatedAmount),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (item.isPartial) {
+                        Text(
+                            text = "of ₹%,.2f (%d%%)".format(item.totalTransactionAmount, item.percent),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = onEdit,
+                    enabled = enabled,
+                    modifier = Modifier.padding(end = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text("Edit Amount")
+                }
+
+                IconButton(
+                    onClick = onRemove,
+                    enabled = enabled
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Remove from Event",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun MonthWiseTransactionPicker(
-
     title: String,
-
-    transactions: List<Transaction>,
-
+    transactions: List<AvailableTransactionUiModel>,
     isUpdating: Boolean,
-
     onDismiss: () -> Unit,
-
-    onConfirm: (Set<Long>) -> Unit
-
+    onConfirm: (Map<Long, Double>) -> Unit
 ) {
+    val selectedAmounts = remember { mutableStateMapOf<Long, Double>() }
 
-    var selectedIds by
-        remember {
-            mutableStateOf(
-                emptySet<Long>()
-            )
-        }
+    var expandedMonth by remember {
+        mutableStateOf(transactions.firstOrNull()?.let { monthKey(it.transaction.dateTimestamp) })
+    }
 
-    var expandedMonth by
-        remember {
-
-            mutableStateOf(
-                transactions
-                    .firstOrNull()
-                    ?.let {
-                        monthKey(it)
-                    }
-            )
-        }
-
-    val groupedTransactions =
-        transactions
-            .sortedByDescending {
-                it.dateTimestamp
-            }
-            .groupBy {
-                monthKey(it)
-            }
+    val groupedTransactions = transactions
+        .sortedByDescending { it.transaction.dateTimestamp }
+        .groupBy { monthKey(it.transaction.dateTimestamp) }
 
     AlertDialog(
-
         onDismissRequest = {
-
-            if (!isUpdating) {
-                onDismiss()
-            }
+            if (!isUpdating) onDismiss()
         },
-
         title = {
-
-            Text(
-                title
-            )
+            Text(title)
         },
-
         text = {
-
             Column(
-
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(
-                            rememberScrollState()
-                        ),
-
-                verticalArrangement =
-                    Arrangement.spacedBy(
-                        8.dp
-                    )
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-
                 Text(
-
-                    text =
-                        "Select transactions by month.",
-
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall,
-
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
+                    text = "Select transactions and optionally customize allocated amounts.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                groupedTransactions
-                    .forEach { (_, monthTransactions) ->
+                groupedTransactions.forEach { (_, monthTransactions) ->
+                    val firstItem = monthTransactions.first()
+                    val key = monthKey(firstItem.transaction.dateTimestamp)
+                    val monthSelectedCount = monthTransactions.count { it.transaction.id in selectedAmounts }
 
-                        val month =
-                            monthTransactions
-                                .first()
-
-                        val key =
-                            monthKey(
-                                month
-                            )
-
-                        val monthSelectedCount =
-                            monthTransactions.count {
-
-                                it.id in
-                                    selectedIds
-                            }
-
-                        Card(
-                            modifier =
-                                Modifier.fillMaxWidth()
-                        ) {
-
-                            Column {
-
-                                OutlinedButton(
-
-                                    onClick = {
-
-                                        expandedMonth =
-                                            if (
-                                                expandedMonth ==
-                                                    key
-                                            ) {
-
-                                                null
-
-                                            } else {
-
-                                                key
-                                            }
-                                    },
-
-                                    enabled =
-                                        !isUpdating,
-
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column {
+                            OutlinedButton(
+                                onClick = {
+                                    expandedMonth = if (expandedMonth == key) null else key
+                                },
+                                enabled = !isUpdating,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-
-                                    Row(
-
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth(),
-
-                                        horizontalArrangement =
-                                            Arrangement
-                                                .SpaceBetween
-                                    ) {
-
+                                    Text(monthLabel(firstItem.transaction.dateTimestamp))
+                                    if (monthSelectedCount > 0) {
                                         Text(
-                                            monthLabel(
-                                                month
-                                            )
+                                            "$monthSelectedCount selected",
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold
                                         )
-
-                                        if (
-                                            monthSelectedCount >
-                                                0
-                                        ) {
-
-                                            Text(
-
-                                                "$monthSelectedCount selected",
-
-                                                color =
-                                                    MaterialTheme
-                                                        .colorScheme
-                                                        .primary
-                                            )
-                                        }
                                     }
                                 }
+                            }
 
-                                if (
-                                    expandedMonth ==
-                                        key
-                                ) {
-
-                                    monthTransactions
-                                        .forEach {
-                                            transaction ->
-
-                                            TransactionPickerRow(
-
-                                                transaction =
-                                                    transaction,
-
-                                                selected =
-                                                    transaction.id in
-                                                        selectedIds,
-
-                                                enabled =
-                                                    !isUpdating,
-
-                                                onToggle = {
-
-                                                    selectedIds =
-                                                        if (
-                                                            transaction.id in
-                                                                selectedIds
-                                                        ) {
-
-                                                            selectedIds -
-                                                                transaction.id
-
-                                                        } else {
-
-                                                            selectedIds +
-                                                                transaction.id
-                                                        }
-                                                }
-                                            )
+                            if (expandedMonth == key) {
+                                monthTransactions.forEach { avail ->
+                                    TransactionPickerRow(
+                                        avail = avail,
+                                        allocatedAmount = selectedAmounts[avail.transaction.id],
+                                        enabled = !isUpdating,
+                                        onToggle = { isSelected ->
+                                            if (isSelected) {
+                                                selectedAmounts[avail.transaction.id] = avail.remainingAmount
+                                            } else {
+                                                selectedAmounts.remove(avail.transaction.id)
+                                            }
+                                        },
+                                        onAmountChange = { newAmt ->
+                                            selectedAmounts[avail.transaction.id] = newAmt
                                         }
+                                    )
                                 }
                             }
                         }
                     }
+                }
 
-                if (
-                    selectedIds.isNotEmpty()
-                ) {
-
+                if (selectedAmounts.isNotEmpty()) {
+                    val total = selectedAmounts.values.sum()
                     Text(
-
-                        text =
-                            "${selectedIds.size} transaction(s) selected",
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodyMedium,
-
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .primary
+                        text = "${selectedAmounts.size} selected | Total: ₹%,.2f".format(total),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
         },
-
         confirmButton = {
-
             Button(
-
-                onClick = {
-
-                    onConfirm(
-                        selectedIds
-                    )
-                },
-
-                enabled =
-                    selectedIds.isNotEmpty() &&
-                    !isUpdating
-
+                onClick = { onConfirm(selectedAmounts.toMap()) },
+                enabled = selectedAmounts.isNotEmpty() && !isUpdating
             ) {
-
-                Text(
-
-                    if (isUpdating) {
-
-                        "Adding..."
-
-                    } else {
-
-                        "Add Selected"
-                    }
-                )
+                Text(if (isUpdating) "Adding..." else "Add Selected")
             }
         },
-
         dismissButton = {
-
             OutlinedButton(
-
-                onClick =
-                    onDismiss,
-
-                enabled =
-                    !isUpdating
-
+                onClick = onDismiss,
+                enabled = !isUpdating
             ) {
-
-                Text(
-                    "Cancel"
-                )
+                Text("Cancel")
             }
         }
     )
 }
-
-//--------------------------------------------------
-// Transaction picker row
-//--------------------------------------------------
 
 @Composable
 private fun TransactionPickerRow(
-
-    transaction: Transaction,
-
-    selected: Boolean,
-
+    avail: AvailableTransactionUiModel,
+    allocatedAmount: Double?,
     enabled: Boolean,
-
-    onToggle: () -> Unit
-
+    onToggle: (Boolean) -> Unit,
+    onAmountChange: (Double) -> Unit
 ) {
-
-    Row(
-
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 8.dp,
-                    vertical = 4.dp
-                ),
-
-        horizontalArrangement =
-            Arrangement.spacedBy(
-                8.dp
-            )
-
-    ) {
-
-        Checkbox(
-
-            checked =
-                selected,
-
-            onCheckedChange = {
-
-                onToggle()
-            },
-
-            enabled =
-                enabled
-        )
-
-        Column(
-
-            modifier =
-                Modifier.weight(1f)
-
-        ) {
-
-            Text(
-
-                text =
-                    transaction.description,
-
-                style =
-                    MaterialTheme
-                        .typography
-                        .bodyMedium
-            )
-
-            Text(
-
-                text =
-                    SimpleDateFormat(
-                        "dd MMM yyyy",
-                        Locale.ENGLISH
-                    ).format(
-                        Date(
-                            transaction.dateTimestamp
-                        )
-                    ),
-
-                style =
-                    MaterialTheme
-                        .typography
-                        .bodySmall,
-
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant
-            )
-        }
-
-        Text(
-
-            text =
-                "₹%,.2f".format(
-                    transaction.amount
-                ),
-
-            style =
-                MaterialTheme
-                    .typography
-                    .bodyMedium
-        )
+    val isSelected = allocatedAmount != null
+    var isEditingCustomAmount by remember { mutableStateOf(false) }
+    var customAmountText by remember(allocatedAmount) {
+        mutableStateOf("%.2f".format(allocatedAmount ?: avail.remainingAmount))
     }
-}
 
-//--------------------------------------------------
-// Month helpers
-//--------------------------------------------------
-
-private fun monthKey(
-    transaction: Transaction
-): String {
-
-    return SimpleDateFormat(
-        "yyyy-MM",
-        Locale.ENGLISH
-    ).format(
-        Date(
-            transaction.dateTimestamp
-        )
-    )
-}
-
-private fun monthLabel(
-    transaction: Transaction
-): String {
-
-    return SimpleDateFormat(
-        "MMMM yyyy",
-        Locale.ENGLISH
-    ).format(
-        Date(
-            transaction.dateTimestamp
-        )
-    )
-}
-
-//--------------------------------------------------
-// Linked transaction row
-//--------------------------------------------------
-
-@Composable
-private fun FinancialEventTransactionRow(
-
-    transaction: Transaction,
-
-    onRemove: () -> Unit,
-
-    enabled: Boolean
-
-) {
-
-    val date =
-        SimpleDateFormat(
-            "dd MMM yyyy",
-            Locale.ENGLISH
-        ).format(
-            Date(
-                transaction.dateTimestamp
-            )
-        )
-
-    Card(
-        modifier =
-            Modifier.fillMaxWidth()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-
-        Column(
-
-            modifier =
-                Modifier.padding(
-                    16.dp
-                ),
-
-            verticalArrangement =
-                Arrangement.spacedBy(
-                    6.dp
-                )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { checked ->
+                    onToggle(checked)
+                },
+                enabled = enabled
+            )
 
-            Row(
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = avail.transaction.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH).format(Date(avail.transaction.dateTimestamp)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement
-                        .SpaceBetween
-            ) {
-
-                Column(
-                    modifier =
-                        Modifier.weight(1f)
-                ) {
-
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "Avail: ₹%,.2f".format(avail.remainingAmount),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                if (avail.remainingAmount < avail.totalAmount - 0.01) {
                     Text(
-
-                        transaction.description,
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodyMedium
-                    )
-
-                    Text(
-
-                        date,
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodySmall,
-
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .onSurfaceVariant
+                        text = "Total: ₹%,.2f".format(avail.totalAmount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
-                Text(
-
-                    "₹%,.2f".format(
-                        transaction.amount
-                    ),
-
-                    fontWeight =
-                        FontWeight.SemiBold
-                )
             }
+        }
 
-            OutlinedButton(
-
-                onClick =
-                    onRemove,
-
-                enabled =
-                    enabled,
-
-                modifier =
-                    Modifier.fillMaxWidth()
+        if (isSelected) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 40.dp, end = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-
-                Text(
-                    "Remove from Event"
-                )
+                if (isEditingCustomAmount) {
+                    OutlinedTextField(
+                        value = customAmountText,
+                        onValueChange = {
+                            customAmountText = it
+                            val parsed = it.toDoubleOrNull()
+                            if (parsed != null && parsed > 0 && parsed <= avail.remainingAmount + 0.01) {
+                                onAmountChange(parsed)
+                            }
+                        },
+                        label = { Text("Allocate (₹)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = { isEditingCustomAmount = false }) {
+                        Text("Done")
+                    }
+                } else {
+                    Text(
+                        text = "Allocated: ₹%,.2f".format(allocatedAmount ?: 0.0),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    TextButton(onClick = { isEditingCustomAmount = true }) {
+                        Text("Custom Amount")
+                    }
+                }
             }
         }
     }
 }
 
-//--------------------------------------------------
-// Edit Financial Event dialog
-//
-// Category is now a dropdown backed by the existing
-// application category list.
-//--------------------------------------------------
+@Composable
+private fun EditItemAmountDialog(
+    item: FinancialEventItemUiModel,
+    onDismiss: () -> Unit,
+    onSave: (Double) -> Unit
+) {
+    var amountText by remember(item) {
+        mutableStateOf("%.2f".format(item.allocatedAmount))
+    }
+    val amountVal = amountText.toDoubleOrNull() ?: 0.0
+    val isValid = amountVal > 0.0 && amountVal <= (item.totalTransactionAmount + 0.01)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Edit Allocation Amount")
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = item.transaction.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Total transaction amount: ₹%,.2f".format(item.totalTransactionAmount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = it },
+                    label = { Text("Allocated Amount (₹)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    isError = amountText.isNotBlank() && !isValid,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (isValid) onSave(amountVal)
+                },
+                enabled = isValid
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+private fun monthKey(timestamp: Long): String {
+    return SimpleDateFormat("yyyy-MM", Locale.ENGLISH).format(Date(timestamp))
+}
+
+private fun monthLabel(timestamp: Long): String {
+    return SimpleDateFormat("MMMM yyyy", Locale.ENGLISH).format(Date(timestamp))
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EditFinancialEventDialog(
-
     initialName: String,
-
     initialCategory: String,
-
     categories: List<String>,
-
     onDismiss: () -> Unit,
-
-    onSave: (
-        String,
-        String
-    ) -> Unit
-
+    onSave: (String, String) -> Unit
 ) {
-
-    var groupName by
-        remember(initialName) {
-
-            mutableStateOf(
-                initialName
-            )
-        }
-
-    var category by
-        remember(initialCategory) {
-
-            mutableStateOf(
-                initialCategory
-            )
-        }
-
-    var categoryExpanded by
-        remember {
-
-            mutableStateOf(false)
-        }
+    var groupName by remember(initialName) { mutableStateOf(initialName) }
+    var category by remember(initialCategory) { mutableStateOf(initialCategory) }
+    var categoryExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
-
-        onDismissRequest =
-            onDismiss,
-
-        title = {
-
-            Text(
-                "Edit Financial Event"
-            )
-        },
-
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Financial Event") },
         text = {
-
             Column(
-
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                verticalArrangement =
-                    Arrangement.spacedBy(
-                        12.dp
-                    )
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
-                //--------------------------------------------------
-                // Event name
-                //--------------------------------------------------
-
                 OutlinedTextField(
-
-                    value =
-                        groupName,
-
-                    onValueChange = {
-
-                        groupName =
-                            it
-                    },
-
-                    label = {
-
-                        Text(
-                            "Event name"
-                        )
-                    },
-
+                    value = groupName,
+                    onValueChange = { groupName = it },
+                    label = { Text("Event name") },
                     singleLine = true,
-
-                    modifier =
-                        Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                //--------------------------------------------------
-                // Category dropdown
-                //--------------------------------------------------
-Column(
-    modifier = Modifier.fillMaxWidth()
-) {
-
-    Box(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-
-        OutlinedTextField(
-            value = category,
-            onValueChange = {},
-            readOnly = true,
-            label = {
-                Text("Category")
-            },
-            trailingIcon = {
-                Text(
-                    text =
-                        if (categoryExpanded) "▲"
-                        else "▼",
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
-            },
-            modifier =
-                Modifier.fillMaxWidth()
-        )
-
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .clickable {
-                        categoryExpanded =
-                            !categoryExpanded
-                    }
-        )
-    }
-
-    DropdownMenu(
-        expanded = categoryExpanded,
-        onDismissRequest = {
-            categoryExpanded = false
-        }
-    ) {
-
-        categories.forEach { availableCategory ->
-
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        availableCategory
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = category,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category") },
+                        trailingIcon = {
+                            Text(if (categoryExpanded) "▲" else "▼")
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     )
-                },
-                onClick = {
-
-                    category =
-                        availableCategory
-
-                    categoryExpanded =
-                        false
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { categoryExpanded = !categoryExpanded }
+                    )
                 }
-            )
-        }
-    }
-}
+
+                DropdownMenu(
+                    expanded = categoryExpanded,
+                    onDismissRequest = { categoryExpanded = false }
+                ) {
+                    categories.forEach { availableCategory ->
+                        DropdownMenuItem(
+                            text = { Text(availableCategory) },
+                            onClick = {
+                                category = availableCategory
+                                categoryExpanded = false
+                            }
+                        )
+                    }
+                }
             }
         },
-
         confirmButton = {
-
             Button(
-
-                onClick = {
-
-                    onSave(
-
-                        groupName,
-
-                        category
-                    )
-                },
-
-                enabled =
-                    groupName.isNotBlank() &&
-                    category.isNotBlank() &&
-                    category in categories
-
+                onClick = { onSave(groupName, category) },
+                enabled = groupName.isNotBlank() && category.isNotBlank() && category in categories
             ) {
-
-                Text(
-                    "Save"
-                )
+                Text("Save")
             }
         },
-
         dismissButton = {
-
-            OutlinedButton(
-
-                onClick =
-                    onDismiss
-            ) {
-
-                Text(
-                    "Cancel"
-                )
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancel")
             }
         }
     )
