@@ -4,6 +4,16 @@ import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionLinkGroup
 import com.varsel.expensetracker.domain.model.TransactionRole
 
+data class TransactionEventAllocationUiModel(
+    val allocationId: Long,
+    val transactionLinkId: String,
+    val groupName: String,
+    val category: String,
+    val allocatedAmount: Double,
+    val totalTransactionAmount: Double,
+    val percent: Int = if (totalTransactionAmount > 0.0) ((allocatedAmount / totalTransactionAmount) * 100).toInt().coerceIn(0, 100) else 100
+)
+
 sealed interface TransactionDetailUiState {
 
     //--------------------------------------------------
@@ -42,7 +52,29 @@ sealed interface TransactionDetailUiState {
             emptyList(),
 
         //--------------------------------------------------
-        // Financial Event / transaction grouping
+        // Financial Event Allocations (Multi-Event)
+        //--------------------------------------------------
+
+        val allocations: List<TransactionEventAllocationUiModel> =
+            emptyList(),
+
+        val totalAllocatedAmount: Double = 0.0,
+
+        val remainingUnallocatedAmount: Double = 0.0,
+
+        val allAvailableEventGroups: List<TransactionLinkGroup> =
+            emptyList(),
+
+        val showCreateGroupPrompt: Boolean = false,
+
+        val showAllocateExistingPrompt: Boolean = false,
+
+        val editingAllocation: TransactionEventAllocationUiModel? = null,
+
+        val allocationErrorMessage: String? = null,
+
+        //--------------------------------------------------
+        // Financial Event / Legacy transaction grouping
         //--------------------------------------------------
 
         /**
@@ -67,14 +99,8 @@ sealed interface TransactionDetailUiState {
          */
         val isLinking: Boolean = false,
 
-        //--------------------------------------------------
-        // Financial Event / Report Group
-        //--------------------------------------------------
-
         val transactionLinkGroup:
             TransactionLinkGroup? = null,
-
-        val showCreateGroupPrompt: Boolean = false,
 
         val isSavingGroup: Boolean = false,
 
