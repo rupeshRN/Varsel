@@ -146,18 +146,77 @@ interface FinancialEventAllocationDao {
     ): Double
 
     /**
- * Get all transaction IDs allocated to a Financial Event.
- */
-@Query(
-    """
-    SELECT transactionId
-    FROM financial_event_allocations
-    WHERE transactionLinkId = :transactionLinkId
-    ORDER BY createdAt ASC
-    """
-)
-suspend fun getTransactionIdsForFinancialEvent(
-    transactionLinkId: String
-): List<Long>
-    
+     * Get all transaction IDs allocated to a Financial Event.
+     */
+    @Query(
+        """
+        SELECT transactionId
+        FROM financial_event_allocations
+        WHERE transactionLinkId = :transactionLinkId
+        ORDER BY createdAt ASC
+        """
+    )
+    suspend fun getTransactionIdsForFinancialEvent(
+        transactionLinkId: String
+    ): List<Long>
+
+    /**
+     * Observe allocations for one transaction.
+     */
+    @Query(
+        """
+        SELECT *
+        FROM financial_event_allocations
+        WHERE transactionId = :transactionId
+        ORDER BY createdAt ASC
+        """
+    )
+    fun observeAllocationsForTransaction(
+        transactionId: Long
+    ): Flow<List<FinancialEventAllocationEntity>>
+
+    /**
+     * Observe allocations for one Financial Event.
+     */
+    @Query(
+        """
+        SELECT *
+        FROM financial_event_allocations
+        WHERE transactionLinkId = :transactionLinkId
+        ORDER BY createdAt ASC
+        """
+    )
+    fun observeAllocationsForFinancialEvent(
+        transactionLinkId: String
+    ): Flow<List<FinancialEventAllocationEntity>>
+
+    /**
+     * Update allocated amount for a specific transaction and event.
+     */
+    @Query(
+        """
+        UPDATE financial_event_allocations
+        SET allocatedAmount = :newAmount
+        WHERE transactionId = :transactionId AND transactionLinkId = :transactionLinkId
+        """
+    )
+    suspend fun updateAllocationAmount(
+        transactionId: Long,
+        transactionLinkId: String,
+        newAmount: Double
+    )
+
+    /**
+     * Remove allocation for a specific transaction and event.
+     */
+    @Query(
+        """
+        DELETE FROM financial_event_allocations
+        WHERE transactionId = :transactionId AND transactionLinkId = :transactionLinkId
+        """
+    )
+    suspend fun deleteAllocationForTransactionAndEvent(
+        transactionId: Long,
+        transactionLinkId: String
+    )
 }
