@@ -580,17 +580,12 @@ private fun buildExpenseCategories(
      * Allocation lookup
      * --------------------------------------------------------
      *
-     * transactionId -> total amount allocated to Financial
-     * Events.
+     * A transaction may now be allocated to multiple
+     * Financial Events.
      *
-     * This allows partial allocation.
-     *
-     * Example:
-     *
-     * transaction = ₹1,000
-     * allocated   = ₹600
-     *
-     * ordinary remainder = ₹400
+     * Therefore we NEVER use transactionLinkId to determine
+     * how much of a transaction remains available for normal
+     * reporting.
      */
     val allocatedByTransactionId =
         allocations
@@ -605,11 +600,19 @@ private fun buildExpenseCategories(
 
     /*
      * --------------------------------------------------------
-     * Normal expenses
+     * Ordinary expense categories
      * --------------------------------------------------------
      *
-     * Only the unallocated remainder belongs to the original
+     * Only the unallocated remainder remains in the original
      * transaction category.
+     *
+     * Example:
+     *
+     * Transaction = ₹1,000
+     * Event A     = ₹600
+     * Event B     = ₹400
+     *
+     * Ordinary category = ₹0
      */
     val normalAmountsByCategory =
         transactions
@@ -632,8 +635,11 @@ private fun buildExpenseCategories(
                     ] ?: 0.0
 
                 val remainingAmount =
-                    transaction.amount -
-                        allocatedAmount
+                    (
+                        transaction.amount -
+                            allocatedAmount
+                        )
+                        .coerceAtLeast(0.0)
 
                 if (remainingAmount <= 0.0) {
                     null
@@ -656,13 +662,20 @@ private fun buildExpenseCategories(
 
     /*
      * --------------------------------------------------------
-     * Financial Event calculations
+     * Financial Event category amounts
      * --------------------------------------------------------
      *
-     * Only allocation amounts are used.
+     * IMPORTANT:
      *
-     * This is critical for the new model because one
-     * transaction can belong to multiple Financial Events.
+     * We calculate each event through the END of the
+     * currently selected month.
+     *
+     * This is intentionally different from the ordinary
+     * transaction list, which contains only the selected
+     * reporting period.
+     *
+     * Therefore a June reimbursement remains relevant when
+     * July is selected.
      */
     val eventAmountsByCategory =
         mutableMapOf<String, Double>()
@@ -672,6 +685,21 @@ private fun buildExpenseCategories(
 
     val eventReimbursementByCategory =
         mutableMapOf<String, Double>()
+
+    /*
+     * All transactions available to the report calculation.
+     *
+     * `latestTransactions` contains the complete transaction
+     * stream observed by ReportsViewModel.
+     *
+     * We use it here so Financial Events can be calculated
+     * cumulatively through month-end.
+     */
+    val allTransactions =
+        latestTransactions
+
+    val selectedMonth =
+        _uiState.value.selectedMonth
 
     groups.forEach { group ->
 
@@ -685,6 +713,11 @@ private fun buildExpenseCategories(
             return@forEach
         }
 
+        /*
+         * transactionId -> amount allocated to THIS event
+         *
+         * This is important for the future multi-event case.
+         */
         val allocationByTransactionId =
             eventAllocations
                 .groupBy {
@@ -697,23 +730,39 @@ private fun buildExpenseCategories(
                 }
 
         /*
-         * Only transactions in the currently selected period
-         * are used here.
+         * All transactions belonging to this event.
          *
-         * C3 will make this cumulative through month-end for
-         * Financial Event summaries.
+         * We deliberately use allTransactions instead of the
+         * currently filtered transaction list.
          */
         val eventTransactions =
-            transactions
+            allTransactions
                 .filter { transaction ->
 
                     transaction.id in
-                        allocationByTransactionId
-                            .keys
+                        allocationByTransactionId.keys
                 }
 
-        val eventExpense =
-            eventTransactions
+        /*
+         * Only transactions occurring on or before the end
+         * of the selected month contribute to the event's
+         * effective cost.
+         */
+        val transactionsThroughMonthEnd =
+            eventTransactions.filter { transaction ->
+
+                transactionYearMonth(
+                    transaction.dateTimestamp
+                ) <= selectedMonth
+            }
+
+        /*
+         * ----------------------------------------------------
+         * Cumulative Financial Event expenses
+         * ----------------------------------------------------
+         */
+        val cumulativeExpense =
+            transactionsThroughMonthEnd
                 .asSequence()
                 .filter { transaction ->
 
@@ -730,8 +779,13 @@ private fun buildExpenseCategories(
                     ] ?: 0.0
                 }
 
-        val eventReimbursement =
-            eventTransactions
+        /*
+         * ----------------------------------------------------
+         * Cumulative Financial Event reimbursements
+         * ----------------------------------------------------
+         */
+        val cumulativeReimbursement =
+            transactionsThroughMonthEnd
                 .asSequence()
                 .filter { transaction ->
 
@@ -745,9 +799,14 @@ private fun buildExpenseCategories(
                     ] ?: 0.0
                 }
 
+        /*
+         * ----------------------------------------------------
+         * Effective Financial Event cost
+         * ----------------------------------------------------
+         */
         val effectiveCost =
-            eventExpense -
-                eventReimbursement
+            cumulativeExpense -
+                cumulativeReimbursement
 
         val category =
             group.category.trim()
@@ -756,21 +815,28 @@ private fun buildExpenseCategories(
             return@forEach
         }
 
+        /*
+         * Keep these values available for the existing
+         * ReportsExpenseCategory model / UI.
+         */
         eventGrossByCategory[category] =
             (
                 eventGrossByCategory[category]
                     ?: 0.0
-                ) + eventExpense
+                ) + cumulativeExpense
 
         eventReimbursementByCategory[category] =
             (
                 eventReimbursementByCategory[category]
                     ?: 0.0
-                ) + eventReimbursement
+                ) + cumulativeReimbursement
 
         /*
-         * A negative effective expense must never create a
-         * negative expense category.
+         * A Financial Event with a positive effective cost
+         * contributes to expenses.
+         *
+         * If reimbursements exceed expenses, it must NOT
+         * create a negative expense category.
          */
         if (effectiveCost > 0.0) {
 
@@ -807,11 +873,6 @@ private fun buildExpenseCategories(
 
             val eventAmount =
                 eventAmountsByCategory[
-                    category
-                ] ?: 0.0
-
-            val grossEventAmount =
-                eventGrossByCategory[
                     category
                 ] ?: 0.0
 
