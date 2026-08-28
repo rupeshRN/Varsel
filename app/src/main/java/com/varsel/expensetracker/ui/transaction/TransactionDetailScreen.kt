@@ -264,49 +264,31 @@ if (
 ) {
 
     TransactionLinkSection(
-
-        linkedTransactions =
-            state.linkedTransactions,
-
-        transactionLinkGroup =
-            state.transactionLinkGroup,
-
-        showCreateGroupPrompt =
-            state.showCreateGroupPrompt,
-
-        isSavingGroup =
-            state.isSavingGroup,
-
-        categories =
-            state.categories,
-
-        onManageFinancialEvent = {
-
-            val linkId =
-                transaction
-                    .transactionLinkId
-
-            if (
-                linkId != null
-            ) {
-
-                onFinancialEventClick(
-                    linkId
-                )
-            }
+        allocations = state.allocations,
+        totalAllocatedAmount = state.totalAllocatedAmount,
+        remainingUnallocatedAmount = state.remainingUnallocatedAmount,
+        totalTransactionAmount = kotlin.math.abs(transaction.amount),
+        allAvailableEventGroups = state.allAvailableEventGroups,
+        showCreateGroupPrompt = state.showCreateGroupPrompt,
+        showAllocateExistingPrompt = state.showAllocateExistingPrompt,
+        editingAllocation = state.editingAllocation,
+        allocationErrorMessage = state.allocationErrorMessage,
+        isSavingGroup = state.isSavingGroup,
+        categories = state.categories,
+        onManageFinancialEvent = onFinancialEventClick,
+        onShowCreateFinancialEvent = viewModel::showCreateGroupPrompt,
+        onDismissCreateGroupPrompt = viewModel::dismissCreateGroupPrompt,
+        onCreateReportGroup = { groupName, category, amount ->
+            viewModel.createReportGroup(groupName, category, amount)
         },
-
-        onShowCreateFinancialEvent =
-            viewModel::showCreateGroupPrompt,
-
-        onUnlink =
-            viewModel::unlinkCurrentTransaction,
-
-        onDismissCreateGroupPrompt =
-            viewModel::dismissCreateGroupPrompt,
-
-        onCreateReportGroup =
-            viewModel::createReportGroup
+        onShowAllocateExisting = viewModel::showAllocateExistingPrompt,
+        onDismissAllocateExisting = viewModel::dismissAllocateExistingPrompt,
+        onAllocateToExistingGroup = viewModel::allocateToExistingGroup,
+        onStartEditingAllocation = viewModel::startEditingAllocation,
+        onDismissEditingAllocation = viewModel::dismissEditingAllocation,
+        onUpdateAllocationAmount = viewModel::updateAllocationAmount,
+        onDeleteAllocation = viewModel::deleteAllocation,
+        onClearError = viewModel::clearAllocationError
     )
 }
 
