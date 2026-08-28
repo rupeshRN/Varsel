@@ -2,7 +2,27 @@ package com.varsel.expensetracker.ui.financialevent
 
 import com.varsel.expensetracker.domain.model.Transaction
 import com.varsel.expensetracker.domain.model.TransactionLinkGroup
-import com.varsel.expensetracker.data.local.entity.CategoryEntity
+
+data class FinancialEventItemUiModel(
+    val allocationId: Long,
+    val transaction: Transaction,
+    val allocatedAmount: Double,
+    val totalTransactionAmount: Double,
+    val isPartialAllocation: Boolean = (totalTransactionAmount - allocatedAmount) > 0.01
+) {
+    val isPartial: Boolean get() = isPartialAllocation
+    val percent: Int
+        get() = if (totalTransactionAmount > 0.0) {
+            ((allocatedAmount / totalTransactionAmount) * 100).toInt()
+        } else 100
+}
+
+data class AvailableTransactionUiModel(
+    val transaction: Transaction,
+    val remainingAmount: Double,
+    val totalAmount: Double,
+    val isPartiallyAllocated: Boolean = (totalAmount - remainingAmount) > 0.01
+)
 
 sealed interface FinancialEventUiState {
 
@@ -12,31 +32,38 @@ sealed interface FinancialEventUiState {
 
         val group: TransactionLinkGroup,
 
-        val expenses: List<Transaction>,
+        val allocatedExpenses: List<FinancialEventItemUiModel> = emptyList(),
 
-        val reimbursements: List<Transaction>,
-
-        /**
-         * Expenses that are not currently part of this
-         * financial event and can be added manually.
-         */
-        val availableExpenses: List<Transaction>,
+        val allocatedReimbursements: List<FinancialEventItemUiModel> = emptyList(),
 
         /**
-         * Reimbursement transactions that are not currently
-         * part of this financial event and can be added manually.
+         * Backward compatibility: list of transactions
          */
-        val availableReimbursements: List<Transaction>,
+        val expenses: List<Transaction> = emptyList(),
 
-        val totalExpenses: Double,
+        val reimbursements: List<Transaction> = emptyList(),
 
-        val totalReimbursements: Double,
+        /**
+         * Expenses with remaining unallocated amount.
+         */
+        val availableExpenses: List<AvailableTransactionUiModel> = emptyList(),
+
+        /**
+         * Reimbursements with remaining unallocated amount.
+         */
+        val availableReimbursements: List<AvailableTransactionUiModel> = emptyList(),
+
+        val totalExpenses: Double = 0.0,
+
+        val totalReimbursements: Double = 0.0,
 
         val isUpdating: Boolean = false,
 
         val isEditingGroup: Boolean = false,
 
-        val categories: List<String>
+        val editingItem: FinancialEventItemUiModel? = null,
+
+        val categories: List<String> = emptyList()
 
     ) : FinancialEventUiState {
 
