@@ -112,7 +112,32 @@ val customEndDate: LocalDate = LocalDate.now(),
     /**
      * Detailed category drill-down state.
      */
-    val drillDownState: CategoryDrillDownState = CategoryDrillDownState()
+    val drillDownState: CategoryDrillDownState = CategoryDrillDownState(),
+
+    /**
+     * Active tab on the Reports screen (Overview vs Compare/Trends).
+     */
+    val currentTab: ReportsTab = ReportsTab.OVERVIEW,
+
+    /**
+     * Time window for month-over-month category comparisons.
+     */
+    val comparisonWindow: ComparisonWindow = ComparisonWindow.THREE_MONTHS,
+
+    /**
+     * Selected flow for the comparison view (Expenses vs Income).
+     */
+    val comparisonFlow: ReportsFlow = ReportsFlow.EXPENSES,
+
+    /**
+     * List of category comparison items with multi-month data and sparklines.
+     */
+    val comparisonItems: List<CategoryComparisonItem> = emptyList(),
+
+    /**
+     * Overall summary of trends across all categories in the comparison window.
+     */
+    val comparisonSummary: ComparisonOverviewSummary? = null
 ) {
 
     /**
@@ -164,12 +189,19 @@ val customEndDate: LocalDate = LocalDate.now(),
 
     /**
      * Formatted string for the current reporting period.
+     * When in COMPARE tab, dynamically reflects the selected 3M / 6M comparison window.
      */
     val formattedPeriodLabel: String
         get() {
             val monthYearFormatter = java.time.format.DateTimeFormatter.ofPattern("MMM yyyy", java.util.Locale.ENGLISH)
             val fullMonthYearFormatter = java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.ENGLISH)
             val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.ENGLISH)
+
+            if (currentTab == ReportsTab.COMPARE) {
+                val monthsCount = comparisonWindow.monthsCount
+                val startMonth = selectedMonth.minusMonths((monthsCount - 1).toLong())
+                return "${startMonth.format(monthYearFormatter)} – ${selectedMonth.format(monthYearFormatter)}"
+            }
 
             return when (periodFilter) {
                 PeriodFilter.THIS_MONTH -> {
@@ -198,10 +230,14 @@ val customEndDate: LocalDate = LocalDate.now(),
         }
 
     val isPreviousPeriodEnabled: Boolean
-        get() = periodFilter != PeriodFilter.CUSTOM
+        get() {
+            if (currentTab == ReportsTab.COMPARE) return true
+            return periodFilter != PeriodFilter.CUSTOM
+        }
 
     val isNextPeriodEnabled: Boolean
         get() {
+            if (currentTab == ReportsTab.COMPARE) return true
             if (periodFilter == PeriodFilter.CUSTOM) return false
             val currentMonth = YearMonth.now()
             if (periodFilter == PeriodFilter.YEAR_TO_DATE) {
