@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 /**
  * ViewModel for the production Reports feature.
@@ -107,16 +108,105 @@ class ReportsViewModel @Inject constructor(
     // Period actions
     // ------------------------------------------------------------------------
 
-    fun previousMonth() {
-        updateSelectedMonth(
-            _uiState.value.selectedMonth.minusMonths(1)
+/**
+ * Select one of the predefined reporting periods.
+ */
+fun selectPeriod(
+    periodFilter: PeriodFilter
+) {
+
+    _uiState.value =
+        _uiState.value.copy(
+            periodFilter = periodFilter,
+
+            period =
+                when (periodFilter) {
+                    PeriodFilter.THIS_MONTH ->
+                        ReportPeriod.MONTH
+
+                    PeriodFilter.LAST_3_MONTHS ->
+                        ReportPeriod.MONTH
+
+                    PeriodFilter.LAST_6_MONTHS ->
+                        ReportPeriod.MONTH
+
+                    PeriodFilter.YEAR_TO_DATE ->
+                        ReportPeriod.YEAR
+
+                    PeriodFilter.CUSTOM ->
+                        ReportPeriod.CUSTOM
+                },
+
+            selectedExpenseCategory = null,
+            selectedIncomeCategory = null,
+            drillDownState =
+                CategoryDrillDownState(),
+
+            errorMessage = null,
+            isLoading = true
         )
+
+    rebuildReport()
+}
+
+/**
+ * Set an exact custom date range.
+ */
+fun setCustomDateRange(
+    startDate: LocalDate,
+    endDate: LocalDate
+) {
+
+    if (endDate.isBefore(startDate)) {
+        return
+    }
+
+    _uiState.value =
+        _uiState.value.copy(
+            periodFilter =
+                PeriodFilter.CUSTOM,
+
+            period =
+                ReportPeriod.CUSTOM,
+
+            customStartDate =
+                startDate,
+
+            customEndDate =
+                endDate,
+
+            selectedExpenseCategory = null,
+            selectedIncomeCategory = null,
+            drillDownState =
+                CategoryDrillDownState(),
+
+            errorMessage = null,
+            isLoading = true
+        )
+
+    rebuildReport()
+}
+
+    fun previousPeriod() {
+        if (_uiState.value.periodFilter == PeriodFilter.CUSTOM) return
+        navigatePeriod(_uiState.value.selectedMonth.minusMonths(1))
+    }
+
+    fun nextPeriod() {
+        val state = _uiState.value
+        if (state.periodFilter == PeriodFilter.CUSTOM) return
+        if (state.periodFilter == PeriodFilter.YEAR_TO_DATE && state.selectedMonth >= YearMonth.now()) {
+            return
+        }
+        navigatePeriod(state.selectedMonth.plusMonths(1))
+    }
+
+    fun previousMonth() {
+        previousPeriod()
     }
 
     fun nextMonth() {
-        updateSelectedMonth(
-            _uiState.value.selectedMonth.plusMonths(1)
-        )
+        nextPeriod()
     }
 
     fun selectMonth(
@@ -125,21 +215,56 @@ class ReportsViewModel @Inject constructor(
         updateSelectedMonth(month)
     }
 
-    private fun updateSelectedMonth(
+    private fun navigatePeriod(
         month: YearMonth
     ) {
         _uiState.value =
             _uiState.value.copy(
-                period = ReportPeriod.MONTH,
                 selectedMonth = month,
                 selectedExpenseCategory = null,
                 selectedIncomeCategory = null,
+                drillDownState = CategoryDrillDownState(),
                 errorMessage = null,
                 isLoading = true
             )
 
         rebuildReport()
     }
+
+private fun updateSelectedMonth(
+    month: YearMonth
+) {
+
+    _uiState.value =
+        _uiState.value.copy(
+
+            periodFilter =
+                PeriodFilter.THIS_MONTH,
+
+            period =
+                ReportPeriod.MONTH,
+
+            selectedMonth =
+                month,
+
+            selectedExpenseCategory =
+                null,
+
+            selectedIncomeCategory =
+                null,
+
+            drillDownState =
+                CategoryDrillDownState(),
+
+            errorMessage =
+                null,
+
+            isLoading =
+                true
+        )
+
+    rebuildReport()
+}
 
     // ------------------------------------------------------------------------
     // Account filter
@@ -291,6 +416,7 @@ class ReportsViewModel @Inject constructor(
                 flow = flow,
                 totalCategoryAmount = totalCategoryAmount,
                 percentOfTotal = percent,
+                periodLabel = state.formattedPeriodLabel,
                 month = state.selectedMonth,
                 items = items,
                 searchQuery = ""
@@ -318,7 +444,12 @@ class ReportsViewModel @Inject constructor(
         selectedMonth: YearMonth,
         selectedAccountIds: Set<String>
     ): List<CategoryDrillDownItem> {
-        val periodTransactions = latestTransactions.filter { it.belongsToMonth(selectedMonth) }
+        val reportRange = _uiState.value.dateRange
+        val periodTransactions = latestTransactions.filter { transaction ->
+            transaction.belongsToDateRange(
+                reportRange
+            )
+        }
         val filteredTransactions = filterByAccounts(periodTransactions, selectedAccountIds)
         val allFilteredTransactions = filterByAccounts(latestTransactions, selectedAccountIds)
         val resolvedEvents = resolveFinancialEvents(allFilteredTransactions, latestGroups, latestAllocations)
@@ -352,10 +483,11 @@ class ReportsViewModel @Inject constructor(
                     }
                 }
 
-            // 2. Financial event net expenses if final month matches
+            // 2. Financial event net expenses if final month falls within report range
             resolvedEvents.forEach { event ->
                 if (event.group.category.equals(categoryName, ignoreCase = true) &&
-                    event.finalMonth == selectedMonth &&
+                    event.finalMonth != null &&
+                    reportRange.contains(event.finalMonth.atDay(1)) &&
                     event.netCost > 0.0
                 ) {
                     // Include event root/rep item or top transaction
@@ -406,7 +538,8 @@ class ReportsViewModel @Inject constructor(
             // Surplus events
             resolvedEvents.forEach { event ->
                 if (event.group.category.equals(categoryName, ignoreCase = true) &&
-                    event.finalMonth == selectedMonth &&
+                    event.finalMonth != null &&
+                    reportRange.contains(event.finalMonth.atDay(1)) &&
                     event.netCost < 0.0
                 ) {
                     val primaryTx = event.eventTransactions.firstOrNull()
@@ -495,12 +628,16 @@ private fun observeReportData() {
              * Filter transactions by the selected reporting
              * period.
              */
-            val periodTransactions =
-                latestTransactions.filter { transaction ->
-                    transaction.belongsToMonth(
-                        state.selectedMonth
-                    )
-                }
+val reportRange =
+    state.dateRange
+
+val periodTransactions =
+    latestTransactions.filter { transaction ->
+
+        transaction.belongsToDateRange(
+            reportRange
+        )
+    }
 
             /*
              * Step 2:
@@ -552,29 +689,35 @@ private fun observeReportData() {
              *
              * Build report sections.
              */
-            val expenseCategories =
-                buildExpenseCategories(
-                    transactions =
-                        filteredTransactions,
-                    selectedMonth =
-                        state.selectedMonth,
-                    resolvedEvents =
-                        resolvedEvents,
-                    allocations =
-                        latestAllocations
-                )
+val expenseCategories =
+    buildExpenseCategories(
+        transactions =
+            filteredTransactions,
 
-            val incomeCategories =
-                buildIncomeCategories(
-                    transactions =
-                        filteredTransactions,
-                    selectedMonth =
-                        state.selectedMonth,
-                    resolvedEvents =
-                        resolvedEvents,
-                    allocations =
-                        latestAllocations
-                )
+        reportRange =
+            reportRange,
+
+        resolvedEvents =
+            resolvedEvents,
+
+        allocations =
+            latestAllocations
+    )
+
+val incomeCategories =
+    buildIncomeCategories(
+        transactions =
+            filteredTransactions,
+
+        reportRange =
+            reportRange,
+
+        resolvedEvents =
+            resolvedEvents,
+
+        allocations =
+            latestAllocations
+    )
 
             val cashFlow =
                 buildCashFlow(
@@ -584,15 +727,17 @@ private fun observeReportData() {
                         incomeCategories
                 )
 
-            val financialEvents =
-                buildFinancialEvents(
-                    selectedMonth =
-                        state.selectedMonth,
-                    transactions =
-                        filteredTransactions,
-                    resolvedEvents =
-                        resolvedEvents
-                )
+val financialEvents =
+    buildFinancialEvents(
+        reportRange =
+            reportRange,
+
+        transactions =
+            filteredTransactions,
+
+        resolvedEvents =
+            resolvedEvents
+    )
 
             /*
              * Account list comes from the complete transaction
@@ -862,12 +1007,12 @@ private fun observeReportData() {
     // Expense Categories
     // ------------------------------------------------------------------------
 
-    private fun buildExpenseCategories(
-        transactions: List<Transaction>,
-        selectedMonth: YearMonth,
-        resolvedEvents: List<ResolvedFinancialEvent>,
-        allocations: List<FinancialEventAllocationEntity>
-    ): List<ReportsExpenseCategory> {
+private fun buildExpenseCategories(
+    transactions: List<Transaction>,
+    reportRange: ReportDateRange,
+    resolvedEvents: List<ResolvedFinancialEvent>,
+    allocations: List<FinancialEventAllocationEntity>
+): List<ReportsExpenseCategory> {
 
         /*
          * --------------------------------------------------------
@@ -935,7 +1080,12 @@ private fun observeReportData() {
             }
 
             // Only map to pie chart in the event's final month
-            if (event.finalMonth == selectedMonth) {
+            if (
+    event.finalMonth != null &&
+    reportRange.contains(
+        event.finalMonth.atDay(1)
+    )
+) {
                 if (event.netCost > 0.0) {
                     eventAmountsByCategory[category] =
                         (eventAmountsByCategory[category] ?: 0.0) + event.netCost
@@ -989,12 +1139,12 @@ private fun observeReportData() {
     // Income Categories
     // ------------------------------------------------------------------------
 
-    private fun buildIncomeCategories(
-        transactions: List<Transaction>,
-        selectedMonth: YearMonth,
-        resolvedEvents: List<ResolvedFinancialEvent>,
-        allocations: List<FinancialEventAllocationEntity>
-    ): List<ReportsIncomeCategory> {
+private fun buildIncomeCategories(
+    transactions: List<Transaction>,
+    reportRange: ReportDateRange,
+    resolvedEvents: List<ResolvedFinancialEvent>,
+    allocations: List<FinancialEventAllocationEntity>
+): List<ReportsIncomeCategory> {
 
         val normalAmountsByCategory =
             transactions
@@ -1038,7 +1188,13 @@ private fun observeReportData() {
 
             // If an event resulted in a net surplus (reimbursements > expenses),
             // report the net surplus as income in its final month
-            if (event.finalMonth == selectedMonth && event.netCost < 0.0) {
+            if (
+    event.finalMonth != null &&
+    reportRange.contains(
+        event.finalMonth.atDay(1)
+    ) &&
+    event.netCost < 0.0
+) {
                 val surplus =
                     kotlin.math.abs(event.netCost)
 
@@ -1076,11 +1232,11 @@ private fun observeReportData() {
     /**
      * Builds Financial Event summaries.
      */
-    private fun buildFinancialEvents(
-        selectedMonth: YearMonth,
-        transactions: List<Transaction>,
-        resolvedEvents: List<ResolvedFinancialEvent>
-    ): List<ReportsFinancialEvent> {
+private fun buildFinancialEvents(
+    reportRange: ReportDateRange,
+    transactions: List<Transaction>,
+    resolvedEvents: List<ResolvedFinancialEvent>
+): List<ReportsFinancialEvent> {
 
         val selectedPeriodTransactionIds =
             transactions
@@ -1089,14 +1245,34 @@ private fun observeReportData() {
 
         return resolvedEvents
             .mapNotNull { event ->
-                val hasActivityInSelectedMonth =
-                    event.coveredMonths.contains(selectedMonth)
+val hasActivityInSelectedRange =
+    event.coveredMonths.any { month ->
 
-                val isFinalMonth =
-                    event.finalMonth == selectedMonth
+        val monthStart =
+            month.atDay(1)
+
+        val monthEnd =
+            month.atEndOfMonth()
+
+        !monthEnd.isBefore(
+            reportRange.startDate
+        ) &&
+            !monthStart.isAfter(
+                reportRange.endDate
+            )
+    }
+
+val isFinalMonth =
+    event.finalMonth != null &&
+        reportRange.contains(
+            event.finalMonth.atDay(1)
+        )
 
                 // Show event if it has transactions in this month or concludes in this month
-                if (!hasActivityInSelectedMonth && !isFinalMonth) {
+                if (
+    !hasActivityInSelectedRange &&
+    !isFinalMonth
+) {
                     return@mapNotNull null
                 }
 
@@ -1147,7 +1323,21 @@ private fun observeReportData() {
                 it.expenseAmount != 0.0 ||
                     it.reimbursedAmount != 0.0 ||
                     it.effectiveCost != 0.0 ||
-                    it.coveredMonths.contains(selectedMonth)
+                    it.coveredMonths.any { month ->
+
+    val monthStart =
+        month.atDay(1)
+
+    val monthEnd =
+        month.atEndOfMonth()
+
+    !monthEnd.isBefore(
+        reportRange.startDate
+    ) &&
+        !monthStart.isAfter(
+            reportRange.endDate
+        )
+}
             }
             .sortedByDescending {
                 kotlin.math.abs(it.effectiveCost)
@@ -1177,17 +1367,18 @@ private fun observeReportData() {
             )
         }
 }
-    private fun Transaction.belongsToMonth(
-        month: YearMonth
-    ): Boolean {
+private fun Transaction.belongsToDateRange(
+    range: ReportDateRange
+): Boolean {
 
-        val localDate =
-            Instant
-                .ofEpochMilli(dateTimestamp)
-                .atZone(zoneId)
-                .toLocalDate()
+    val localDate =
+        Instant
+            .ofEpochMilli(dateTimestamp)
+            .atZone(zoneId)
+            .toLocalDate()
 
-        return YearMonth.from(localDate) ==
-            month
-    }
+    return range.contains(
+        localDate
+    )
+}
 }
