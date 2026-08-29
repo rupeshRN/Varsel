@@ -78,3 +78,4 @@ sealed interface FinancialEventUiState {
 
     ) : FinancialEventUiState
 }
+

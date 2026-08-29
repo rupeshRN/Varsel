@@ -181,3 +181,4 @@ object CategoryIconCatalog {
         }
     }
 }
+
