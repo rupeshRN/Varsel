@@ -1,6 +1,7 @@
 package com.varsel.expensetracker.ui.reports
 
 import java.time.YearMonth
+import java.time.LocalDate
 
 /**
  * Complete UI state for the Reports feature.
@@ -15,21 +16,44 @@ data class ReportsUiState(
     val errorMessage: String? = null,
 
     /**
+ * Current user-selected reporting period.
+ */
+val periodFilter: PeriodFilter = PeriodFilter.THIS_MONTH,
+
+/**
+ * Custom range start date.
+ *
+ * Used only when periodFilter == CUSTOM.
+ */
+val customStartDate: LocalDate = LocalDate.now()
+    .withDayOfMonth(1),
+
+/**
+ * Custom range end date.
+ *
+ * Used only when periodFilter == CUSTOM.
+ */
+val customEndDate: LocalDate = LocalDate.now(),
+
+    /**
      * Currently selected reporting period.
-     *
-     * The first implementation supports MONTH.
-     * The model is intentionally separated so WEEK, QUARTER,
-     * YEAR and CUSTOM can be added later without redesigning
-     * the account filter.
      */
     val period: ReportPeriod = ReportPeriod.MONTH,
 
     /**
-     * Currently selected month.
-     *
-     * Used while period == MONTH.
+     * Currently selected month (or anchor month for 3M/6M).
      */
     val selectedMonth: YearMonth = YearMonth.now(),
+
+    /**
+     * Start month when period == CUSTOM.
+     */
+    val customStartMonth: YearMonth = YearMonth.now().minusMonths(2),
+
+    /**
+     * End month when period == CUSTOM.
+     */
+    val customEndMonth: YearMonth = YearMonth.now(),
 
     /**
      * Currently selected account IDs.
@@ -137,6 +161,132 @@ data class ReportsUiState(
 
             return "${selectedAccountIds.size} Accounts"
         }
+
+    /**
+     * Formatted string for the current reporting period.
+     */
+    val formattedPeriodLabel: String
+        get() {
+            val monthYearFormatter = java.time.format.DateTimeFormatter.ofPattern("MMM yyyy", java.util.Locale.ENGLISH)
+            val fullMonthYearFormatter = java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.ENGLISH)
+            val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.ENGLISH)
+
+            return when (periodFilter) {
+                PeriodFilter.THIS_MONTH -> {
+                    selectedMonth.format(fullMonthYearFormatter)
+                }
+                PeriodFilter.LAST_3_MONTHS -> {
+                    val startMonth = selectedMonth.minusMonths(2)
+                    "${startMonth.format(monthYearFormatter)} – ${selectedMonth.format(monthYearFormatter)}"
+                }
+                PeriodFilter.LAST_6_MONTHS -> {
+                    val startMonth = selectedMonth.minusMonths(5)
+                    "${startMonth.format(monthYearFormatter)} – ${selectedMonth.format(monthYearFormatter)}"
+                }
+                PeriodFilter.YEAR_TO_DATE -> {
+                    val startMonth = selectedMonth.withMonth(1)
+                    if (selectedMonth.monthValue == 1) {
+                        startMonth.format(fullMonthYearFormatter)
+                    } else {
+                        "${startMonth.format(monthYearFormatter)} – ${selectedMonth.format(monthYearFormatter)}"
+                    }
+                }
+                PeriodFilter.CUSTOM -> {
+                    "${customStartDate.format(dateFormatter)} – ${customEndDate.format(dateFormatter)}"
+                }
+            }
+        }
+
+    val isPreviousPeriodEnabled: Boolean
+        get() = periodFilter != PeriodFilter.CUSTOM
+
+    val isNextPeriodEnabled: Boolean
+        get() {
+            if (periodFilter == PeriodFilter.CUSTOM) return false
+            val currentMonth = YearMonth.now()
+            if (periodFilter == PeriodFilter.YEAR_TO_DATE) {
+                return selectedMonth < currentMonth
+            }
+            return true
+        }
+
+    /**
+     * Actual inclusive date range represented by the report.
+     */
+    val dateRange: ReportDateRange
+    get() {
+
+        return when (periodFilter) {
+
+            PeriodFilter.THIS_MONTH -> {
+
+                ReportDateRange(
+                    startDate =
+                        selectedMonth
+                            .atDay(1),
+
+                    endDate =
+                        selectedMonth
+                            .atEndOfMonth()
+                )
+            }
+
+            PeriodFilter.LAST_3_MONTHS -> {
+
+                val startMonth =
+                    selectedMonth
+                        .minusMonths(2)
+
+                ReportDateRange(
+                    startDate =
+                        startMonth.atDay(1),
+
+                    endDate =
+                        selectedMonth.atEndOfMonth()
+                )
+            }
+
+            PeriodFilter.LAST_6_MONTHS -> {
+
+                val startMonth =
+                    selectedMonth
+                        .minusMonths(5)
+
+                ReportDateRange(
+                    startDate =
+                        startMonth.atDay(1),
+
+                    endDate =
+                        selectedMonth.atEndOfMonth()
+                )
+            }
+
+            PeriodFilter.YEAR_TO_DATE -> {
+
+                ReportDateRange(
+                    startDate =
+                        selectedMonth
+                            .withMonth(1)
+                            .atDay(1),
+
+                    endDate =
+                        selectedMonth
+                            .atEndOfMonth()
+                )
+            }
+
+            PeriodFilter.CUSTOM -> {
+
+                ReportDateRange(
+                    startDate =
+                        customStartDate,
+
+                    endDate =
+                        customEndDate
+                )
+            }
+        }
+    }
 }
 
 /**
