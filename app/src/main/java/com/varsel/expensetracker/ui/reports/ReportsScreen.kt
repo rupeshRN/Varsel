@@ -118,6 +118,21 @@ fun ReportsScreen(
             selectedAccountIds =
                 uiState.selectedAccountIds,
 
+                selectedPeriod =
+        uiState.periodFilter,
+
+    customStartDate =
+        uiState.customStartDate,
+
+    customEndDate =
+        uiState.customEndDate,
+
+    onPeriodSelected =
+        viewModel::selectPeriod,
+
+    onCustomDateRangeSelected =
+        viewModel::setCustomDateRange,
+
             sheetState =
                 filterSheetState,
 
@@ -219,8 +234,14 @@ private fun ReportsScreenContent(
                 ) {
 
                     ReportsHeader(
-                        selectedMonth =
-                            uiState.selectedMonth,
+                        periodLabel =
+                            uiState.formattedPeriodLabel,
+
+                        isPreviousEnabled =
+                            uiState.isPreviousPeriodEnabled,
+
+                        isNextEnabled =
+                            uiState.isNextPeriodEnabled,
 
                         accountFilterLabel =
                             uiState.accountFilterLabel,
@@ -228,10 +249,10 @@ private fun ReportsScreenContent(
                         hasActiveAccountFilter =
                             !uiState.isAllAccountsSelected,
 
-                        onPreviousMonth =
+                        onPreviousPeriod =
                             onPreviousMonth,
 
-                        onNextMonth =
+                        onNextPeriod =
                             onNextMonth,
 
                         onFilterClick =
