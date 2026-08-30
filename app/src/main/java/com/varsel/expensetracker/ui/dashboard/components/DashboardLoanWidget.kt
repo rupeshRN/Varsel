@@ -38,12 +38,6 @@ fun DashboardLoanWidget(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-<<<<<<< HEAD
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onNavigateToLoans),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(16.dp)
-=======
             .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onNavigateToLoans),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
@@ -52,7 +46,6 @@ fun DashboardLoanWidget(
             1.dp,
             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.20f)
         )
->>>>>>> source-repo/main
     ) {
         if (activeLoans.isNotEmpty()) {
             Column(

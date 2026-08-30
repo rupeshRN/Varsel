@@ -13,10 +13,7 @@ object CategoryMetadata {
     val expenseCategories = listOf(
         CategoryUi(Category.FOOD, "🍔"),
         CategoryUi(Category.GROCERIES, "🛒"),
-<<<<<<< HEAD
-=======
         CategoryUi("Fuel & Transport", "🚗"),
->>>>>>> source-repo/main
         CategoryUi(Category.TRAVEL, "🚗"),
         CategoryUi(Category.FUEL, "⛽"),
         CategoryUi(Category.SHOPPING, "🛍️"),
@@ -41,8 +38,6 @@ object CategoryMetadata {
 
     val all: List<CategoryUi> = (expenseCategories + incomeCategories).distinctBy { it.id }
 
-<<<<<<< HEAD
-=======
     fun emojiForCategory(categoryName: String, isIncome: Boolean = false): String {
         return when {
             categoryName.contains("Food", ignoreCase = true) || categoryName.contains("Dining", ignoreCase = true) -> "🍔"
@@ -66,7 +61,6 @@ object CategoryMetadata {
         }
     }
 
->>>>>>> source-repo/main
     fun categoriesFor(type: TransactionType): List<CategoryUi> {
         return when (type) {
             TransactionType.INCOME, TransactionType.CREDIT -> incomeCategories

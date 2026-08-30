@@ -114,14 +114,6 @@ class CategoryRuleEngine @Inject constructor(
 
         // Mobile
         KeywordRule("recharge", Category.MOBILE, 100),
-<<<<<<< HEAD
-
-        // Bills
-        KeywordRule("electricity", Category.BILLS, 95),
-        KeywordRule("water", Category.BILLS, 95),
-        KeywordRule("gas", Category.BILLS, 95),
-        KeywordRule("eb", Category.BILLS, 95),
-=======
         KeywordRule("airtel", Category.UTILITIES, 95),
         KeywordRule("jio", Category.UTILITIES, 95),
 
@@ -133,7 +125,6 @@ class CategoryRuleEngine @Inject constructor(
         KeywordRule("tneb", Category.UTILITIES, 95),
         KeywordRule("bescom", Category.UTILITIES, 95),
         KeywordRule("power", Category.UTILITIES, 95),
->>>>>>> source-repo/main
 
         // Healthcare
         KeywordRule("medical", Category.HEALTHCARE, 95),

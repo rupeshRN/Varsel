@@ -1,9 +1,6 @@
 package com.varsel.expensetracker.data.repository
 
-<<<<<<< HEAD
-=======
 import com.varsel.expensetracker.category.DescriptionNormalizer
->>>>>>> source-repo/main
 import com.varsel.expensetracker.category.KnowledgeRecord
 import com.varsel.expensetracker.data.local.dao.CustomRuleDao
 import com.varsel.expensetracker.data.local.entity.CustomRuleEntity
@@ -14,14 +11,8 @@ import javax.inject.Singleton
 
 @Singleton
 class CustomRuleRepository @Inject constructor(
-<<<<<<< HEAD
-
-    private val customRuleDao: CustomRuleDao
-
-=======
     private val customRuleDao: CustomRuleDao,
     private val descriptionNormalizer: DescriptionNormalizer
->>>>>>> source-repo/main
 ) {
 
     //--------------------------------------------------
@@ -29,27 +20,6 @@ class CustomRuleRepository @Inject constructor(
     //--------------------------------------------------
 
     suspend fun loadRuleCache(): Map<String, KnowledgeRecord> {
-<<<<<<< HEAD
-
-        return getAllRules()
-            .first()
-            .associate { rule ->
-
-                rule.pattern.lowercase() to
-
-                    KnowledgeRecord(
-
-                        displayDescription =
-                            rule.displayDescription,
-
-                        categoryName =
-                            rule.categoryName
-
-                    )
-
-            }
-
-=======
         val rules = getAllRules().first()
         val cache = mutableMapOf<String, KnowledgeRecord>()
 
@@ -73,7 +43,6 @@ class CustomRuleRepository @Inject constructor(
         }
 
         return cache
->>>>>>> source-repo/main
     }
 
     //--------------------------------------------------

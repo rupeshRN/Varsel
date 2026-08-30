@@ -7,11 +7,8 @@ import com.varsel.expensetracker.domain.model.TransactionType
 import com.varsel.expensetracker.ui.dashboard.DashboardUiState
 import com.varsel.expensetracker.ui.model.AccountBalanceUiModel
 import com.varsel.expensetracker.ui.model.BalanceSummaryUiModel
-<<<<<<< HEAD
-=======
 import com.varsel.expensetracker.ui.model.FinancialInsight
 import com.varsel.expensetracker.ui.model.InsightType
->>>>>>> source-repo/main
 import java.util.Calendar
 import javax.inject.Inject
 import kotlin.math.abs
@@ -140,13 +137,6 @@ class DashboardUiMapper @Inject constructor(
 
         //--------------------------------------------------
         // Account balances
-<<<<<<< HEAD
-        //
-        // IMPORTANT:
-        // This remains independent from monthly
-        // income/expense reporting.
-=======
->>>>>>> source-repo/main
         //--------------------------------------------------
 
         val accountBalances =
@@ -160,8 +150,6 @@ class DashboardUiMapper @Inject constructor(
                 it.balance
             }
 
-<<<<<<< HEAD
-=======
         val insights = generateInsights(
             currentMonthTransactions = currentMonthTransactions,
             currentMonthIncome = currentMonthIncome,
@@ -170,7 +158,6 @@ class DashboardUiMapper @Inject constructor(
             expenseChangePercent = expenseChangePercent
         )
 
->>>>>>> source-repo/main
         //--------------------------------------------------
         // Dashboard state
         //--------------------------------------------------
@@ -218,11 +205,8 @@ class DashboardUiMapper @Inject constructor(
                         transactionUiMapper.map(it)
                     },
 
-<<<<<<< HEAD
-=======
             insights = insights,
 
->>>>>>> source-repo/main
             isLoading = false
         )
     }
@@ -445,20 +429,13 @@ private fun calculateEffectiveExpense(
                         .firstOrNull()
                         ?.accountLast4
 
-<<<<<<< HEAD
-=======
             val bankName = detectBankName(accountTransactions)
 
->>>>>>> source-repo/main
             result.add(
                 AccountBalanceUiModel(
 
                     bankName =
-<<<<<<< HEAD
-                        "Bank Account",
-=======
                         bankName,
->>>>>>> source-repo/main
 
                     accountDisplayName =
                         accountLast4
@@ -496,26 +473,16 @@ private fun calculateEffectiveExpense(
                     }
                 }
 
-<<<<<<< HEAD
-=======
             val legacyBankName = detectBankName(legacyTransactions)
 
->>>>>>> source-repo/main
             result.add(
                 AccountBalanceUiModel(
 
                     bankName =
-<<<<<<< HEAD
-                        "Other",
-
-                    accountDisplayName =
-                        "Unlinked",
-=======
                         if (legacyBankName != "Bank Account") legacyBankName else "Other",
 
                     accountDisplayName =
                         "Manual",
->>>>>>> source-repo/main
 
                     balance =
                         legacyBalance
@@ -577,8 +544,6 @@ private fun calculateEffectiveExpense(
 
         return balance
     }
-<<<<<<< HEAD
-=======
 
     private fun detectBankName(transactions: List<Transaction>): String {
         for (t in transactions) {
@@ -714,5 +679,4 @@ private fun calculateEffectiveExpense(
 
         return insights
     }
->>>>>>> source-repo/main
 }

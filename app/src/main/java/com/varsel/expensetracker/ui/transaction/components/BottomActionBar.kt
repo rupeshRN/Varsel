@@ -17,69 +17,6 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun BottomActionBar(
-<<<<<<< HEAD
-
-    onDeleteClick: () -> Unit,
-
-    onSaveClick: () -> Unit,
-
-    saveEnabled: Boolean = true
-
-) {
-
-    Row(
-
-        modifier = Modifier.fillMaxWidth(),
-
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-
-    ) {
-
-        OutlinedButton(
-
-            modifier = Modifier.weight(1f),
-
-            onClick = onDeleteClick
-
-        ) {
-
-            Icon(
-
-                imageVector = Icons.Outlined.Delete,
-
-                contentDescription = null
-
-            )
-
-Text("Delete")
-
-        }
-
-        Button(
-
-            modifier = Modifier.weight(1f),
-
-            enabled = saveEnabled,
-
-            onClick = onSaveClick
-
-        ) {
-
-            Icon(
-
-                imageVector = Icons.Outlined.Save,
-
-                contentDescription = null
-
-            )
-
-Text("Save Changes")
-
-        }
-
-    }
-
-=======
     onDeleteClick: () -> Unit,
     onSaveClick: () -> Unit,
     saveEnabled: Boolean = true,
@@ -113,5 +50,4 @@ Text("Save Changes")
             Text("Save Changes")
         }
     }
->>>>>>> source-repo/main
 }

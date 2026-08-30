@@ -19,14 +19,9 @@ import com.varsel.expensetracker.domain.model.TransactionType
 fun CategorySection(
     selectedCategory: String,
     transactionType: TransactionType = TransactionType.EXPENSE,
-<<<<<<< HEAD
-    onCategorySelected: (String) -> Unit,
-    onNewCategoryClick: (() -> Unit)? = null
-=======
     availableCategories: List<String> = emptyList(),
     onCategorySelected: (String) -> Unit,
     onNewCategoryClick: () -> Unit
->>>>>>> source-repo/main
 ) {
     val isIncome = transactionType == TransactionType.INCOME || transactionType == TransactionType.CREDIT
 
@@ -36,19 +31,6 @@ fun CategorySection(
         modifier = Modifier.padding(bottom = 8.dp)
     )
 
-<<<<<<< HEAD
-    val baseCategories = remember(transactionType) {
-        CategoryMetadata.categoriesFor(transactionType)
-    }
-
-    // Ensure currently selected category is visible even if custom or non-standard
-    val displayCategories = remember(baseCategories, selectedCategory) {
-        if (selectedCategory.isNotBlank() && baseCategories.none { it.id.equals(selectedCategory, ignoreCase = true) }) {
-            baseCategories + CategoryUi(selectedCategory, "🏷️", isIncome = isIncome)
-        } else {
-            baseCategories
-        }
-=======
     val displayCategories = remember(transactionType, availableCategories, selectedCategory) {
         val staticCategories = CategoryMetadata.categoriesFor(transactionType)
         val dynamicCategoryUis = availableCategories.map { name ->
@@ -62,7 +44,6 @@ fun CategorySection(
             combined.add(CategoryUi(selectedCategory, CategoryMetadata.emojiForCategory(selectedCategory, isIncome), isIncome = isIncome))
         }
         combined
->>>>>>> source-repo/main
     }
 
     Column(
@@ -84,23 +65,6 @@ fun CategorySection(
                     )
                 }
 
-<<<<<<< HEAD
-                repeat(3 - row.size) { index ->
-                    if (index == 0 && onNewCategoryClick != null) {
-                        NewCategoryCard(
-                            modifier = Modifier.weight(1f),
-                            onClick = onNewCategoryClick
-                        )
-                    } else {
-                        NewCategoryCard(
-                            modifier = Modifier.weight(1f),
-                            onClick = onNewCategoryClick ?: {}
-                        )
-                    }
-                }
-            }
-        }
-=======
                 repeat(3 - row.size) {
                     NewCategoryCard(
                         modifier = Modifier.weight(1f),
@@ -124,7 +88,6 @@ fun CategorySection(
                 androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
             }
         }
->>>>>>> source-repo/main
     }
 }
 

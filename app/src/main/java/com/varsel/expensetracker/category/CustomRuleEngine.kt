@@ -100,49 +100,6 @@ class CustomRuleEngine @Inject constructor(
     //--------------------------------------------------
 
     fun findKnowledge(
-<<<<<<< HEAD
-
-        description: String
-
-    ): KnowledgeRecord? {
-
-        val normalized =
-        
-            descriptionNormalizer.normalize(description)
-
-        //--------------------------------------------------
-        // Exact match
-        //--------------------------------------------------
-
-        cache[normalized]?.let {
-
-            return it
-
-        }
-
-        //--------------------------------------------------
-        // Longest contains match
-        //--------------------------------------------------
-
-        return cache
-
-            .entries
-
-            .filter {
-
-                normalized.contains(it.key)
-
-            }
-
-            .maxByOrNull {
-
-                it.key.length
-
-            }
-
-            ?.value
-
-=======
         description: String
     ): KnowledgeRecord? {
         val normalized =
@@ -173,7 +130,6 @@ class CustomRuleEngine @Inject constructor(
                 it.key.length
             }
             ?.value
->>>>>>> source-repo/main
     }
 
 }
