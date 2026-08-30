@@ -2,10 +2,17 @@ package com.varsel.expensetracker.ui.dashboard
 
 import com.varsel.expensetracker.domain.model.loan.LoanSummary
 import com.varsel.expensetracker.ui.model.BalanceSummaryUiModel
+<<<<<<< HEAD
 import com.varsel.expensetracker.ui.model.TransactionUiModel
 
 data class DashboardUiState(
 
+=======
+import com.varsel.expensetracker.ui.model.FinancialInsight
+import com.varsel.expensetracker.ui.model.TransactionUiModel
+
+data class DashboardUiState(
+>>>>>>> source-repo/main
     val balanceSummary: BalanceSummaryUiModel =
         BalanceSummaryUiModel(
             totalBalance = 0.0,
@@ -19,5 +26,10 @@ data class DashboardUiState(
 
     val loans: List<LoanSummary> = emptyList(),
 
+<<<<<<< HEAD
+=======
+    val insights: List<FinancialInsight> = emptyList(),
+
+>>>>>>> source-repo/main
     val isLoading: Boolean = true
 )

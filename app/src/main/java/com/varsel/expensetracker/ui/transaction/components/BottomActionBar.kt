@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun BottomActionBar(
+<<<<<<< HEAD
 
     onDeleteClick: () -> Unit,
 
@@ -78,4 +79,39 @@ Text("Save Changes")
 
     }
 
+=======
+    onDeleteClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    saveEnabled: Boolean = true,
+    deleteEnabled: Boolean = true
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        OutlinedButton(
+            modifier = Modifier.weight(1f),
+            enabled = deleteEnabled,
+            onClick = onDeleteClick
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Delete,
+                contentDescription = null
+            )
+            Text(if (deleteEnabled) "Delete" else "Locked")
+        }
+
+        Button(
+            modifier = Modifier.weight(1f),
+            enabled = saveEnabled,
+            onClick = onSaveClick
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Save,
+                contentDescription = null
+            )
+            Text("Save Changes")
+        }
+    }
+>>>>>>> source-repo/main
 }

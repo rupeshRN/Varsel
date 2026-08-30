@@ -66,4 +66,12 @@ data class Transaction(
     val role:
         TransactionRole =
             TransactionRole.NORMAL
+<<<<<<< HEAD
 )
+=======
+) {
+    val isImported: Boolean
+        get() = !transactionFingerprint.isNullOrBlank() || !referenceNumber.isNullOrBlank()
+}
+
+>>>>>>> source-repo/main

@@ -128,7 +128,11 @@ val category =
                     description = description,
                     category = category.category,
                     dateTimestamp = date.time,
+<<<<<<< HEAD
                     referenceNumber = null
+=======
+                    referenceNumber = fields.reference
+>>>>>>> source-repo/main
                 )
             )
         }

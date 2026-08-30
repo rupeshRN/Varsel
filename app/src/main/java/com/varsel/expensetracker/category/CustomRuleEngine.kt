@@ -100,6 +100,7 @@ class CustomRuleEngine @Inject constructor(
     //--------------------------------------------------
 
     fun findKnowledge(
+<<<<<<< HEAD
 
         description: String
 
@@ -141,6 +142,38 @@ class CustomRuleEngine @Inject constructor(
 
             ?.value
 
+=======
+        description: String
+    ): KnowledgeRecord? {
+        val normalized =
+            descriptionNormalizer.normalize(description)
+
+        val lower = description.trim().lowercase()
+
+        // 1. Exact match on normalized
+        if (normalized.isNotBlank()) {
+            cache[normalized]?.let { return it }
+        }
+
+        // 2. Exact match on lowercase
+        if (lower.isNotBlank()) {
+            cache[lower]?.let { return it }
+        }
+
+        // 3. Longest contains match
+        return cache.entries
+            .filter { entry ->
+                val key = entry.key
+                key.length >= 3 && (
+                    (normalized.isNotBlank() && (normalized.contains(key) || key.contains(normalized))) ||
+                    (lower.isNotBlank() && lower.contains(key))
+                )
+            }
+            .maxByOrNull {
+                it.key.length
+            }
+            ?.value
+>>>>>>> source-repo/main
     }
 
 }

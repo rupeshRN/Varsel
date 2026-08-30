@@ -5,7 +5,10 @@ import javax.inject.Inject
 class DescriptionCleaner @Inject constructor() {
 
     fun clean(description: String): String {
+<<<<<<< HEAD
 
+=======
+>>>>>>> source-repo/main
         var text = description
 
         // Remove IFSC-like bank codes
@@ -20,6 +23,7 @@ class DescriptionCleaner @Inject constructor() {
             " "
         )
 
+<<<<<<< HEAD
         // Remove UPI numeric IDs
         text = text.replace(
             Regex("\\b\\d{10,18}\\b"),
@@ -31,6 +35,30 @@ class DescriptionCleaner @Inject constructor() {
     Regex("\\b[A-Za-z0-9._-]+@[A-Za-z0-9._-]+\\b", RegexOption.IGNORE_CASE),
     " "
 )
+=======
+        // Remove UPI / IMPS / RRN reference numeric IDs
+        text = text.replace(
+            Regex("\\b\\d{8,20}\\b"),
+            " "
+        )
+
+        // Remove UPI handles (e.g. user@okhdfcbank, merchant@paytm)
+        text = text.replace(
+            Regex("\\b[A-Za-z0-9._-]+@[A-Za-z0-9._-]+\\b", RegexOption.IGNORE_CASE),
+            " "
+        )
+
+        // Remove common Indian banking noise prefixes
+        val noisePrefixes = listOf(
+            "UPI/", "UPI-", "UPI ", "IMPS-", "IMPS/", "NEFT-", "NEFT/", "RTGS-", "RTGS/",
+            "NACH/", "NACH-", "ACH/", "ACH-", "POS ", "POS/", "E-COM/", "BIL/", "IN/",
+            "REV-", "DR-", "CR-", "PAY TO ", "PAID TO ", "TRANSFER TO ", "COLLECT FROM ",
+            "BY TRANSFER-", "TO TRANSFER-"
+        )
+        for (prefix in noisePrefixes) {
+            text = text.replace(Regex("\\b$prefix", RegexOption.IGNORE_CASE), " ")
+        }
+>>>>>>> source-repo/main
 
         // Remove INR
         text = text.replace("INR", " ", ignoreCase = true)
@@ -38,6 +66,11 @@ class DescriptionCleaner @Inject constructor() {
         // Remove separators
         text = text.replace("/", " ")
         text = text.replace("-", " ")
+<<<<<<< HEAD
+=======
+        text = text.replace(":", " ")
+        text = text.replace("_", " ")
+>>>>>>> source-repo/main
 
         // Remove repeated spaces
         text = text.replace(

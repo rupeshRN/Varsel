@@ -19,8 +19,14 @@ import com.varsel.expensetracker.domain.model.TransactionType
 fun CategorySection(
     selectedCategory: String,
     transactionType: TransactionType = TransactionType.EXPENSE,
+<<<<<<< HEAD
     onCategorySelected: (String) -> Unit,
     onNewCategoryClick: (() -> Unit)? = null
+=======
+    availableCategories: List<String> = emptyList(),
+    onCategorySelected: (String) -> Unit,
+    onNewCategoryClick: () -> Unit
+>>>>>>> source-repo/main
 ) {
     val isIncome = transactionType == TransactionType.INCOME || transactionType == TransactionType.CREDIT
 
@@ -30,6 +36,7 @@ fun CategorySection(
         modifier = Modifier.padding(bottom = 8.dp)
     )
 
+<<<<<<< HEAD
     val baseCategories = remember(transactionType) {
         CategoryMetadata.categoriesFor(transactionType)
     }
@@ -41,6 +48,21 @@ fun CategorySection(
         } else {
             baseCategories
         }
+=======
+    val displayCategories = remember(transactionType, availableCategories, selectedCategory) {
+        val staticCategories = CategoryMetadata.categoriesFor(transactionType)
+        val dynamicCategoryUis = availableCategories.map { name ->
+            val emoji = CategoryMetadata.emojiForCategory(name, isIncome)
+            CategoryUi(id = name, icon = emoji, isIncome = isIncome)
+        }
+
+        val combined = (staticCategories + dynamicCategoryUis).distinctBy { it.id.lowercase() }.toMutableList()
+
+        if (selectedCategory.isNotBlank() && combined.none { it.id.equals(selectedCategory, ignoreCase = true) }) {
+            combined.add(CategoryUi(selectedCategory, CategoryMetadata.emojiForCategory(selectedCategory, isIncome), isIncome = isIncome))
+        }
+        combined
+>>>>>>> source-repo/main
     }
 
     Column(
@@ -62,6 +84,7 @@ fun CategorySection(
                     )
                 }
 
+<<<<<<< HEAD
                 repeat(3 - row.size) { index ->
                     if (index == 0 && onNewCategoryClick != null) {
                         NewCategoryCard(
@@ -77,6 +100,31 @@ fun CategorySection(
                 }
             }
         }
+=======
+                repeat(3 - row.size) {
+                    NewCategoryCard(
+                        modifier = Modifier.weight(1f),
+                        onClick = onNewCategoryClick
+                    )
+                }
+            }
+        }
+
+        // If categories evenly divide by 3, provide a dedicated row with NewCategoryCard
+        if (displayCategories.size % 3 == 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                NewCategoryCard(
+                    modifier = Modifier.weight(1f),
+                    onClick = onNewCategoryClick
+                )
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+>>>>>>> source-repo/main
     }
 }
 

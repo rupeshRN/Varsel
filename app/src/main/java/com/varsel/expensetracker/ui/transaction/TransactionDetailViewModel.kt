@@ -111,25 +111,49 @@ class TransactionDetailViewModel @Inject constructor(
             combine(
                 transactionRepository.getAllTransactions(),
                 transactionLinkGroupRepository.getAllGroups(),
+<<<<<<< HEAD
                 financialEventAllocationRepository.observeAllAllocations()
             ) { allTransactions, allGroups, allAllocations ->
                 Triple(allTransactions, allGroups, allAllocations)
             }.collectLatest { (allTransactions, allGroups, allAllocations) ->
+=======
+                financialEventAllocationRepository.observeAllAllocations(),
+                categoryDao.getAllCategories()
+            ) { allTransactions, allGroups, allAllocations, dbCategories ->
+                val categoryNames = (dbCategories.map { it.name } + loadCategories()).distinct()
+                Quad(allTransactions, allGroups, allAllocations, categoryNames)
+            }.collectLatest { (allTransactions, allGroups, allAllocations, categoryNames) ->
+>>>>>>> source-repo/main
                 updateTransactionDetailState(
                     transactionId = transactionId,
                     allTransactions = allTransactions,
                     allGroups = allGroups,
+<<<<<<< HEAD
                     allAllocations = allAllocations
+=======
+                    allAllocations = allAllocations,
+                    categoryNames = categoryNames
+>>>>>>> source-repo/main
                 )
             }
         }
     }
 
+<<<<<<< HEAD
+=======
+    private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
+>>>>>>> source-repo/main
     private suspend fun updateTransactionDetailState(
         transactionId: Long,
         allTransactions: List<Transaction>,
         allGroups: List<TransactionLinkGroup>,
+<<<<<<< HEAD
         allAllocations: List<FinancialEventAllocationEntity>
+=======
+        allAllocations: List<FinancialEventAllocationEntity>,
+        categoryNames: List<String>
+>>>>>>> source-repo/main
     ) {
         val currentState = _uiState.value as? TransactionDetailUiState.Loaded ?: return
 
@@ -230,7 +254,11 @@ class TransactionDetailViewModel @Inject constructor(
 
         _uiState.value = currentState.copy(
             transaction = currentTransaction,
+<<<<<<< HEAD
             categories = currentState.categories,
+=======
+            categories = categoryNames,
+>>>>>>> source-repo/main
             allocations = allocationUiModels,
             totalAllocatedAmount = totalAllocated,
             remainingUnallocatedAmount = remainingUnallocated,
@@ -593,7 +621,11 @@ class TransactionDetailViewModel @Inject constructor(
     // Save transaction changes
     //--------------------------------------------------
 
+<<<<<<< HEAD
     fun saveChanges() {
+=======
+    fun saveChanges(createSmartRule: Boolean = true) {
+>>>>>>> source-repo/main
         val current = _uiState.value as? TransactionDetailUiState.Loaded ?: return
         if (current.isSaving) return
 
@@ -606,9 +638,16 @@ class TransactionDetailViewModel @Inject constructor(
                 role = current.selectedRole
             )
 
+<<<<<<< HEAD
             if (current.transaction.description != current.editableDescription ||
                 current.transaction.category != current.selectedCategory
             ) {
+=======
+            if (createSmartRule && (
+                current.transaction.description != current.editableDescription ||
+                current.transaction.category != current.selectedCategory
+            )) {
+>>>>>>> source-repo/main
                 customRuleRepository.saveRule(
                     pattern = current.transaction.description,
                     displayDescription = current.editableDescription,
@@ -629,6 +668,37 @@ class TransactionDetailViewModel @Inject constructor(
         }
     }
 
+<<<<<<< HEAD
+=======
+    fun createCategory(name: String, isIncome: Boolean) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val emoji = CategoryMetadata.emojiForCategory(name, isIncome)
+            val typeStr = if (isIncome) "INCOME" else "EXPENSE"
+            val newCategory = com.varsel.expensetracker.data.local.entity.CategoryEntity(
+                name = name.trim(),
+                type = typeStr,
+                colorHex = if (isIncome) "#4CAF50" else "#2196F3",
+                iconName = emoji,
+                budgetLimit = 0.0,
+                keywords = name.trim().uppercase()
+            )
+            categoryDao.insertCategory(newCategory)
+            updateCategory(name.trim())
+        }
+    }
+
+    fun deleteTransaction(onDeleted: () -> Unit) {
+        val current = _uiState.value as? TransactionDetailUiState.Loaded ?: return
+        if (current.transaction.isImported) return
+
+        viewModelScope.launch {
+            transactionRepository.deleteTransaction(current.transaction)
+            onDeleted()
+        }
+    }
+
+>>>>>>> source-repo/main
     fun consumeSaveCompleted() {
         _saveCompleted.value = false
     }
