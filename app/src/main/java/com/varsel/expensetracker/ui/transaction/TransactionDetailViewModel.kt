@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -63,7 +64,8 @@ class TransactionDetailViewModel @Inject constructor(
                 return@launch
             }
 
-            val categories = loadCategories()
+            val isIncome = transaction.type == TransactionType.INCOME || transaction.type == TransactionType.CREDIT
+            val categories = loadCategories(isIncome)
 
             _uiState.value = TransactionDetailUiState.Loaded(
                 transaction = transaction,
@@ -95,8 +97,8 @@ class TransactionDetailViewModel @Inject constructor(
         }
     }
 
-    private fun loadCategories(): List<String> {
-        return CategoryMetadata.all
+    private fun loadCategories(isIncome: Boolean): List<String> {
+        return CategoryMetadata.categoriesFor(isIncome)
             .map { it.id }
             .filter { it.isNotBlank() }
             .distinct()
@@ -114,7 +116,13 @@ class TransactionDetailViewModel @Inject constructor(
                 financialEventAllocationRepository.observeAllAllocations(),
                 categoryDao.getAllCategories()
             ) { allTransactions, allGroups, allAllocations, dbCategories ->
-                val categoryNames = (dbCategories.map { it.name } + loadCategories()).distinct()
+                val currentTx = allTransactions.firstOrNull { it.id == transactionId }
+                val isIncome = currentTx?.let { it.type == TransactionType.INCOME || it.type == TransactionType.CREDIT } ?: false
+                val staticCategoryNames = CategoryMetadata.categoriesFor(isIncome).map { it.id }
+                val filteredDbCategories = dbCategories
+                    .filter { it.type == "BOTH" || (isIncome && it.type == "INCOME") || (!isIncome && it.type == "EXPENSE") }
+                    .map { it.name }
+                val categoryNames = (filteredDbCategories + staticCategoryNames).distinct()
                 Quad(allTransactions, allGroups, allAllocations, categoryNames)
             }.collectLatest { (allTransactions, allGroups, allAllocations, categoryNames) ->
                 updateTransactionDetailState(
@@ -432,6 +440,12 @@ class TransactionDetailViewModel @Inject constructor(
             if (current.transaction.transactionLinkId == transactionLinkId) {
                 transactionRepository.unlinkTransaction(current.transaction.id)
             }
+
+            val remainingAllocations = financialEventAllocationRepository.getAllocationsForFinancialEvent(transactionLinkId)
+            val remainingLinkedTxs = transactionRepository.getAllTransactions().first().filter { it.transactionLinkId == transactionLinkId }
+            if (remainingAllocations.isEmpty() && remainingLinkedTxs.isEmpty()) {
+                transactionLinkGroupRepository.deleteGroup(transactionLinkId)
+            }
         }
     }
 
@@ -440,6 +454,9 @@ class TransactionDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.value = current.copy(isLinking = true)
+
+            val eventIdsToCheck = current.allocations.map { it.transactionLinkId }.toSet() +
+                listOfNotNull(current.transaction.transactionLinkId)
 
             for (alloc in current.allocations) {
                 financialEventAllocationRepository.deleteAllocationForTransactionAndEvent(
@@ -450,6 +467,14 @@ class TransactionDetailViewModel @Inject constructor(
 
             if (current.transaction.transactionLinkId != null) {
                 transactionRepository.unlinkTransaction(current.transaction.id)
+            }
+
+            for (linkId in eventIdsToCheck) {
+                val remainingAllocations = financialEventAllocationRepository.getAllocationsForFinancialEvent(linkId)
+                val remainingLinkedTxs = transactionRepository.getAllTransactions().first().filter { it.transactionLinkId == linkId }
+                if (remainingAllocations.isEmpty() && remainingLinkedTxs.isEmpty()) {
+                    transactionLinkGroupRepository.deleteGroup(linkId)
+                }
             }
         }
     }
@@ -639,13 +664,13 @@ class TransactionDetailViewModel @Inject constructor(
     fun createCategory(name: String, isIncome: Boolean) {
         if (name.isBlank()) return
         viewModelScope.launch {
-            val emoji = CategoryMetadata.emojiForCategory(name, isIncome)
+            val iconKey = com.varsel.expensetracker.category.CategoryIconCatalog.iconKeyForCategory(name, isIncome)
             val typeStr = if (isIncome) "INCOME" else "EXPENSE"
             val newCategory = com.varsel.expensetracker.data.local.entity.CategoryEntity(
                 name = name.trim(),
                 type = typeStr,
                 colorHex = if (isIncome) "#4CAF50" else "#2196F3",
-                iconName = emoji,
+                iconName = iconKey,
                 budgetLimit = 0.0,
                 keywords = name.trim().uppercase()
             )
