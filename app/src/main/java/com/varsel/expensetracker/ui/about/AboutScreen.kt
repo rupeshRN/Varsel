@@ -33,7 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-private const val GITHUB_REPO_URL = "https://github.com/jeobida/varsel"
+private const val GITHUB_REPO_URL = "https://github.com/rupeshRN/Varsel.git"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -285,7 +285,7 @@ private fun GitHubRepoCard(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "github.com/jeobida/varsel",
+                        text = "https://github.com/rupeshRN/Varsel.git",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
