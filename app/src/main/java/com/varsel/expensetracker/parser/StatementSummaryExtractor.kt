@@ -23,24 +23,34 @@ class StatementSummaryExtractor @Inject constructor() {
 
     private val moneyRegex =
         Regex(
-            "INR\\s*([\\d,]+\\.\\d{2})",
+            """(?:INR|Rs\.?|₹)?\s*([0-9]{1,3}(?:,[0-9]{3})*|\d+)\.(\d{2})""",
             RegexOption.IGNORE_CASE
         )
 
-    private val periodRegex =
-        Regex(
-            "For\\s+period\\s*:\\s*" +
-                    "(\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4})" +
-                    "\\s*-\\s*" +
-                    "(\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4})",
-            RegexOption.IGNORE_CASE
-        )
+    private val periodRegexes = listOf(
+        Regex("""For\s+period\s*:\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*-\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})""", RegexOption.IGNORE_CASE),
+        Regex("""for\s+the\s+period\s+([A-Za-z]+\s+\d{1,2},\s+\d{4})\s*-\s*([A-Za-z]+\s+\d{1,2},\s+\d{4})""", RegexOption.IGNORE_CASE),
+        Regex("""(?:period|from)\s*[:\-]?\s*(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})\s*(?:to|-)\s*(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})""", RegexOption.IGNORE_CASE)
+    )
 
-    private val dateFormatter =
-        SimpleDateFormat(
-            "dd MMM yyyy",
-            Locale.ENGLISH
-        )
+    private val dateParsers = listOf(
+        SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH),
+        SimpleDateFormat("MMMM dd, yyyy", Locale.ENGLISH),
+        SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH),
+        SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH),
+        SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH)
+    )
+
+    private fun tryParseDate(str: String): Long? {
+        val clean = str.trim()
+        for (parser in dateParsers) {
+            try {
+                val d = parser.parse(clean)
+                if (d != null) return d.time
+            } catch (_: Exception) {}
+        }
+        return null
+    }
 
     fun extract(
         rawText: String
@@ -62,24 +72,15 @@ class StatementSummaryExtractor @Inject constructor() {
         // Statement period
         //--------------------------------------------------
 
-        val periodMatch =
-            periodRegex.find(rawText)
-
-        if (periodMatch != null) {
-
-            statementStartDate =
-                dateFormatter
-                    .parse(
-                        periodMatch.groupValues[1]
-                    )
-                    ?.time
-
-            statementEndDate =
-                dateFormatter
-                    .parse(
-                        periodMatch.groupValues[2]
-                    )
-                    ?.time
+        for (regex in periodRegexes) {
+            val periodMatch = regex.find(rawText)
+            if (periodMatch != null) {
+                statementStartDate = tryParseDate(periodMatch.groupValues[1])
+                statementEndDate = tryParseDate(periodMatch.groupValues[2])
+                if (statementStartDate != null && statementEndDate != null) {
+                    break
+                }
+            }
         }
 
         //--------------------------------------------------
@@ -94,42 +95,31 @@ class StatementSummaryExtractor @Inject constructor() {
             val amount =
                 moneyRegex
                     .find(line)
-                    ?.groupValues
-                    ?.get(1)
-                    ?.replace(",", "")
-                    ?.toDoubleOrNull()
+                    ?.let { match ->
+                        val intPart = match.groupValues[1].replace(",", "")
+                        val decPart = match.groupValues[2]
+                        "$intPart.$decPart".toDoubleOrNull()
+                    }
                     ?: continue
 
             val upper =
                 line.uppercase()
 
             when {
-
-                upper.contains(
-                    "OPENING BALANCE"
-                ) -> {
-                    opening = amount
+                upper.contains("OPENING BALANCE") || upper.contains("OPENING BAL") || upper.contains("BROUGHT FORWARD") || upper.contains("B/F") -> {
+                    if (opening == null) opening = amount
                 }
 
-                upper.contains(
-                    "TOTAL CREDIT"
-                ) -> {
-                    credits = amount
+                upper.contains("TOTAL CREDIT") || upper.contains("TOTAL DEPOSIT") || upper.contains("TOTAL DEPOSITS") || upper.contains("DEPOSIT AMOUNT") -> {
+                    if (credits == null) credits = amount
                 }
 
-                upper.contains(
-                    "TOTAL DEBIT"
-                ) -> {
-                    debits = amount
+                upper.contains("TOTAL DEBIT") || upper.contains("TOTAL WITHDRAWAL") || upper.contains("TOTAL WITHDRAWALS") || upper.contains("WITHDRAWAL AMOUNT") -> {
+                    if (debits == null) debits = amount
                 }
 
-                upper.contains(
-                    "ENDING BALANCE"
-                ) ||
-                upper.contains(
-                    "CLOSING BALANCE"
-                ) -> {
-                    ending = amount
+                upper.contains("ENDING BALANCE") || upper.contains("CLOSING BALANCE") || upper.contains("CLOSING BAL") || upper.contains("CARRIED FORWARD") || upper.contains("C/F") -> {
+                    if (ending == null) ending = amount
                 }
             }
         }

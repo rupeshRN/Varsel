@@ -122,14 +122,14 @@ fun StatementUploadHeroCard(
                     enabled = true
                 )
                 FormatBadge(
-                    icon = Icons.Default.Image,
-                    label = "Passbook / Photo (Soon)",
-                    enabled = false
+                    icon = Icons.Default.ReceiptLong,
+                    label = "Indian Bank • ICICI • HDFC",
+                    enabled = true
                 )
                 FormatBadge(
                     icon = Icons.Default.ReceiptLong,
-                    label = "UPI / Bank Report",
-                    enabled = true
+                    label = "Other banks soon",
+                    enabled = false
                 )
             }
 

@@ -10,7 +10,11 @@ data class StatementImportResult(
 
     val transactions: List<Transaction>,
 
+    val bankName: String = "Bank Statement",
+
     val accountId: String? = null,
 
-    val accountLast4: String? = null
+    val accountLast4: String? = null,
+
+    val ifscCode: String? = null
 )
